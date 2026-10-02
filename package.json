@@ -1,0 +1,12 @@
+{
+	"name": "gamejams",
+	"version": "0.1.0",
+	"private": true,
+	"description": "Game jam portal: small browser games on GitHub Pages",
+	"type": "module",
+	"scripts": {
+		"test": "node --test tests/",
+		"serve": "npx --yes http-server -p 8620 -c-1 .",
+		"setup": "git config core.hooksPath .githooks"
+	}
+}

@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="en">
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+	<title>Fowl Play: The Battle of Midair</title>
+	<style>
+		html, body { margin: 0; height: 100%; background: #10131c; overflow: hidden; touch-action: none; }
+		#game { position: fixed; inset: 0; }
+		#back {
+			position: fixed; top: 8px; left: 10px; z-index: 2;
+			font: 12px/1 monospace; color: #8a93b8; text-decoration: none; opacity: 0.7;
+		}
+		#back:hover { opacity: 1; color: #f2d544; }
+	</style>
+</head>
+<body>
+	<a id="back" href="../../">&larr; all games</a>
+	<div id="game"></div>
+	<script src="../../lib/phaser.min.js"></script>
+	<script type="module" src="src/game/main.js"></script>
+</body>
+</html>

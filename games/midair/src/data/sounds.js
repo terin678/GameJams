@@ -1,0 +1,21 @@
+// Synthesized sound effects, see shared/sfx.js for the format.
+export const SOUNDS = {
+	splat: { wave: 'square', f0: 900, f1: 300, dur: 0.05, vol: 0.08 },
+	drop: { wave: 'sine', f0: 1400, f1: 350, dur: 0.5, vol: 0.12 },
+	impact: { wave: 'noise', f0: 1500, f1: 120, dur: 0.25, vol: 0.35 },
+	pop: { wave: 'noise', f0: 3000, f1: 300, dur: 0.15, vol: 0.3 },
+	crunch: { wave: 'noise', f0: 2200, f1: 150, dur: 0.3, vol: 0.45 },
+	boom: { wave: 'noise', f0: 1200, f1: 60, dur: 0.5, vol: 0.5 },
+	bigboom: { wave: 'noise', f0: 900, f1: 40, dur: 1.5, vol: 0.7 },
+	hurt: { wave: 'sawtooth', f0: 420, f1: 90, dur: 0.3, vol: 0.25 },
+	pickup: { wave: 'triangle', notes: [523, 659, 784, 1047], dur: 0.25, vol: 0.25 },
+	power: { wave: 'square', notes: [392, 523, 659, 784, 1047], dur: 0.45, vol: 0.18 },
+	empty: { wave: 'square', f0: 150, f1: 120, dur: 0.12, vol: 0.15 },
+	charged: { wave: 'triangle', f0: 600, f1: 1200, dur: 0.12, vol: 0.15 },
+	bullseye: { wave: 'triangle', notes: [880, 1175, 1760], dur: 0.2, vol: 0.25 },
+	enemyShot: { wave: 'square', f0: 700, f1: 500, dur: 0.05, vol: 0.05 },
+	boss: { wave: 'sawtooth', notes: [110, 98, 110, 98, 82], dur: 1.4, vol: 0.22 },
+	start: { wave: 'square', notes: [262, 330, 392, 523], dur: 0.4, vol: 0.18 },
+	gameover: { wave: 'triangle', notes: [523, 392, 330, 262], dur: 1.2, vol: 0.3 },
+	select: { wave: 'square', f0: 660, dur: 0.05, vol: 0.1 },
+};

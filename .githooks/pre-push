@@ -1,0 +1,4 @@
+#!/bin/sh
+# Tests run here instead of in CI (Actions minutes are limited).
+# A red suite blocks the push, which blocks the Pages deploy.
+npm test || { echo "pre-push: tests failed, push aborted"; exit 1; }

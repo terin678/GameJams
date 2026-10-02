@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="en">
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<title>Game Jams</title>
+	<meta name="description" content="Small browser games made in game jams.">
+	<link rel="stylesheet" href="portal/portal.css">
+</head>
+<body>
+	<header>
+		<h1>GAME<span>JAMS</span></h1>
+		<p>Small browser games, built fast. Click one and play.</p>
+	</header>
+	<main>
+		<div id="filters" class="filters" aria-label="Filter by tag"></div>
+		<ul id="games" class="grid"></ul>
+		<p id="error" class="error" hidden></p>
+	</main>
+	<footer>
+		<span>Add a game: drop a folder in <code>games/</code> and a line in <code>games.json</code>.</span>
+	</footer>
+	<script type="module" src="portal/portal.js"></script>
+</body>
+</html>
