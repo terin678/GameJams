@@ -76,3 +76,12 @@ eggs turn you into a duck with its own weapon (mallard spread, merganser rapid,
 eider piercing), the same egg again levels it to 3, and shooting a falling egg
 cycles which duck is inside. Feathers add wingmen who fly in a V, fire with you
 and each soak a hit. Red-tinted squadrons drop a prize if you down every plane.
+
+Every now and then a monster truck zooms sideways across the low layer
+(`src/data/cameos.js`); bomb it before it escapes for a bonus and a feather.
+
+**Challenges** (`src/data/challenges.js`, press C on the title screen) are lifetime
+goals with bronze, silver and gold tiers, like "Poop on 20 / 100 / 300 blue cars".
+Progress saves to localStorage and a toast pops up in play when you reach a tier.
+Add one by adding a row: pick an `event` Play.js reports, optionally `match` an
+enemy, give three rising `goals`; `data.test.js` checks it.

@@ -24,5 +24,7 @@ export const SOUNDS = {
 	wingman: { wave: 'triangle', notes: [659, 880, 1175], dur: 0.25, vol: 0.22 },
 	wingmanDown: { wave: 'sawtooth', f0: 600, f1: 150, dur: 0.25, vol: 0.18 },
 	squadron: { wave: 'square', notes: [523, 784, 1047, 1568], dur: 0.4, vol: 0.18 },
+	horn: { wave: 'sawtooth', notes: [220, 277, 220, 277], dur: 0.7, vol: 0.2 },
+	challenge: { wave: 'triangle', notes: [659, 784, 988, 1319, 1568], dur: 0.6, vol: 0.25 },
 	select:{ wave: 'square', f0: 660, dur: 0.05, vol: 0.1 },
 };

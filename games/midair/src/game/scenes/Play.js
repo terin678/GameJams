@@ -6,7 +6,12 @@ import { FORMS } from '../../data/forms.js';
 import { PICKUPS, EGG_CYCLE } from '../../data/pickups.js';
 import { createPower, collect, tickPower, remaining, levelDef } from '../../core/power.js';
 import { formationTargets, follow } from '../../core/flock.js';
-import { createSquadrons, enlist, recordKill, recordEscape } from '../../core/squadrons.js';import { createMeters, tickMeters, damage, feed, trySpend, isDead } from '../../core/meters.js';
+import { createSquadrons, enlist, recordKill, recordEscape } from '../../core/squadrons.js';
+import { CHALLENGES, TIERS } from '../../data/challenges.js';
+import { CAMEOS } from '../../data/cameos.js';
+import { record, formatTitle } from '../../core/challenges.js';
+import { createCameos, dueCameos } from '../../core/cameos.js';
+import { createMeters, tickMeters, damage, feed, trySpend, isDead } from '../../core/meters.js';
 import { reticleFor, charge, bombProgress, splashTargets, isBullseye, bombDamage } from '../../core/bombing.js';
 import { createScore, registerKill, tickCombo, multiplier } from '../../core/scoring.js';
 import { positionAt, isOffscreen } from '../../core/patterns.js';
@@ -42,6 +47,12 @@ export class Play extends Phaser.Scene {
 		this.power = createPower(TUNING.player.form);
 		this.flock = [];           // wingmen: { img, shadow, x, y }
 		this.squadrons = createSquadrons();
+		this.progress = this.registry.get('challenges');
+		this.progressDirty = false;
+		this.toasts = [];
+		this.cameos = createCameos(CAMEOS);
+		this.pendingCameos = [];
+		this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => this.saveProgress());
 		this.nextShotAt = 0;
 		this.nextWingShotAt = 0;
 		this.invulnUntil = 0;
@@ -260,9 +271,80 @@ export class Play extends Phaser.Scene {
 			this.cursor = createCursor(STAGE_SPAWNS);
 			this.stageTime = 0;
 			this.banner(`LOOP ${this.loop + 1}\nTHEY'RE ANGRIER`, 2200);
+			this.challenge('loop', { value: this.loop + 1 });
 		}
 		if (!this.boss) this.stageTime += dt;
 		for (const s of takeDue(this.cursor, this.stageTime)) this.spawnEnemy(s);
+		for (const id of dueCameos(this.cameos, CAMEOS, this.clock, this.rng, { blocked: !!this.boss })) this.warnCameo(id);
+		this.pendingCameos = this.pendingCameos.filter(c => {
+			if (this.clock < c.at) return true;
+			c.marker.destroy();
+			this.spawnEnemy(c.spawn);
+			return false;
+		});
+	}
+
+	// ---------- cameos and challenges ----------
+
+	// Flash a marker on the side it will enter from, then send it in.
+	warnCameo(id) {
+		const c = CAMEOS[id];
+		const dir = this.rng.next() < 0.5 ? 1 : -1;
+		const y = Math.round(this.rng.range(c.y[0], c.y[1]));
+		const marker = this.add.text(dir > 0 ? 14 : W - 14, y, dir > 0 ? '!>' : '<!', {
+			fontFamily: FONT, fontSize: fs(this, 22), color: '#f2d544', fontStyle: 'bold', stroke: '#1b1b2a', strokeThickness: 5,
+		}).setOrigin(dir > 0 ? 0 : 1, 0.5).setDepth(DEPTH.hud);
+		this.tweens.add({ targets: marker, alpha: 0.2, yoyo: true, repeat: -1, duration: 150 });
+		this.floatText(W / 2, y - 30, c.banner, '#f2d544');
+		if (c.sfx) this.sfx.play(c.sfx);
+		this.pendingCameos.push({
+			at: this.clock + c.warnMs, marker,
+			spawn: { type: c.enemy, pattern: c.pattern, x: 0, cameo: id, params: { ...c.params, dir, y0: y } },
+		});
+	}
+
+	cameoCaught(e) {
+		const c = CAMEOS[e.cameo];
+		const bonus = (c.bonus ?? 0) * (this.loop + 1);
+		this.score.score += bonus;
+		if (c.reward) this.spawnPickup(c.reward, e.x, e.y);
+		const x = Phaser.Math.Clamp(e.x, 120, W - 120); // it dies near the edges
+		this.floatText(x, e.y - 22, `${c.banner.replace('!', '')} STOMPED! +${bonus}`, '#f2d544');
+	}
+
+	// Report a game event to the lifetime challenges; celebrate new tiers.
+	challenge(event, info) {
+		const ups = record(this.progress, CHALLENGES, event, info);
+		this.progressDirty = true;
+		if (!ups.length) return;
+		for (const u of ups) this.toast(u.def, u.tier);
+		this.saveProgress();
+	}
+
+	saveProgress() {
+		if (!this.progressDirty) return;
+		this.progressDirty = false;
+		this.registry.get('store').set('challenges', this.progress);
+	}
+
+	toast(def, tier) {
+		const t = TIERS[tier - 1];
+		const goal = def.goals[tier - 1];
+		const y = 92 + this.toasts.length * 34;
+		const box = this.add.container(W / 2, y).setDepth(DEPTH.hud + 1);
+		const bg = this.add.rectangle(0, 0, W - 60, 30, 0x10131c, 0.85).setStrokeStyle(2, t.tint);
+		const text = this.add.text(0, 0, `${t.name}  ${formatTitle(def, goal)}`, {
+			fontFamily: FONT, fontSize: fs(this, 12), color: t.color, fontStyle: 'bold',
+		}).setOrigin(0.5);
+		box.add([bg, text]);
+		this.toasts.push(box);
+		this.sfx.play('challenge');
+		box.setAlpha(0).setScale(0.8);
+		this.tweens.add({ targets: box, alpha: 1, scale: 1, duration: 200, ease: 'Back.easeOut' });
+		this.tweens.add({
+			targets: box, alpha: 0, delay: 2600, duration: 400,
+			onComplete: () => { this.toasts = this.toasts.filter(b => b !== box); box.destroy(); },
+		});
 	}
 
 	moveBird(dt) {
@@ -303,6 +385,8 @@ export class Play extends Phaser.Scene {
 		const result = collect(this.power, form, this.clock, TUNING.power);
 		const name = FORMS[form].name.toUpperCase();
 		const lv = this.power.level;
+		if (result === 'swap') this.challenge('form');
+		if (result === 'levelup' && lv === TUNING.power.maxLevel) this.challenge('maxform');
 		if (result === 'swap') {
 			this.sfx.play('swap');
 			this.floatText(this.bird.x, this.bird.y - 30, `${name}!`, '#f2d544');
@@ -332,6 +416,7 @@ export class Play extends Phaser.Scene {
 		m.img = this.add.image(m.x, m.y, key).setDepth(DEPTH.bird - 1).setScale(s);
 		m.shadow = this.add.image(m.x, m.y, key).setDepth(DEPTH.shadow).setTintFill(0x000000).setAlpha(0.2).setScale(s * 0.55);
 		this.flock.push(m);
+		this.challenge('flock', { value: this.flock.length });
 		return true;
 	}
 
@@ -514,8 +599,10 @@ export class Play extends Phaser.Scene {
 		const low = def.layer === 'low';
 		const img = this.add.image(pos.x, pos.y, frameKey(def.sprite)).setDepth(low ? DEPTH.low : DEPTH.sky);
 		const shadow = this.add.image(pos.x, pos.y, frameKey(def.sprite)).setDepth(DEPTH.shadow).setTintFill(0x000000).setAlpha(0.2);
+		// Side-on sprites face right; flip them to face where they're going.
+		if (def.facing === 'right' && params.dir < 0) { img.setFlipX(true); shadow.setFlipX(true); }
 		const e = {
-			def, img, shadow, params, pattern: s.pattern,
+			def, type: s.type, cameo: s.cameo, img, shadow, params, pattern: s.pattern,
 			layer: def.layer, age: 0, x: pos.x, y: pos.y,
 			hp: Math.ceil(def.hp * this.diff.hp),
 			r: def.radius,
@@ -585,6 +672,7 @@ export class Play extends Phaser.Scene {
 
 			if (!e.dead && !e.def.boss && e.age > 1 && isOffscreen(e, W, H, margin)) {
 				if (e.squad) recordEscape(this.squadrons, e.squad);
+				if (e.cameo && !this.over) this.floatText(e.x < 0 ? 60 : W - 60, e.y, 'IT GOT AWAY...', '#9aa3c8');
 				this.removeEnemy(e);
 			}
 		}
@@ -699,6 +787,10 @@ export class Play extends Phaser.Scene {
 			if (bullseye) this.sfx.play('bullseye');
 			const drop = rollDrop(e.def.drops, this.rng);
 			if (drop) this.spawnPickup(drop, e.x, e.y);
+			if (e.cameo) this.cameoCaught(e);
+			this.challenge('kill', { enemy: e.type });
+			if (bullseye) this.challenge('bullseye');
+			this.challenge('chain', { value: this.score.combo });
 		}
 		if (e.squad) {
 			const reward = recordKill(this.squadrons, e.squad);
@@ -706,6 +798,7 @@ export class Play extends Phaser.Scene {
 				this.spawnPickup(reward, e.x, e.y);
 				this.floatText(e.x, e.y - 20, 'SQUADRON DOWN!', '#ff9a8a');
 				this.sfx.play('squadron');
+				this.challenge('squadron');
 			}
 		}
 		if (big) this.bossDown(e);
@@ -793,6 +886,7 @@ export class Play extends Phaser.Scene {
 		for (const m of [...this.flock]) this.loseWingman(m);
 		this.sfx.play('gameover');
 		this.banner('PLUCKED!', 2000);
+		this.challenge('score', { value: Math.round(this.score.score) });
 		this.time.delayedCall(2200, () => {
 			this.scene.start('GameOver', { score: Math.round(this.score.score), bestCombo: this.score.bestCombo, loop: this.loop });
 		});

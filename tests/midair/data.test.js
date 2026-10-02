@@ -9,6 +9,8 @@ import { PICKUPS, EGG_CYCLE } from '../../games/midair/src/data/pickups.js';
 import { SPRITES, PALETTE } from '../../games/midair/src/data/sprites.js';
 import { SOUNDS } from '../../games/midair/src/data/sounds.js';
 import { TUNING } from '../../games/midair/src/data/tuning.js';
+import { CHALLENGES, CHALLENGE_EVENTS, TIERS } from '../../games/midair/src/data/challenges.js';
+import { CAMEOS } from '../../games/midair/src/data/cameos.js';
 import { PATTERNS } from '../../games/midair/src/core/patterns.js';
 import { buildStage } from '../../games/midair/src/core/waves.js';
 import { parsePixelMap } from '../../shared/pixelart.js';
@@ -142,6 +144,32 @@ test('stage ends with exactly one boss', () => {
 test('stage uses both layers before the boss', () => {
 	const layers = new Set(STAGE.filter(w => !ENEMIES[w.type].boss).map(w => ENEMIES[w.type].layer));
 	assert.deepEqual([...layers].sort(), ['low', 'sky']);
+});
+
+test('challenges: unique ids, known events, real enemies, three rising goals', () => {
+	const ids = CHALLENGES.map(c => c.id);
+	assert.equal(new Set(ids).size, ids.length, 'unique ids');
+	assert.equal(TIERS.length, 3);
+	for (const c of CHALLENGES) {
+		assert.ok(CHALLENGE_EVENTS.includes(c.event), `${c.id}.event "${c.event}"`);
+		assert.ok(c.title.includes('{n}'), `${c.id}.title shows the goal`);
+		if (c.match?.enemy) assert.ok(ENEMIES[c.match.enemy], `${c.id} matches unknown enemy`);
+		if (c.mode) assert.ok(['count', 'best'].includes(c.mode), `${c.id}.mode`);
+		assert.equal(c.goals.length, TIERS.length, `${c.id} has one goal per tier`);
+		c.goals.forEach((g, i) => assert.ok(g > 0 && (i === 0 || g > c.goals[i - 1]), `${c.id} goals rise`));
+	}
+});
+
+test('cameos reference real enemies and patterns with sane timing', () => {
+	for (const [id, c] of Object.entries(CAMEOS)) {
+		assert.ok(ENEMIES[c.enemy], `${id}.enemy`);
+		assert.ok(!ENEMIES[c.enemy].boss, `${id} is not a boss`);
+		assert.ok(PATTERNS[c.pattern], `${id}.pattern`);
+		assert.ok(c.firstMs > 0 && c.everyMs[0] > 0 && c.everyMs[1] >= c.everyMs[0], `${id} timing`);
+		assert.ok(c.y[0] >= 0 && c.y[1] <= TUNING.height, `${id}.y on screen`);
+		if (c.sfx) assert.ok(SOUNDS[c.sfx], `${id}.sfx`);
+		if (c.reward) assert.ok(PICKUPS[c.reward], `${id}.reward`);
+	}
 });
 
 test('tuning: bomb charge range is sane and affordable', () => {

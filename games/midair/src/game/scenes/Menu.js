@@ -2,6 +2,8 @@ import { TUNING } from '../../data/tuning.js';
 import { ENEMIES } from '../../data/enemies.js';
 import { fs, isTouch } from '../../../../../shared/ui.js';
 import { frameKey } from '../textures.js';
+import { CHALLENGES, TIERS } from '../../data/challenges.js';
+import { tierTotals } from '../../core/challenges.js';
 const W = TUNING.width, H = TUNING.height;
 
 export class Menu extends Phaser.Scene {
@@ -31,15 +33,29 @@ export class Menu extends Phaser.Scene {
 		const controls = isTouch(this)
 			? 'DRAG to fly (auto-splat)\nHOLD the poop button to charge a bomb'
 			: 'ARROWS / WASD  fly\nSPLAT  Z / SPACE / left click\nBOMB  X / SHIFT / right click  (hold to charge)\nP  pause     M  mute';
-		this.add.text(W / 2, 330, controls, { ...style(11), lineSpacing: 6 }).setOrigin(0.5);
-		this.add.text(W / 2, 384, 'FOOD refills ENERGY and GUT.\nGrab whatever falls. Some of it is... special.\nRED squadrons: get them all for a prize.', { ...style(10, '#b8bcc8'), lineSpacing: 3 }).setOrigin(0.5);
+		this.add.text(W / 2, 324, controls, { ...style(11), lineSpacing: 6 }).setOrigin(0.5);
+		this.add.text(W / 2, 394, 'FOOD refills ENERGY and GUT.\nGrab whatever falls. Some of it is... special.\nRED squadrons: get them all for a prize.\nHear a horn? Bomb the MONSTER TRUCK.', { ...style(10, '#b8bcc8'), lineSpacing: 3 }).setOrigin(0.5);
 
 		const list = scores.list();
 		const table = list.length
 			? list.map((e, i) => `${i + 1}. ${e.name}  ${String(e.score).padStart(7)}`).join('\n')
 			: 'no scores yet';
-		this.add.text(W / 2, 420, 'HIGH SCORES', style(12, '#f2d544')).setOrigin(0.5);
-		this.add.text(W / 2, 438, table, { ...style(12), lineSpacing: 3 }).setOrigin(0.5, 0);
+		this.add.text(W / 2, 434, 'HIGH SCORES', style(12, '#f2d544')).setOrigin(0.5);
+		this.add.text(W / 2, 450, table, { ...style(12), lineSpacing: 3 }).setOrigin(0.5, 0);
+
+		const medals = tierTotals(CHALLENGES, this.registry.get('challenges'));
+		const chLabel = `${isTouch(this) ? '' : '[C] '}CHALLENGES  ${TIERS.map((t, i) => `${t.name[0]}${medals[i]}`).join(' ')}`;
+		const chBtn = this.add.text(W / 2, H - 86, chLabel, { ...style(12, '#9ff0fa'), backgroundColor: '#1b2238', padding: { x: 10, y: 5 } })
+			.setOrigin(0.5).setInteractive({ useHandCursor: true });
+		let leaving = false;
+		const openChallenges = () => {
+			if (leaving) return;
+			leaving = true;
+			sfx.unlock();
+			this.scene.start('Challenges');
+		};
+		chBtn.on('pointerdown', (_p, _x, _y, e) => { e.stopPropagation(); openChallenges(); });
+		this.input.keyboard.on('keydown-C', openChallenges);
 
 		const prompt = this.add.text(W / 2, H - 50, isTouch(this) ? 'TAP TO START' : 'PRESS SPACE TO START', style(16)).setOrigin(0.5);
 		this.tweens.add({ targets: prompt, alpha: 0.2, yoyo: true, repeat: -1, duration: 600 });
@@ -58,7 +74,7 @@ export class Menu extends Phaser.Scene {
 
 		let started = false;
 		const start = () => {
-			if (started) return;
+			if (started || leaving) return;
 			started = true;
 			sfx.unlock();
 			this.scene.start('Play');
@@ -70,6 +86,7 @@ export class Menu extends Phaser.Scene {
 			this.input.keyboard.off('keydown-SPACE', start);
 			this.input.keyboard.off('keydown-ENTER', start);
 			this.input.keyboard.off('keydown-M', toggleMute);
+			this.input.keyboard.off('keydown-C', openChallenges);
 			this.input.off('pointerdown', start);
 		});
 	}

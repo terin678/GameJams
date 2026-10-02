@@ -51,6 +51,13 @@ export const ENEMIES = {
 		drops: [{ pickup: 'bread', chance: 0.4 }, { pickup: 'eider_egg', chance: 0.3 }, { pickup: 'feather', chance: 0.3 }],
 		sfx: 'boom',
 	},
+	// A cameo (see cameos.js): crosses sideways, fast. Sprite faces right.
+	monster_truck: {
+		name: 'Monster truck', layer: 'low', sprite: 'monster_truck', facing: 'right',
+		hp: 7, radius: 32, speed: 190, score: 1500,
+		drops: [{ pickup: 'fries', chance: 0.5 }],
+		sfx: 'crunch',
+	},
 	airship: {
 		name: 'The Akagi Zeppelin', layer: 'low', sprite: 'airship', boss: true,
 		hp: 60, radius: 58, speed: 50, score: 10000,

@@ -242,6 +242,26 @@ const AIRSHIP = mirror([
 	'.............k',
 ]);
 
+// Monster truck, top-down, facing right: oversized tyres, cab glass, flame decals.
+const TYRES_A = '..kGkGkk....kGkGkk..';
+const TYRES_B = '..kkGkGk....kkGkGk..';
+const TRUCK = tread => [
+	'..kkkkkk....kkkkkk..',
+	tread,
+	'..kkkkkk....kkkkkk..',
+	'.kkkkkkkkkkkkkkkkkk.',
+	'kyrrrrrrrrrkcccRrrrk',
+	'kyoyrrrrrrrkcccRrrrw',
+	'kroyorrrrrrkcccRrrrk',
+	'kroyorrrrrrkcccRrrrk',
+	'kyoyrrrrrrrkcccRrrrw',
+	'kyrrrrrrrrrkcccRrrrk',
+	'.kkkkkkkkkkkkkkkkkk.',
+	'..kkkkkk....kkkkkk..',
+	tread,
+	'..kkkkkk....kkkkkk..',
+];
+
 const SPLAT = mirror(['.z', 'zw', 'zw', 'zz', '.z']);
 const BOMB = mirror(['.xx', 'xzx', 'xxX', '.XX']);
 const SPLATTER = mirror([
@@ -342,6 +362,7 @@ export const SPRITES = {
 	taxi: { frames: [recolor(CAR, { u: 'y', U: 'Y' }), recolor(CAR_B, { u: 'y', U: 'Y' })] },
 	van: { frames: [VAN, VAN_B] },
 	blimp: { frames: [BLIMP] },
+	monster_truck: { frames: [TRUCK(TYRES_A), TRUCK(TYRES_B)], scale: 4 },
 	airship: { frames: [AIRSHIP], scale: 4 },
 	splat: { frames: [SPLAT], scale: 2 },
 	bomb: { frames: [BOMB] },

@@ -7,6 +7,9 @@ import { Menu } from './scenes/Menu.js';
 import { Play } from './scenes/Play.js';
 import { Pause } from './scenes/Pause.js';
 import { GameOver } from './scenes/GameOver.js';
+import { Challenges } from './scenes/Challenges.js';
+import { CHALLENGES } from '../data/challenges.js';
+import { loadProgress } from '../core/challenges.js';
 
 document.addEventListener('contextmenu', e => e.preventDefault());
 
@@ -29,6 +32,7 @@ window.addEventListener('load', () => {
 	game.registry.set('store', store);
 	game.registry.set('scores', createScoreTable(store));
 	game.registry.set('sfx', new Sfx(SOUNDS, { muted: store.get('muted', false) }));
+	game.registry.set('challenges', loadProgress(store.get('challenges', {}), CHALLENGES));
 
 	// Order matters: later scenes render on top.
 	game.scene.add('Boot', Boot);
@@ -36,5 +40,6 @@ window.addEventListener('load', () => {
 	game.scene.add('Play', Play);
 	game.scene.add('Pause', Pause);
 	game.scene.add('GameOver', GameOver);
+	game.scene.add('Challenges', Challenges);
 	game.scene.start('Boot');
 });
