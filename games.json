@@ -1,5 +1,13 @@
 [
 	{
+		"slug": "superposition",
+		"title": "Superposition",
+		"blurb": "Schrödinger's cat in a maze, dodging Observers. Tunnel through walls, split into a mirror twin, and if one of you is seen, collapse into the other.",
+		"date": "2026-10-02",
+		"tags": ["maze", "arcade", "quantum"],
+		"path": "games/superposition/"
+	},
+	{
 		"slug": "midair",
 		"title": "Fowl Play: The Battle of Midair",
 		"blurb": "A 1943-style vertical shooter. You're a bird. They're planes and flying cars. Splat what flies beside you, bomb what flies below.",

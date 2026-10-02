@@ -5,6 +5,7 @@ No build step and no CI: plain ES modules, vendored Phaser 3, tests run locally.
 
 | Game | Where |
 |---|---|
+| **Superposition**: Schrödinger's cat in a maze, with quantum powers | [`games/superposition/`](games/superposition/) |
 | **Fowl Play: The Battle of Midair** — 1943 with a pigeon | [`games/midair/`](games/midair/) |
 | **Teron2** — WoW Teron Gorefiend trainer remake | [external](https://terin678.github.io/Teron2/) |
 
@@ -85,3 +86,19 @@ goals with bronze, silver and gold tiers, like "Poop on 20 / 100 / 300 blue cars
 Progress saves to localStorage and a toast pops up in play when you reach a tier.
 Add one by adding a row: pick an `event` Play.js reports, optionally `match` an
 enemy, give three rising `goals`; `data.test.js` checks it.
+
+## Superposition
+
+Eat every quantum in the lab maze without being seen by the Observers.
+Arrows / WASD (or swipe) to move, P pause, M mute.
+
+| Power | Where | Effect |
+|---|---|---|
+| Measurement | the four pellets | you observe them: Observers flee and can be eaten |
+| Tunnelling | item, every 45 quanta | walk through interior walls |
+| Superposition | item, alternating | a mirror twin splits off and moves mirrored; if one is caught, you collapse into the other; when it runs out, a coin flip decides which was real |
+
+The maze (`src/data/maze.js`) is authored as a left half and mirrored, and
+`tests/superposition/data.test.js` checks it stays symmetric, so the twin's
+mirrored moves are always legal. Observer behaviours, timings and speeds are
+all in `src/data/`.

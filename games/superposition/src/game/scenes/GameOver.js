@@ -16,10 +16,10 @@ export class GameOver extends Phaser.Scene {
 		this.cleanup = [];
 		this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => this.cleanup.forEach(fn => fn()));
 
-		this.add.rectangle(0, 0, W, H, 0x10131c).setOrigin(0);
-		this.add.text(W / 2, 80, 'GAME OVER', this.style(38, '#d6463c')).setOrigin(0.5);
-		const { score, bestCombo, loop } = this.result;
-		this.add.text(W / 2, 140, `SCORE  ${score}\nBEST CHAIN  ${bestCombo}\nLOOP  ${loop + 1}`, { ...this.style(15), lineSpacing: 6 }).setOrigin(0.5, 0);
+		this.add.rectangle(0, 0, W, H, 0x0c0f1a).setOrigin(0);
+		this.add.text(W / 2, 80, 'COLLAPSED', this.style(38, '#ff7ad1')).setOrigin(0.5);
+		const { score, level } = this.result;
+		this.add.text(W / 2, 140, `SCORE  ${score}\nLEVEL  ${level}`, { ...this.style(15), lineSpacing: 6 }).setOrigin(0.5, 0);
 
 		if (!this.result.saved && this.scores.qualifies(score)) this.enterInitials();
 		else this.showTable();
