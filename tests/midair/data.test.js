@@ -4,8 +4,8 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { ENEMIES } from '../../games/midair/src/data/enemies.js';
 import { STAGE } from '../../games/midair/src/data/stage1.js';
-import { WEAPONS } from '../../games/midair/src/data/weapons.js';
-import { PICKUPS } from '../../games/midair/src/data/pickups.js';
+import { FORMS } from '../../games/midair/src/data/forms.js';
+import { PICKUPS, EGG_CYCLE } from '../../games/midair/src/data/pickups.js';
 import { SPRITES, PALETTE } from '../../games/midair/src/data/sprites.js';
 import { SOUNDS } from '../../games/midair/src/data/sounds.js';
 import { TUNING } from '../../games/midair/src/data/tuning.js';
@@ -68,23 +68,57 @@ test('both layers have something to shoot at', () => {
 	assert.ok(layers.has('sky') && layers.has('low'));
 });
 
-test('pickups reference real sprites and weapons', () => {
+test('pickups reference real sprites and forms', () => {
 	for (const [key, p] of Object.entries(PICKUPS)) {
 		assert.ok(SPRITES[p.sprite], `${key}.sprite`);
-		if (p.weapon) {
-			assert.ok(WEAPONS[p.weapon], `${key}.weapon`);
-			assert.ok(p.durationMs > 0, `${key}.durationMs`);
-		}
+		if (p.form) assert.ok(FORMS[p.form], `${key}.form "${p.form}"`);
+		assert.ok(p.form || p.wingman || p.energy || p.gut, `${key} does something`);
 	}
 });
 
-test('weapons are well-formed', () => {
-	assert.ok(WEAPONS[TUNING.player.weapon], 'default weapon exists');
-	for (const [key, w] of Object.entries(WEAPONS)) {
-		assert.ok(w.cooldownMs > 0 && w.speed > 0, key);
-		assert.ok(Array.isArray(w.angles) && w.angles.length > 0, `${key}.angles`);
-		assert.ok(SPRITES[w.sprite], `${key}.sprite`);
+test('the egg cycle only holds form eggs, one per duck', () => {
+	assert.ok(EGG_CYCLE.length >= 2);
+	for (const key of EGG_CYCLE) assert.ok(PICKUPS[key]?.form, `${key} is a form egg`);
+	assert.equal(new Set(EGG_CYCLE.map(k => PICKUPS[k].form)).size, EGG_CYCLE.length);
+});
+
+test('forms are well-formed', () => {
+	assert.ok(FORMS[TUNING.player.form], 'default form exists');
+	for (const [key, f] of Object.entries(FORMS)) {
+		assert.ok(SPRITES[f.sprite], `${key}.sprite`);
+		assert.ok(f.speed > 0, `${key}.speed`);
+		assert.ok(f.levels.length >= 1 && f.levels.length <= TUNING.power.maxLevel, `${key}.levels`);
+		f.levels.forEach((l, i) => {
+			const at = `${key} level ${i + 1}`;
+			assert.ok(l.cooldownMs > 0 && l.speed > 0 && l.damage > 0, at);
+			assert.ok(Array.isArray(l.angles) && l.angles.length > 0, `${at} angles`);
+			if (l.offsets) assert.equal(l.offsets.length, l.angles.length, `${at} offsets match angles`);
+			assert.ok(SPRITES[l.sprite], `${at} sprite "${l.sprite}"`);
+		});
 	}
+});
+
+test('every duck form can be reached from an egg', () => {
+	const reachable = new Set(Object.values(PICKUPS).map(p => p.form).filter(Boolean));
+	for (const key of Object.keys(FORMS)) {
+		if (key !== TUNING.player.form) assert.ok(reachable.has(key), `no egg for ${key}`);
+	}
+});
+
+test('squadron rewards are real pickups on multi-plane waves', () => {
+	const rewarded = STAGE.filter(w => w.reward);
+	assert.ok(rewarded.length > 0, 'stage has squadron rewards');
+	for (const w of rewarded) {
+		assert.ok(PICKUPS[w.reward], `reward "${w.reward}"`);
+		assert.ok((w.count ?? 1) >= 2, `rewarded wave at t=${w.t} needs a squadron`);
+		assert.ok(!ENEMIES[w.type].boss, 'no squadron bosses');
+	}
+});
+
+test('a feather is obtainable', () => {
+	const fromWaves = STAGE.some(w => w.reward && PICKUPS[w.reward].wingman);
+	const fromDrops = Object.values(ENEMIES).some(e => (e.drops ?? []).some(d => PICKUPS[d.pickup].wingman));
+	assert.ok(fromWaves && fromDrops);
 });
 
 test('stage waves reference real enemies and patterns, on-screen', () => {

@@ -11,6 +11,7 @@ export const PALETTE = {
 	G: '#6b7080',
 	p: '#9aa3c8', // pigeon
 	P: '#5d6690',
+	q: '#6a7398', // bird head (ducks recolour it)
 	n: '#4fb38a', // pigeon neck sheen
 	o: '#f29d38', // beak / orange
 	v: '#7a8a42', // olive plane
@@ -38,9 +39,9 @@ const recolor = (rows, map) => rows.map(r => [...r].map(ch => map[ch] ?? ch).joi
 const BIRD_UP = mirror([
 	'........',
 	'.......o',
-	'......Po',
-	'.....PkP',
-	'.....PPP',
+	'......qo',
+	'.....qkq',
+	'.....qqq',
 	'......nn',
 	'...kkppp',
 	'.kkpppPp',
@@ -57,9 +58,9 @@ const BIRD_UP = mirror([
 const BIRD_DOWN = mirror([
 	'........',
 	'.......o',
-	'......Po',
-	'.....PkP',
-	'.....PPP',
+	'......qo',
+	'.....qkq',
+	'.....qqq',
 	'......nn',
 	'.....ppp',
 	'....kpPp',
@@ -283,16 +284,6 @@ const BUG = mirror([
 	'kEee',
 	'..Ee',
 ]);
-const CHILI = [
-	'.....E.',
-	'....E..',
-	'...rrr.',
-	'..rrwr.',
-	'.rrrr..',
-	'rrrr...',
-	'Rrr....',
-	'RR.....',
-];
 const CLOUD = mirror([
 	'.......ww',
 	'....wwwww',
@@ -304,8 +295,46 @@ const CLOUD = mirror([
 ]);
 const SPARK = ['ww', 'ww'];
 
+// Ducks are the pigeon body recoloured: q head, n neck, p body, P wing bars,
+// o bill, g tail.
+const DUCKS = {
+	mallard: { q: 'E', n: 'w', p: 'g', P: 'h', o: 'y', g: 'k' },       // green head, white collar
+	merganser: { q: 'R', n: 'w', p: 'w', P: 'G', o: 'r', g: 'G' },     // rusty crest, red bill
+	eider: { q: 'w', n: 'e', p: 'w', P: 'k', o: 'G', g: 'k' },         // white back, black bars
+};
+const duck = map => [recolor(BIRD_UP, map), recolor(BIRD_DOWN, map)];
+
+const egg = speck => mirror([
+	'..z',
+	'.zz',
+	`z${speck}z`,
+	'zzz',
+	`zz${speck}`,
+	'zzz',
+	'.zz',
+]);
+const FEATHER = [
+	'......w',
+	'.....ww',
+	'....wwg',
+	'...wwg.',
+	'..wwg..',
+	'.wwg...',
+	'.wg....',
+	'h......',
+];
+const SHELL = mirror(['.zw', 'zww', 'zww', 'zzw', '.zz']);
+
 export const SPRITES = {
 	bird: { frames: [BIRD_UP, BIRD_DOWN] },
+	mallard: { frames: duck(DUCKS.mallard) },
+	merganser: { frames: duck(DUCKS.merganser) },
+	eider: { frames: duck(DUCKS.eider) },
+	egg_mallard: { frames: [egg('e')] },
+	egg_merganser: { frames: [egg('r')] },
+	egg_eider: { frames: [egg('G')] },
+	feather: { frames: [FEATHER] },
+	shell: { frames: [SHELL], scale: 2 },
 	prop: { frames: [mirror(PROP), mirror(PROP_B)] },
 	jet: { frames: [JET] },
 	drone: { frames: [DRONE, DRONE_B] },
@@ -322,7 +351,6 @@ export const SPRITES = {
 	fries: { frames: [FRIES] },
 	bread: { frames: [BREAD] },
 	bug: { frames: [BUG] },
-	chili: { frames: [CHILI] },
 	cloud: { frames: [CLOUD], scale: 5 },
 	spark: { frames: [SPARK], scale: 2 },
 };

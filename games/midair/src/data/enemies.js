@@ -20,7 +20,7 @@ export const ENEMIES = {
 		name: 'Jet', layer: 'sky', sprite: 'jet',
 		hp: 4, radius: 18, speed: 210, score: 350,
 		fire: { kind: 'spread', everyMs: 2000, speed: 220, count: 3, spreadDeg: 28 },
-		drops: [{ pickup: 'chili', chance: 0.15 }, { pickup: 'fries', chance: 0.15 }],
+		drops: [{ pickup: 'mallard_egg', chance: 0.2 }, { pickup: 'fries', chance: 0.15 }],
 		sfx: 'boom',
 	},
 	car: {
@@ -41,14 +41,14 @@ export const ENEMIES = {
 		name: 'Hover van', layer: 'low', sprite: 'van',
 		hp: 6, radius: 20, speed: 60, score: 400,
 		fire: { kind: 'flak', everyMs: 2000, speed: 160 },
-		drops: [{ pickup: 'fries', chance: 0.35 }, { pickup: 'chili', chance: 0.15 }],
+		drops: [{ pickup: 'fries', chance: 0.35 }, { pickup: 'feather', chance: 0.2 }],
 		sfx: 'crunch',
 	},
 	blimp: {
 		name: 'Ad blimp', layer: 'low', sprite: 'blimp',
 		hp: 12, radius: 30, speed: 40, score: 1000,
 		fire: { kind: 'flak', everyMs: 1500, speed: 150 },
-		drops: [{ pickup: 'bread', chance: 0.5 }, { pickup: 'chili', chance: 0.5 }],
+		drops: [{ pickup: 'bread', chance: 0.4 }, { pickup: 'eider_egg', chance: 0.3 }, { pickup: 'feather', chance: 0.3 }],
 		sfx: 'boom',
 	},
 	airship: {
@@ -56,7 +56,7 @@ export const ENEMIES = {
 		hp: 60, radius: 58, speed: 50, score: 10000,
 		fire: { kind: 'flak', everyMs: 850, speed: 170 },
 		escorts: { type: 'prop', everyMs: 3200, pattern: 'swoop', params: { amp: 130, freq: 1.3 } },
-		drops: [{ pickup: 'chili', chance: 1 }],
+		drops: [{ pickup: 'feather', chance: 1 }],
 		sfx: 'bigboom',
 	},
 };

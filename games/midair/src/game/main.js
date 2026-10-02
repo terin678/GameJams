@@ -18,6 +18,7 @@ window.addEventListener('load', () => {
 		type: Phaser.AUTO,
 		backgroundColor: '#10131c',
 		pixelArt: true,
+		disableContextMenu: true, // right click is the bomb
 		scale: { mode: Phaser.Scale.FIT, autoCenter: Phaser.Scale.CENTER_BOTH },
 		input: { activePointers: 3 },
 	});

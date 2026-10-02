@@ -22,6 +22,15 @@ test('buildStage flattens and sorts by time', () => {
 		{ t: 1, type: 'a', pattern: 'straight', x: 0, count: 2, gap: 10 },
 	]);
 	assert.deepEqual(spawns.map(s => `${s.type}@${s.t}`), ['a@1', 'b@5', 'a@11']);
+	assert.deepEqual(Object.keys(spawns[0]).sort(), ['params', 'pattern', 't', 'type', 'wave', 'waveSize', 'x']);
+});
+
+test('buildStage tags spawns with their wave index, size and reward', () => {
+	const spawns = buildStage([
+		{ t: 0, type: 'a', pattern: 'straight', x: 0, count: 2, reward: 'feather' },
+		{ t: 5, type: 'b', pattern: 'straight', x: 0 },
+	]);
+	assert.deepEqual(spawns.map(s => [s.wave, s.waveSize, s.reward]), [[0, 2, 'feather'], [0, 2, 'feather'], [1, 1, undefined]]);
 });
 
 test('cursor yields each spawn exactly once when due', () => {

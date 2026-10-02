@@ -2,9 +2,11 @@
 import { TUNING } from '../../data/tuning.js';
 import { ENEMIES } from '../../data/enemies.js';
 import { STAGE } from '../../data/stage1.js';
-import { WEAPONS } from '../../data/weapons.js';
-import { PICKUPS } from '../../data/pickups.js';
-import { createMeters, tickMeters, damage, feed, trySpend, isDead } from '../../core/meters.js';
+import { FORMS } from '../../data/forms.js';
+import { PICKUPS, EGG_CYCLE } from '../../data/pickups.js';
+import { createPower, collect, tickPower, remaining, levelDef } from '../../core/power.js';
+import { formationTargets, follow } from '../../core/flock.js';
+import { createSquadrons, enlist, recordKill, recordEscape } from '../../core/squadrons.js';import { createMeters, tickMeters, damage, feed, trySpend, isDead } from '../../core/meters.js';
 import { reticleFor, charge, bombProgress, splashTargets, isBullseye, bombDamage } from '../../core/bombing.js';
 import { createScore, registerKill, tickCombo, multiplier } from '../../core/scoring.js';
 import { positionAt, isOffscreen } from '../../core/patterns.js';
@@ -37,9 +39,11 @@ export class Play extends Phaser.Scene {
 
 		this.meters = createMeters(TUNING.meters);
 		this.score = createScore();
-		this.weapon = TUNING.player.weapon;
-		this.powerUntil = 0;
+		this.power = createPower(TUNING.player.form);
+		this.flock = [];           // wingmen: { img, shadow, x, y }
+		this.squadrons = createSquadrons();
 		this.nextShotAt = 0;
+		this.nextWingShotAt = 0;
 		this.invulnUntil = 0;
 		this.bombHeldSince = null;
 		this.chargedCue = false;
@@ -83,7 +87,7 @@ export class Play extends Phaser.Scene {
 
 	buildInput() {
 		const kb = this.input.keyboard;
-		this.keys = kb.addKeys('UP,DOWN,LEFT,RIGHT,W,A,S,D,Z,J,SPACE,X,K');
+		this.keys = kb.addKeys('UP,DOWN,LEFT,RIGHT,W,A,S,D,Z,J,SPACE,X,K,SHIFT');
 		const onPause = () => this.pause();
 		const onMute = () => this.toggleMute();
 		kb.on('keydown-P', onPause);
@@ -91,7 +95,7 @@ export class Play extends Phaser.Scene {
 		kb.on('keydown-M', onMute);
 		const bombDown = () => this.startBomb();
 		const bombUp = () => this.releaseBomb();
-		const bombKeys = [this.keys.X, this.keys.K];
+		const bombKeys = [this.keys.X, this.keys.K, this.keys.SHIFT];
 		for (const k of bombKeys) {
 			k.on('down', bombDown);
 			k.on('up', bombUp);
@@ -104,6 +108,8 @@ export class Play extends Phaser.Scene {
 			kb.resetKeys();
 			this.drag = null;
 			this.bombHeldSince = null;
+			this.mouseFire = false;
+			this.mouseBomb = false;
 		};
 		this.events.on(Phaser.Scenes.Events.RESUME, onResume);
 		// Phaser reuses emitters and Key objects across restarts, so remove
@@ -118,12 +124,20 @@ export class Play extends Phaser.Scene {
 			this.input.off('pointerdown');
 			this.input.off('pointermove');
 			this.input.off('pointerup');
+			this.input.off('pointerupoutside');
 		});
 
-		// Touch: drag anywhere to move (relative), auto-fire while dragging,
-		// hold the bomb button to charge.
+		// Keyboard + mouse and touch are separate schemes:
+		// - KBM: keys move; the mouse is buttons only (left splat, right bomb,
+		//   hold to charge). The cursor never moves the bird.
+		// - Touch: drag anywhere to move (relative), auto-fire while dragging,
+		//   hold the on-screen bomb button to charge.
 		this.touch = isTouch(this);
 		this.drag = null;
+		this.input.setDefaultCursor('crosshair');
+		this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => this.input.setDefaultCursor('default'));
+		this.mouseFire = false;
+		this.mouseBomb = false;
 		if (this.touch) {
 			const r = 46;
 			this.bombBtn = this.add.circle(W - 64, H - 78, r, 0x3e2814, 0.55)
@@ -132,21 +146,42 @@ export class Play extends Phaser.Scene {
 			this.bombBtn.on('pointerdown', p => { this.bombPointer = p.id; this.startBomb(); });
 		}
 		this.input.on('pointerdown', (p, over) => {
-			if (over.includes(this.bombBtn)) return;
 			this.sfx.unlock();
+			if (!p.wasTouch) {
+				if (p.rightButtonDown()) {
+					this.mouseBomb = true;
+					this.startBomb();
+				}
+				if (p.leftButtonDown()) {
+					this.mouseFire = true;
+					this.fireTap = true; // a click shorter than a frame still fires
+				}
+				return;
+			}
+			if (over.includes(this.bombBtn)) return;
 			if (!this.drag) this.drag = { id: p.id, px: p.x, py: p.y, bx: this.bird.x, by: this.bird.y };
 		});
 		this.input.on('pointermove', p => {
-			if (!this.drag || this.drag.id !== p.id || this.over) return;
+			if (this.over || !p.wasTouch || !this.drag || this.drag.id !== p.id) return;
 			const k = TUNING.player.touchFollow;
 			this.bird.x = this.drag.bx + (p.x - this.drag.px) * k;
 			this.bird.y = this.drag.by + (p.y - this.drag.py) * k;
 			this.clampBird();
 		});
-		this.input.on('pointerup', p => {
+		const onUp = p => {
+			if (!p.wasTouch) {
+				if (p.button === 2 && this.mouseBomb) {
+					this.mouseBomb = false;
+					this.releaseBomb();
+				}
+				if (p.button === 0) this.mouseFire = false;
+				return;
+			}
 			if (p.id === this.bombPointer) { this.bombPointer = null; this.releaseBomb(); }
 			if (this.drag?.id === p.id) this.drag = null;
-		});
+		};
+		this.input.on('pointerup', onUp);
+		this.input.on('pointerupoutside', onUp);
 	}
 
 	buildHud() {
@@ -186,6 +221,8 @@ export class Play extends Phaser.Scene {
 		if (!this.over) {
 			this.advanceStage(dt);
 			this.moveBird(dt);
+			this.updatePower();
+			this.updateFlock(dt);
 			this.fire();
 		}
 		this.updateSplats(dt);
@@ -233,52 +270,146 @@ export class Play extends Phaser.Scene {
 		let dx = (k.RIGHT.isDown || k.D.isDown) - (k.LEFT.isDown || k.A.isDown);
 		let dy = (k.DOWN.isDown || k.S.isDown) - (k.UP.isDown || k.W.isDown);
 		if (dx && dy) { dx *= Math.SQRT1_2; dy *= Math.SQRT1_2; }
-		this.bird.x += dx * TUNING.player.speed * dt;
-		this.bird.y += dy * TUNING.player.speed * dt;
+		const form = FORMS[this.power.form];
+		this.bird.x += dx * form.speed * dt;
+		this.bird.y += dy * form.speed * dt;
 		this.clampBird();
 
-		const frame = Math.floor(this.clock / 110) % 2;
-		this.bird.setTexture(frameKey('bird', frame));
-		this.birdShadow.setTexture(frameKey('bird', frame)).setPosition(this.bird.x + 26, this.bird.y + 40);
+		const key = frameKey(form.sprite, Math.floor(this.clock / 110) % 2);
+		this.bird.setTexture(key);
+		this.birdShadow.setTexture(key).setPosition(this.bird.x + 26, this.bird.y + 40);
 		this.bird.setAlpha(this.clock < this.invulnUntil && Math.floor(this.clock / 80) % 2 ? 0.35 : 1);
 	}
 
 	clampBird() {
 		const m = TUNING.player.margin;
+		// Keep the whole V on screen: each row of wingmen trails 0.8 spacing.
+		const rows = Math.ceil(this.flock.length / 2);
+		const trail = rows * TUNING.flock.spacing * 0.8;
 		this.bird.x = Phaser.Math.Clamp(this.bird.x, m, W - m);
-		this.bird.y = Phaser.Math.Clamp(this.bird.y, H * 0.3, H - m - 10);
+		this.bird.y = Phaser.Math.Clamp(this.bird.y, H * 0.3, H - m - 10 - trail);
+	}
+
+	// ---------- ducks and the flock ----------
+
+	updatePower() {
+		if (tickPower(this.power, this.clock, TUNING.player.form)) {
+			this.sfx.play('powerdown');
+			this.floatText(this.bird.x, this.bird.y - 30, 'BACK TO PIGEON', '#9aa3c8');
+		}
+	}
+
+	collectForm(form) {
+		const result = collect(this.power, form, this.clock, TUNING.power);
+		const name = FORMS[form].name.toUpperCase();
+		const lv = this.power.level;
+		if (result === 'swap') {
+			this.sfx.play('swap');
+			this.floatText(this.bird.x, this.bird.y - 30, `${name}!`, '#f2d544');
+		} else {
+			this.sfx.play('levelup');
+			this.floatText(this.bird.x, this.bird.y - 30, result === 'max' ? `${name} MAX` : `${name} LV${lv}`, '#f2d544');
+		}
+		this.fxFeathers.explode(10, this.bird.x, this.bird.y);
+	}
+
+	cycleEgg(p) {
+		if (this.clock < (p.cycleAt ?? 0)) return;
+		p.cycleAt = this.clock + TUNING.eggs.cycleCooldownMs;
+		const next = EGG_CYCLE[(EGG_CYCLE.indexOf(p.kind) + 1) % EGG_CYCLE.length];
+		p.kind = next;
+		p.def = PICKUPS[next];
+		p.img.setTexture(frameKey(p.def.sprite));
+		this.sfx.play('eggcycle');
+	}
+
+	addWingman() {
+		if (this.flock.length >= TUNING.flock.max) return false;
+		const key = frameKey(FORMS[this.power.form].sprite);
+		const s = TUNING.flock.scale;
+		// Fly in from below the screen to take their slot.
+		const m = { x: this.bird.x, y: H + 30 };
+		m.img = this.add.image(m.x, m.y, key).setDepth(DEPTH.bird - 1).setScale(s);
+		m.shadow = this.add.image(m.x, m.y, key).setDepth(DEPTH.shadow).setTintFill(0x000000).setAlpha(0.2).setScale(s * 0.55);
+		this.flock.push(m);
+		return true;
+	}
+
+	loseWingman(m) {
+		this.fxFeathers.explode(16, m.x, m.y);
+		this.sfx.play('wingmanDown');
+		m.img.destroy();
+		m.shadow.destroy();
+		this.flock = this.flock.filter(o => o !== m); // the rest close ranks
+	}
+
+	updateFlock(dt) {
+		if (!this.flock.length) return;
+		const f = TUNING.flock;
+		const targets = formationTargets(this.bird, this.flock.length, f.spacing);
+		const key = frameKey(FORMS[this.power.form].sprite, Math.floor((this.clock + 55) / 110) % 2);
+		this.flock.forEach((m, i) => {
+			const p = follow(m, targets[i], dt, f.follow);
+			m.x = p.x; m.y = p.y;
+			m.img.setPosition(m.x, m.y).setTexture(key);
+			m.shadow.setPosition(m.x + 18, m.y + 28).setTexture(key);
+		});
 	}
 
 	// ---------- player weapons ----------
 
 	fire() {
-		if (this.weapon !== TUNING.player.weapon && this.clock >= this.powerUntil) this.weapon = TUNING.player.weapon;
 		const k = this.keys;
-		const firing = k.Z.isDown || k.J.isDown || k.SPACE.isDown || this.drag;
-		if (!firing || this.clock < this.nextShotAt) return;
-		const w = WEAPONS[this.weapon];
-		this.nextShotAt = this.clock + w.cooldownMs;
-		for (const deg of w.angles) {
-			const rad = Phaser.Math.DegToRad(deg);
-			const img = this.add.image(this.bird.x, this.bird.y - 18, frameKey(w.sprite)).setDepth(DEPTH.shots).setRotation(rad);
-			this.splats.push({ img, x: img.x, y: img.y, r: 4, vx: Math.sin(rad) * w.speed, vy: -Math.cos(rad) * w.speed, damage: w.damage });
+		const firing = k.Z.isDown || k.J.isDown || k.SPACE.isDown || this.drag || this.mouseFire || this.fireTap;
+		if (!firing) return;
+		if (this.clock >= this.nextShotAt) {
+			this.fireTap = false;
+			const w = levelDef(FORMS[this.power.form], this.power.level);
+			this.nextShotAt = this.clock + w.cooldownMs;
+			w.angles.forEach((deg, i) => this.spawnSplat(this.bird.x + (w.offsets?.[i] ?? 0), this.bird.y - 18, deg, w));
+			this.sfx.play('splat');
 		}
-		this.sfx.play('splat');
+		// Wingmen fire a plain splat at the pigeon's rate, whatever you are.
+		if (this.flock.length && this.clock >= this.nextWingShotAt) {
+			const base = FORMS[TUNING.player.form].levels[0];
+			const f = TUNING.flock;
+			this.nextWingShotAt = this.clock + base.cooldownMs;
+			for (const m of this.flock) this.spawnSplat(m.x, m.y - 12, 0, { ...base, damage: f.damage, speed: f.shotSpeed }, 0.8);
+		}
+	}
+
+	spawnSplat(x, y, deg, w, scale = 1) {
+		const rad = Phaser.Math.DegToRad(deg);
+		const img = this.add.image(x, y, frameKey(w.sprite)).setDepth(DEPTH.shots).setRotation(rad).setScale(scale);
+		this.splats.push({
+			img, x, y, r: w.sprite === 'shell' ? 6 : 4,
+			vx: Math.sin(rad) * w.speed, vy: -Math.cos(rad) * w.speed,
+			damage: w.damage, pierce: w.pierce ?? 0, hit: new Set(),
+		});
 	}
 
 	updateSplats(dt) {
 		const sky = this.enemies.filter(e => e.layer === 'sky' && !e.dead);
+		const eggs = this.pickups.filter(p => p.def.form);
 		this.splats = this.splats.filter(s => {
 			s.x += s.vx * dt;
 			s.y += s.vy * dt;
 			s.img.setPosition(s.x, s.y);
 			for (const e of sky) {
-				if (!e.dead && circlesOverlap(s, e)) {
-					this.hitEnemy(e, s.damage);
-					this.fxPoop.explode(4, s.x, s.y);
-					s.img.destroy();
-					return false;
-				}
+				if (e.dead || s.hit.has(e) || !circlesOverlap(s, e)) continue;
+				this.hitEnemy(e, s.damage);
+				this.fxPoop.explode(4, s.x, s.y);
+				s.hit.add(e);
+				if (s.pierce-- > 0) continue;
+				s.img.destroy();
+				return false;
+			}
+			// Shooting an egg cycles which duck is inside (1943's POW trick).
+			for (const p of eggs) {
+				if (!circlesOverlap(s, p)) continue;
+				this.cycleEgg(p);
+				s.img.destroy();
+				return false;
 			}
 			if (s.y < -20 || s.x < -20 || s.x > W + 20) { s.img.destroy(); return false; }
 			return true;
@@ -393,6 +524,11 @@ export class Play extends Phaser.Scene {
 			escortAt: this.clock + 1500,
 		};
 		e.maxHp = e.hp;
+		if (s.reward) {
+			e.squad = `${this.loop}:${s.wave}`;
+			enlist(this.squadrons, e.squad, s.waveSize, s.reward);
+			img.setTint(0xff9a8a); // marked squadrons glow red, like 1943's
+		}
 		this.setLayerLook(e);
 		this.enemies.push(e);
 		if (def.boss) {
@@ -407,7 +543,9 @@ export class Play extends Phaser.Scene {
 		const low = e.layer === 'low';
 		const s = low ? TUNING.layers.lowScale : 1;
 		e.img.setScale(s);
-		if (low) e.img.setTint(TUNING.layers.lowTint); else e.img.clearTint();
+		if (low) e.img.setTint(TUNING.layers.lowTint);
+		else if (e.squad) e.img.setTint(0xff9a8a);
+		else e.img.clearTint();
 		e.shadow.setScale(s * (low ? 0.85 : 0.55));
 		e.shadowOffset = low ? { x: 8, y: 12 } : { x: 26, y: 40 };
 		e.r = e.def.radius * s;
@@ -433,12 +571,22 @@ export class Play extends Phaser.Scene {
 			if (!this.over) this.enemyFire(e);
 			if (e.def.escorts && !this.over && this.clock >= e.escortAt) this.spawnEscort(e);
 
-			if (e.layer === 'sky' && !this.over && this.clock >= this.invulnUntil && circlesOverlap(e, { x: this.bird.x, y: this.bird.y, r: TUNING.player.radius })) {
-				this.hurtBird(TUNING.damage.collide);
-				this.hitEnemy(e, e.def.boss ? 0 : e.hp, { noScore: true });
+			if (e.layer === 'sky' && !this.over) {
+				if (this.clock >= this.invulnUntil && circlesOverlap(e, { x: this.bird.x, y: this.bird.y, r: TUNING.player.radius })) {
+					this.hurtBird(TUNING.damage.collide);
+					this.hitEnemy(e, e.def.boss ? 0 : e.hp, { noScore: true });
+				}
+				const wing = !e.dead && this.flock.find(m => circlesOverlap(e, { x: m.x, y: m.y, r: TUNING.flock.radius }));
+				if (wing) {
+					this.loseWingman(wing);
+					this.hitEnemy(e, 2);
+				}
 			}
 
-			if (!e.def.boss && e.age > 1 && isOffscreen(e, W, H, margin)) this.removeEnemy(e);
+			if (!e.dead && !e.def.boss && e.age > 1 && isOffscreen(e, W, H, margin)) {
+				if (e.squad) recordEscape(this.squadrons, e.squad);
+				this.removeEnemy(e);
+			}
 		}
 		this.enemies = this.enemies.filter(e => !e.dead);
 	}
@@ -517,6 +665,13 @@ export class Play extends Phaser.Scene {
 				s.img.destroy();
 				return false;
 			}
+			// Wingmen take bullets for you.
+			const wing = armed && !this.over && this.flock.find(m => circlesOverlap(s, { x: m.x, y: m.y, r: TUNING.flock.radius }));
+			if (wing) {
+				this.loseWingman(wing);
+				s.img.destroy();
+				return false;
+			}
 			if (s.x < -20 || s.x > W + 20 || s.y < -20 || s.y > H + 20) { s.img.destroy(); return false; }
 			return true;
 		});
@@ -544,6 +699,14 @@ export class Play extends Phaser.Scene {
 			if (bullseye) this.sfx.play('bullseye');
 			const drop = rollDrop(e.def.drops, this.rng);
 			if (drop) this.spawnPickup(drop, e.x, e.y);
+		}
+		if (e.squad) {
+			const reward = recordKill(this.squadrons, e.squad);
+			if (reward) {
+				this.spawnPickup(reward, e.x, e.y);
+				this.floatText(e.x, e.y - 20, 'SQUADRON DOWN!', '#ff9a8a');
+				this.sfx.play('squadron');
+			}
 		}
 		if (big) this.bossDown(e);
 		this.removeEnemy(e);
@@ -582,16 +745,21 @@ export class Play extends Phaser.Scene {
 	updatePickups(dt) {
 		const bird = { x: this.bird.x, y: this.bird.y, r: TUNING.player.radius * 2 };
 		this.pickups = this.pickups.filter(p => {
-			p.y += TUNING.pickup.fall * dt;
+			p.y += (p.def.form ? TUNING.eggs.fall : TUNING.pickup.fall) * dt;
 			p.img.setPosition(p.x, p.y);
 			if (!this.over && circlesOverlap(p, bird)) {
 				feed(this.meters, p.def);
 				this.score.score += TUNING.pickup.score;
-				if (p.def.weapon) {
-					this.weapon = p.def.weapon;
-					this.powerUntil = this.clock + p.def.durationMs;
-					this.sfx.play('power');
-					this.floatText(p.x, p.y, 'SPICY!', '#ef6fb0');
+				if (p.def.form) this.collectForm(p.def.form);
+				else if (p.def.wingman) {
+					if (this.addWingman()) {
+						this.sfx.play('wingman');
+						this.floatText(p.x, p.y, `WINGMAN! V${this.flock.length}`, '#9ff0fa');
+					} else {
+						this.score.score += 1000;
+						this.sfx.play('pickup');
+						this.floatText(p.x, p.y, 'FULL FLOCK +1000', '#9ff0fa');
+					}
 				} else {
 					this.sfx.play('pickup');
 					this.floatText(p.x, p.y, p.def.name.toUpperCase(), '#e8dcc0');
@@ -622,6 +790,7 @@ export class Play extends Phaser.Scene {
 		this.fxBoom.explode(20, this.bird.x, this.bird.y);
 		this.bird.setVisible(false);
 		this.birdShadow.setVisible(false);
+		for (const m of [...this.flock]) this.loseWingman(m);
 		this.sfx.play('gameover');
 		this.banner('PLUCKED!', 2000);
 		this.time.delayedCall(2200, () => {
@@ -637,8 +806,17 @@ export class Play extends Phaser.Scene {
 		this.hudHi.setText(`HI ${Math.max(this.hi, score)}`);
 		const mult = multiplier(this.score, TUNING.combo);
 		this.hudCombo.setText(this.score.combo > 1 ? `${this.score.combo} CHAIN  x${mult}` : '');
-		const powerLeft = this.powerUntil - this.clock;
-		this.hudPower.setText(this.weapon !== TUNING.player.weapon && powerLeft > 0 ? `SPREAD ${Math.ceil(powerLeft / 1000)}` : '');
+		const left = remaining(this.power, this.clock);
+		const form = FORMS[this.power.form];
+		const flock = this.flock.length ? `  V${this.flock.length}` : '';
+		if (left === Infinity) {
+			this.hudPower.setText(flock.trim()).setVisible(true);
+		} else {
+			const stars = '*'.repeat(this.power.level);
+			this.hudPower.setText(`${form.name.toUpperCase()} ${stars} ${Math.ceil(left / 1000)}s${flock}`);
+			// Blink as the form runs out.
+			this.hudPower.setVisible(left > TUNING.power.warnMs || Math.floor(this.clock / 150) % 2 === 0);
+		}
 
 		const g = this.hudBars;
 		g.clear();

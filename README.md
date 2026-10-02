@@ -61,12 +61,18 @@ There's no Actions workflow on purpose (minutes are limited). Instead,
 
 ## Fowl Play controls
 
-| | Keyboard | Touch |
+| | Keyboard + mouse | Touch |
 |---|---|---|
-| Fly | Arrows / WASD | drag anywhere |
-| Splat (hits your altitude) | Z / J / Space | automatic while dragging |
-| Bomb (hits below you) | X / K, hold to charge | hold the poop button |
+| Fly | Arrows / WASD (the cursor never moves you) | drag anywhere |
+| Splat (hits your altitude) | Z / J / Space, or left click | automatic while dragging |
+| Bomb (hits below you) | X / K / Shift, or right click; hold to charge | hold the poop button |
 | Pause / mute | P or Esc / M | — |
 
 Energy drains over time and on hits; gut is bomb ammo and refills slowly. Food
-refills both; chili gives a spread shot. Bomb a car dead-centre for a bullseye.
+refills both. Bomb a car dead-centre for a bullseye.
+
+Upgrades (kept off the title screen on purpose; see `src/data/forms.js`, `pickups.js`):
+eggs turn you into a duck with its own weapon (mallard spread, merganser rapid,
+eider piercing), the same egg again levels it to 3, and shooting a falling egg
+cycles which duck is inside. Feathers add wingmen who fly in a V, fire with you
+and each soak a hit. Red-tinted squadrons drop a prize if you down every plane.

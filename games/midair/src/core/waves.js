@@ -14,7 +14,14 @@ export function expandWave(w) {
 
 export function buildStage(waves) {
 	// Stable sort keeps authoring order for same-time spawns.
-	return waves.flatMap(expandWave).sort((a, b) => a.t - b.t);
+	return waves
+		.flatMap((w, wave) => expandWave(w).map(s => ({
+			...s,
+			wave,
+			waveSize: w.count ?? 1,
+			...(w.reward ? { reward: w.reward } : {}),
+		})))
+		.sort((a, b) => a.t - b.t);
 }
 
 export const createCursor = spawns => ({ spawns, idx: 0 });

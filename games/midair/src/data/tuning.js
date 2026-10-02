@@ -10,7 +10,7 @@ export const TUNING = {
 		invulnMs: 1400,
 		startY: 560,
 		margin: 18,
-		weapon: 'single',
+		form: 'pigeon',      // see forms.js
 		touchFollow: 1.4,    // drag sensitivity on touch
 	},
 
@@ -33,6 +33,15 @@ export const TUNING = {
 		damage: 3,           // per hit at no charge
 		chargeDamage: 1.5,   // a full charge adds +150%
 	},
+
+	// Duck forms: timed like 1943's weapons; same egg again = level up.
+	power: { durationMs: 20000, maxLevel: 3, warnMs: 3000 },
+
+	// Shooting a falling egg cycles which duck it holds.
+	eggs: { cycleCooldownMs: 220, fall: 60 },
+
+	// V formation wingmen: fire with you, each soaks one hit.
+	flock: { max: 4, spacing: 30, follow: 9, radius: 7, scale: 0.7, damage: 1, shotSpeed: 560 },
 
 	combo: { windowMs: 1800, perStep: 5, maxMult: 5, bullseyeMult: 2 },
 

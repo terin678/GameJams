@@ -17,5 +17,12 @@ export const SOUNDS = {
 	boss: { wave: 'sawtooth', notes: [110, 98, 110, 98, 82], dur: 1.4, vol: 0.22 },
 	start: { wave: 'square', notes: [262, 330, 392, 523], dur: 0.4, vol: 0.18 },
 	gameover: { wave: 'triangle', notes: [523, 392, 330, 262], dur: 1.2, vol: 0.3 },
-	select: { wave: 'square', f0: 660, dur: 0.05, vol: 0.1 },
+	levelup: { wave: 'square', notes: [523, 659, 784, 1047, 1319], dur: 0.45, vol: 0.2 },
+	swap: { wave: 'triangle', notes: [392, 587, 784], dur: 0.3, vol: 0.22 },
+	powerdown: { wave: 'triangle', notes: [784, 587, 392], dur: 0.35, vol: 0.2 },
+	eggcycle: { wave: 'square', f0: 880, f1: 1320, dur: 0.06, vol: 0.1 },
+	wingman: { wave: 'triangle', notes: [659, 880, 1175], dur: 0.25, vol: 0.22 },
+	wingmanDown: { wave: 'sawtooth', f0: 600, f1: 150, dur: 0.25, vol: 0.18 },
+	squadron: { wave: 'square', notes: [523, 784, 1047, 1568], dur: 0.4, vol: 0.18 },
+	select:{ wave: 'square', f0: 660, dur: 0.05, vol: 0.1 },
 };
