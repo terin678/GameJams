@@ -17,12 +17,16 @@ export const reactionTo = (def, giftId) =>
 
 export const heartsOf = (points, t) => Math.min(t.maxHearts, Math.floor(points / t.pointsPerHeart));
 
+// How far along the next heart is, 0 to 1 (1 once every heart is won).
+export const heartProgress = (points, t) =>
+	heartsOf(points, t) >= t.maxHearts ? 1 : (points % t.pointsPerHeart) / t.pointsPerHeart;
+
 // Neighbours who should turn up now and haven't yet.
 export const newlyMet = (state, defs) => defs.filter(d =>
 	!state.friends[d.id] && state.phase >= (d.unlock.phase ?? 1) && state.grown >= (d.unlock.grown ?? 0));
 
 export function meet(state, def) {
-	state.friends[def.id] = { points: 0, readyAt: 0, known: {}, said: '' };
+	state.friends[def.id] = { points: 0, readyAt: 0, known: {}, said: '', gained: 0 };
 }
 
 // Gifts get dearer as the friendship deepens.
@@ -53,7 +57,9 @@ export function give(state, def, gift, t) {
 	const before = heartsOf(friend.points, t);
 	for (const [c, v] of Object.entries(giftCost(gift, before, t))) state[c] -= v;
 	const reaction = reactionTo(def, gift.id);
+	const had = friend.points;
 	friend.points = Math.max(before * t.pointsPerHeart, friend.points + t.points[reaction]);
+	friend.gained = friend.points - had;   // what the last gift was worth, for the panel
 	friend.known[gift.id] = reaction;
 	friend.said = def.says[reaction];
 	friend.readyAt = state.time + t.giftSeconds;

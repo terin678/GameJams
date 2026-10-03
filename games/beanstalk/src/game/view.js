@@ -12,7 +12,7 @@ import { counts, findWork } from '../core/farm.js';
 import { demand } from '../core/market.js';
 import { calendar, growthMult, seasonNote } from '../core/seasons.js';
 import { available, affordable, costOf } from '../core/projects.js';
-import { heartsOf, giftsFor, giftCost, canGive, waitFor, nextPerk } from '../core/neighbours.js';
+import { heartsOf, heartProgress, giftsFor, giftCost, canGive, waitFor, nextPerk } from '../core/neighbours.js';
 
 // After the project list changes shape, clicks on it are ignored for a moment,
 // so a button that slid under the pointer isn't bought by accident.
@@ -157,11 +157,19 @@ export function createView(doc, data, handlers) {
 			const perk = nextPerk(def, hearts);
 			const full = hearts >= F.maxHearts;
 			const status = full ? 'Best of friends.' : wait > 0 ? `Come back in ${wait}s.` : 'Would welcome a gift.';
+			// A heart takes more than one gift, so show how full the next one is.
+			const pct = Math.round(heartProgress(friend.points, F) * 100);
+			const fill = el('i');
+			fill.style.width = `${pct}%`;
+			const share = Math.round((friend.gained ?? 0) / F.pointsPerHeart * 100);
+			const gained = `${share < 0 ? '' : '+'}${share}%`;
+			const progress = full ? '' : `Next heart: ${pct}%${friend.said ? ` (last gift ${gained})` : ''}`;
 			return el('div', { className: 'friend' },
 				el('div', { className: 'who' },
 					el('b', {}, def.name), el('span', { className: 'muted' }, ` ${def.role}`),
 					el('span', { className: 'hearts', title: `${hearts} of ${F.maxHearts} hearts` },
 						'♥'.repeat(hearts), el('i', {}, '♥'.repeat(F.maxHearts - hearts)))),
+				el('div', { className: 'bar', title: progress }, fill),
 				el('p', { className: 'said' }, friend.said || status),
 				el('p', { className: 'muted' }, perk ? `At ${perk.hearts} hearts: ${perk.text}` : 'Every perk earned.'),
 				el('div', { className: 'gifts' }, ...list.map(({ g, cost, can }) => {
@@ -174,7 +182,7 @@ export function createView(doc, data, handlers) {
 					b.dataset.gift = g.id;
 					return b;
 				})),
-				el('p', { className: 'muted' }, friend.said ? status : ''));
+				el('p', { className: 'muted' }, [friend.said ? status : '', progress].filter(Boolean).join(' · ')));
 		}));
 		$('neighbours').scrollTop = scroll;
 		if (focused) $('neighbours').querySelector(`[data-friend="${focused[0]}"][data-gift="${focused[1]}"]`)?.focus();

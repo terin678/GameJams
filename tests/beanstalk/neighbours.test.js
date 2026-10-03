@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
-	reactionTo, heartsOf, newlyMet, meet, giftCost, giftsFor, waitFor, canGive, give, perkEffects, nextPerk,
+	reactionTo, heartsOf, heartProgress, newlyMet, meet, giftCost, giftsFor, waitFor, canGive, give, perkEffects, nextPerk,
 	validateGift, validateNeighbour,
 } from '../../games/beanstalk/src/core/neighbours.js';
 
@@ -40,6 +40,13 @@ test('hearts come from points, up to a maximum', () => {
 	assert.equal(heartsOf(9999, T), 3);
 });
 
+test('heartProgress is how full the next heart is', () => {
+	assert.equal(heartProgress(0, T), 0);
+	assert.equal(heartProgress(60, T), 0.6);
+	assert.equal(heartProgress(120, T), 0.2);
+	assert.equal(heartProgress(300, T), 1, 'every heart won');
+});
+
 test('neighbours turn up when their time comes, once', () => {
 	const defs = [BAKER, ALIEN];
 	assert.deepEqual(newlyMet(state(), defs), []);
@@ -61,6 +68,7 @@ test('a loved gift costs coins, earns points and starts a wait', () => {
 	assert.deepEqual(result, { reaction: 'love', hearts: 0, perks: [] });
 	assert.equal(s.coins, 990);
 	assert.equal(s.friends.baker.points, 60);
+	assert.equal(s.friends.baker.gained, 60);
 	assert.equal(s.friends.baker.known.pie, 'love');
 	assert.equal(s.friends.baker.said, 'Yum!');
 	assert.equal(waitFor(s, BAKER), 30);
@@ -88,6 +96,7 @@ test('a disliked gift is wasted but never costs a heart already won', () => {
 	const result = give(s, BAKER, gift('bolts'), T);
 	assert.equal(result.reaction, 'dislike');
 	assert.equal(s.friends.baker.points, 100);
+	assert.equal(s.friends.baker.gained, -5, 'only lost what was above the heart');
 	assert.equal(s.coins, 1000 - 8, 'charged the one-heart price');
 });
 
