@@ -91,7 +91,7 @@ export const PROJECTS = [
 
 	// ---- Phase 3: Beyond (matter) ----
 	{ id: 'seed_probe', phase: 3, title: 'Launch a seed probe', flavor: 'A bean that plants itself. Somewhere else.',
-		cost: { coins: 4e7, pages: 2000 }, grant: { probes: 1 }, effect: { replicate: 0.004 } },
+		cost: { coins: 4e7, pages: 2000 }, grant: { probes: 1 }, effect: { replicate: 0.005 } },
 	{ id: 'self_planting', phase: 3, title: 'Probes that plant probes', flavor: 'It seemed efficient.',
 		cost: { matter: 40 }, requires: { has: ['seed_probe'] }, effect: { replicate: 0.003 } },
 	{ id: 'lunar_soil', phase: 3, title: 'Lunar soil', flavor: 'The Moon was mostly unused. Probe yield x10.',

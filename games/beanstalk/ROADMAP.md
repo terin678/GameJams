@@ -4,10 +4,10 @@ Where the game is going, in order. Update the status as things land.
 
 | # | Step | Status |
 |---|---|---|
-| 1 | **Long game**: retune so a run is 2–5 hours for a real player (the pacing bot, which plays perfectly, takes about 2.3 h: 36 / 55 / 44 minutes across the phases; see Target playtime below). Time away at 15% speed, capped at 8 hours. | done, awaiting play-testing |
+| 1 | **Long game**: retune so a run is 2–5 hours for a real player (the pacing bot, which plays perfectly, takes about 2.4 h: 36 / 51 / 58 minutes across the phases; see Target playtime below). Time away at 15% speed, capped at 8 hours. | done, awaiting play-testing |
 | 2 | **New Game+ flavour**: the world remembers earlier runs (new lines, a golden bean, a run count), and each run adds a twist. A second run takes the bot about 77% as long. | done |
 | 3 | **Installable web app (PWA)**: manifest, icons, offline cache with a version stamp, phone layout with Tend in thumb reach, vibration, wake lock. Built; **still to be tested on a real phone** (install, offline launch, sound with the ringer off, time-away summary). | built, needs phone testing |
-| 4 | **More systems**: The Climb is in (ten ledges, the Giant, finds), two stages of the Guard (pests, then the realm; see below) and the Exchange (bean futures). Still to come: the Guard's last stage, Blight. Each is a tab with its own data, rules and tests, followed by a retune. | in progress |
+| 4 | **More systems**: The Climb is in (ten ledges, the Giant, finds), all three stages of the Guard (pests, the realm, Blight; see below) and the Exchange (bean futures). Each has its own data, rules and tests. What is left is play-testing and tuning by feel. | built, needs play-testing |
 | 5 | **Capacitor and the Play Store**: wrap the same files, local notifications, store listing, privacy policy, closed test (12 testers, 14 days), release. Only once the PWA is well tested and solid. | planned |
 
 ## How systems are rolled out
@@ -33,17 +33,17 @@ Where things unlock today (minutes are for the pacing bot; a person is slower):
 | ~60 min (13 wins) | tough pests from up the stalk, training | invest in the animals, not just place them |
 | ~63 min | Corner the market: coins end, beans are the money | the Paperclips beat: money stops mattering |
 | ~45-85 min | drones, analyst, Dr. Quill, the Giant | scale; the Climb's stakes rise |
-| ~85 min (phase 3) | seed probes, matter, the Visitor | exponential growth |
+| ~87 min (phase 3) | seed probes, matter, the Visitor | exponential growth |
+| ~100 min | the Blight: a share of the swarm on guard | a trade-off with a best answer that moves |
 
-Gaps to fill, in order of need: phase 3 has no new system of its own (only
-probes); the Guard's third stage (Blight) is meant for it. `data.test.js` checks
-that the tabs open in order and well apart.
+No gaps are left in the table. `data.test.js` checks that the tabs open in
+order and well apart.
 
 ## The Guard: a combat system in three stages
 
 Raised by the owner (2026-10-03): a Stardew-flavoured combat simulator in the
 spirit of the one in Universal Paperclips, introduced early so it can grow
-with the "beanstalk realm". Agreed shape; stage one is built:
+with the "beanstalk realm". All three stages are built:
 
 - **Early (from about 20 minutes), built:** pests. Slugs, mice and rabbits
   raid in forecast waves; you post ducks, cats and dogs and watch a short
@@ -55,9 +55,10 @@ with the "beanstalk realm". Agreed shape; stage one is built:
   longer enough and you train your animals with Almanac pages. Bats and
   geese arrive to deal with them. Not done: turning the Climb's risky
   options into fights you can prepare for.
-- **Late (phase 3):** this becomes Blight, the planned phase 3 system: some
-  probes go to seed and turn on you, and you split the swarm between
-  planting and guarding, as in Paperclips' drifter battles.
+- **Late (phase 3, from 10 billion beans), built:** Blight. Some probes go
+  to seed and eat the rest, and you split the swarm between planting and
+  guarding, as in Paperclips' drifter battles. It adapts twice, and each
+  time the best split moves. Ignored, it stalls the swarm but never kills it.
 
 One system that changes scale three times teaches itself once and keeps
 paying off, which fits the rollout rule above.
@@ -78,7 +79,7 @@ completion 6.5 to 9.
 
 The pacing bot is our optimised run: it clicks three times a second without
 stopping, never misses a purchase and knows every neighbour's favourite gift.
-It takes about 2.3 hours, a little over Paperclips' optimised figure, so a
+It takes about 2.4 hours, a little over Paperclips' optimised figure, so a
 first run by a person should land in the same 4 to 8 hour range. That is the
 target; the bounds in `balance.test.js` hold the bot between 2 and 2.8 hours.
 What is not measured yet is a real person's run. When one is, compare it with
@@ -89,7 +90,8 @@ the bot's time and move the bounds if the ratio is not about 2 to 3.
 - Core loop: tend, sell, projects, three phases, ending, New Game+.
 - Neighbours (gifts, hearts, perks) and Seeds (breeding, county fair, ribbons).
 - The Climb: ten ledges up the stalk, the Giant, finds that change the farm.
-- The Guard, stages one and two: pests, posts, animals, ranks; tough pests and training.
+- The Guard, all three stages: pests, posts, animals, ranks; tough pests and training; the Blight.
+- Corner the market: coins end midway through phase 2 and beans become the money.
 - The Exchange: crates of beans, priced by the season and the weather.
 - Installable phone version, farm-behind-the-page mode. (Save codes for moving a farm between devices were built and then cut: a lot of surface for little value.)
 - A minute-long day with dawn, dusk and night; blended season and weather colours.

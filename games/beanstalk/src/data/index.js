@@ -9,8 +9,9 @@ import { RUNS } from './runs.js';
 import { CLIMB } from './climb.js';
 import { GUARD } from './guard.js';
 import { EXCHANGE } from './exchange.js';
+import { BLIGHT } from './blight.js';
 
-export const DATA = { TUNING, SEASONS, WEATHER, PHASES, MILESTONES, LANDMARKS, PROJECTS, NEIGHBOURS, GIFTS, SEEDS, RUNS, CLIMB, GUARD, EXCHANGE };
+export const DATA = { TUNING, SEASONS, WEATHER, PHASES, MILESTONES, LANDMARKS, PROJECTS, NEIGHBOURS, GIFTS, SEEDS, RUNS, CLIMB, GUARD, EXCHANGE, BLIGHT };
 export { SPRITES, PALETTE, VIEW } from './sprites.js';
 export { SOUNDS, EVENT_SOUNDS } from './sounds.js';
 export { MUSIC } from './music.js';

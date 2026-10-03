@@ -171,6 +171,12 @@ buttons. It saves itself every few seconds.
   come down the stalk (cloud moths, giant magpies), bats and geese turn up
   to deal with them, and you train your animals with Almanac pages. Pests,
   animals, waves and ranks are all rows in the data.
+- **The Blight** (`src/data/blight.js`): the Guard's last stage, in phase 3.
+  Some probes go to seed and eat the rest. You set what share of the swarm
+  stands guard: guards clear the blight but neither plant nor spread, so
+  the job is finding the split that grows the swarm fastest, and finding
+  it again when the blight adapts. Left alone it stalls the swarm; it
+  never wipes it out.
 - **The Exchange** (`src/data/exchange.js`): in phase 2 a desk opens where you
   buy and sell crates of beans. The price follows the year (cheapest at
   harvest, dearest in spring), the weather pushes it about (rain is a glut,

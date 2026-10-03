@@ -11,6 +11,7 @@ import { heartsOf } from '../core/neighbours.js';
 import { ribbonCount } from '../core/seeds.js';
 import { skyTarget, ease, toHex } from '../core/sky.js';
 import { climbingFor } from '../core/climb.js';
+import { ratio as blightRatio } from '../core/blight.js';
 
 const CROW_SECONDS = 1.6;
 
@@ -133,9 +134,18 @@ export function createFarmView(canvas, data, { SPRITES, PALETTE, VIEW, SKY }) {
 	function probes(state, top, t) {
 		if (state.probes < 1) return;
 		const n = Math.min(VIEW.maxProbes, 1 + Math.floor(Math.log10(state.probes) * 1.5));
+		const sick = state.blight.amount > 0 ? Math.max(1, Math.round(n * Math.min(0.5, blightRatio(state) * 5))) : 0;
 		for (let i = 0; i < n; i++) {
 			const f = (t * 0.12 + i * 0.37) % 1;
-			put(art.probe[0], stalkX - 3 + Math.sin(i * 2.4 + f * 6) * (8 + 60 * f), top * (1 - f) - 3);
+			const x = stalkX - 3 + Math.sin(i * 2.4 + f * 6) * (8 + 60 * f);
+			const y = top * (1 - f) - 3;
+			// Blighted probes show up among the healthy ones, in proportion (and always at least one).
+			if (i < sick) {
+				ctx.fillStyle = PALETTE.R;
+				ctx.fillRect(Math.round(x), Math.round(y), 4, 4);
+				ctx.fillStyle = PALETTE.k;
+				ctx.fillRect(Math.round(x) + 1, Math.round(y) + 1, 2, 2);
+			} else put(art.probe[0], x, y);
 		}
 	}
 

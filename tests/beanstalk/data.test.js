@@ -11,13 +11,14 @@ import { validateRuns } from '../../games/beanstalk/src/core/runs.js';
 import { validateClimb } from '../../games/beanstalk/src/core/climb.js';
 import { validateGuard } from '../../games/beanstalk/src/core/guard.js';
 import { validateExchange } from '../../games/beanstalk/src/core/exchange.js';
+import { validateBlight, bestShare, steadyGrowth } from '../../games/beanstalk/src/core/blight.js';
 import { heightFor } from '../../games/beanstalk/src/core/phases.js';
 import { plotOrder } from '../../games/beanstalk/src/core/layout.js';
 import { parsePixelMap } from '../../shared/pixelart.js';
 import { validateSfx } from '../../shared/sfx.js';
 import { validateSong } from '../../shared/music.js';
 
-const { TUNING: T, PROJECTS, SEASONS, WEATHER, PHASES, MILESTONES, LANDMARKS, NEIGHBOURS, GIFTS, SEEDS, RUNS, CLIMB, GUARD, EXCHANGE } = DATA;
+const { TUNING: T, PROJECTS, SEASONS, WEATHER, PHASES, MILESTONES, LANDMARKS, NEIGHBOURS, GIFTS, SEEDS, RUNS, CLIMB, GUARD, EXCHANGE, BLIGHT } = DATA;
 const ascending = list => list.every((v, i) => i === 0 || v > list[i - 1]);
 
 test('every project is well formed', () => {
@@ -188,6 +189,27 @@ test('one new tab at a time: the systems open in order, well apart', () => {
 	for (let i = 1; i < order.length; i++) assert.ok(order[i] >= order[i - 1] * 3, `${order[i - 1]} then ${order[i]}`);
 	assert.equal(CLIMB.unlock.phase, 2);
 	assert.equal(EXCHANGE.unlock.phase, 2);
+});
+
+test('the blight is well formed, arrives in phase 3, and always has an answer between the extremes', () => {
+	assert.deepEqual(validateBlight(BLIGHT), []);
+	assert.ok(heightFor(BLIGHT.unlock.grown, T.height) > PHASES[2].height, 'arrives out in space');
+	assert.ok(BLIGHT.levels.at(-1).grown < T.universeBeans);
+	// As the swarm gets faster the blight gets worse: at each level, with the
+	// spreading the swarm has about then, some guards beat none and beat the most.
+	const rates = PROJECTS.filter(p => p.effect?.replicate).map(p => p.effect.replicate);
+	const fastest = rates.reduce((a, b) => a + b, 0);
+	const early = rates.slice(0, 3).reduce((a, b) => a + b, 0);
+	const answers = BLIGHT.levels.map((level, i) => {
+		const r = early + (fastest - early) * i / (BLIGHT.levels.length - 1);
+		const best = bestShare(r, level, BLIGHT);
+		assert.ok(best > 0 && best < BLIGHT.maxShare, `drift ${level.drift}, spreading ${r}: best share ${best}`);
+		assert.ok(steadyGrowth(best, r, level, BLIGHT) > steadyGrowth(0, r, level, BLIGHT) * 1.1, `drift ${level.drift}: guarding is worth it`);
+		// Left alone it stalls the swarm at worst; it never kills it.
+		assert.ok(BLIGHT.maxRatio * BLIGHT.eat <= r * 1.2, `drift ${level.drift}: unguarded loses ${BLIGHT.maxRatio * BLIGHT.eat} a second`);
+		return best;
+	});
+	assert.ok(answers.at(-1) > answers[0], `the answer changes as it adapts: ${answers.join(', ')}`);
 });
 
 test('seasons and weather make sense', () => {

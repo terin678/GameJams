@@ -2,11 +2,12 @@
 // game can be finished. Set BEANSTALK_TIMELINE=1 to print what the bot bought when.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { createState, tick, tend, buyProject, giveGift, crossSeeds, chooseSeedling, climb, chooseAtLedge, buildPost, trainAnimal, buyCrates, sellCrates, nudgePrice } from '../../games/beanstalk/src/core/sim.js';
+import { createState, refresh, tick, tend, buyProject, giveGift, crossSeeds, chooseSeedling, climb, chooseAtLedge, buildPost, trainAnimal, guardSwarm, buyCrates, sellCrates, nudgePrice } from '../../games/beanstalk/src/core/sim.js';
 import { available, affordable } from '../../games/beanstalk/src/core/projects.js';
 import { nextEncounter, optionBlocked } from '../../games/beanstalk/src/core/climb.js';
 import { createGuard, makeWave, bestRoster, defendersFor, setRoster, postCost, trainCost, step as guardStep } from '../../games/beanstalk/src/core/guard.js';
 import { canCross, crossCost, growingFor, fairTrait } from '../../games/beanstalk/src/core/seeds.js';
+import { bestShare } from '../../games/beanstalk/src/core/blight.js';
 import { calendar } from '../../games/beanstalk/src/core/seasons.js';
 import { demand, autoPriceDir } from '../../games/beanstalk/src/core/market.js';
 import { formatNumber, formatHeight, formatDuration } from '../../games/beanstalk/src/core/format.js';
@@ -73,6 +74,12 @@ function playBot({ seed = 1, limit = 8 * 60 * MINUTE, clicksPerSecond = 3, verbo
 				if (price && needed && state.pages > 2 * price.pages) trainAnimal(state, d.id, DATA);
 			}
 		}
+		// Keeps the best split of the swarm on guard against the blight.
+		if (state.blight.open) {
+			const want = bestShare(state.mods.replicate, DATA.BLIGHT.levels[state.blight.level], DATA.BLIGHT);
+			while (state.blight.share < want - 1e-9 && guardSwarm(state, 1, DATA));
+			while (state.blight.share > want + 1e-9 && guardSwarm(state, -1, DATA));
+		}
 		// Buys crates at harvest and sells them in spring.
 		if (state.exchange.open) {
 			const { season } = calendar(state.day, DATA.SEASONS, T.calendar);
@@ -116,7 +123,7 @@ test('pacing: a run is a couple of hours for the bot, split sensibly across the 
 	if (verbose) console.log(report);
 	assert.ok(p1 >= 30 && p1 <= 50, report);
 	assert.ok(p2 >= 45 && p2 <= 70, report);
-	assert.ok(p3 >= 35 && p3 <= 55, report);
+	assert.ok(p3 >= 40 && p3 <= 62, report);
 	assert.ok(total >= 120 && total <= 170, report);
 });
 
@@ -226,6 +233,30 @@ test('trading with the seasons makes money; trading against them loses it', () =
 		if (season.id === 'autumn' && s.exchange.crates > 0) sellCrates(s, 1, DATA);
 	}
 	assert.ok(s.exchange.profit < 0, `profit ${s.exchange.profit}`);
+});
+
+test('the blight arrives in phase 3 and is kept in check; ignored, it costs a lot of time', () => {
+	assert.ok(state.blight.open);
+	assert.equal(state.blight.level, DATA.BLIGHT.levels.length - 1, 'it adapted all the way');
+	// The same last stretch of the game with nobody put on guard.
+	const s = createState(DATA);
+	s.phase = 3;
+	s.grown = DATA.BLIGHT.unlock.grown;
+	s.probes = 1e6;
+	s.owned = { seed_probe: 1, self_planting: 1, solar_trellis: 1 };
+	refresh(s, DATA);
+	const guarded = JSON.parse(JSON.stringify(s));
+	refresh(guarded, DATA);
+	const rng = createRng(9);
+	for (const [x, on] of [[s, false], [guarded, true]]) {
+		x.height = 1e6;
+		tick(x, 0.1, DATA, rng);
+		if (on) while (x.blight.share < bestShare(x.mods.replicate, DATA.BLIGHT.levels[0], DATA.BLIGHT) - 1e-9) guardSwarm(x, 1, DATA);
+		for (let t = 0; t < 600; t += 0.5) tick(x, 0.5, DATA, rng);
+	}
+	if (verbose) console.log(`ten minutes of blight: ${formatNumber(guarded.probes)} probes guarded, ${formatNumber(s.probes)} unguarded`);
+	assert.ok(guarded.probes > s.probes * 1.5, `${guarded.probes} vs ${s.probes}`);
+	assert.ok(s.probes >= 1e6 * 0.5, 'even ignored, the swarm is not wiped out');
 });
 
 test('the first purchase comes quickly', () => {

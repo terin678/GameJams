@@ -17,6 +17,7 @@ import { nextEncounter, climbBlocked, climbingFor, optionBlocked, findsOf, tempe
 import { raidIn, postsUsed, postCost, trainCost, defendersFor, ranksEarned, nextRank, hasDrill, needsAttention, waveText } from '../core/guard.js';
 import { valueOf, averageCost } from '../core/exchange.js';
 import { moneyOf } from '../core/sim.js';
+import { ratio as blightRatio, eating } from '../core/blight.js';
 import { available, affordable, costOf } from '../core/projects.js';
 import { crossCost, canCross, growingFor, fairTrait, fairBar, ribbonCount, luckOf } from '../core/seeds.js';
 import { heartsOf, heartProgress, giftsFor, giftCost, canGive, waitFor, nextPerk } from '../core/neighbours.js';
@@ -30,7 +31,7 @@ const TABS = [
 	{ id: 'projects', label: 'Projects', unlocked: () => true },
 	{ id: 'neighbours', label: 'Neighbours', unlocked: state => Object.keys(state.friends).length > 0 },
 	{ id: 'seeds', label: 'Seeds', unlocked: state => state.seeds.open, wants: state => growingFor(state) === 0 },
-	{ id: 'guard', label: 'Guard', unlocked: state => state.guard.open, wants: (state, data) => needsAttention(state, data.GUARD) },
+	{ id: 'guard', label: 'Guard', unlocked: state => state.guard.open, wants: (state, data) => needsAttention(state, data.GUARD) || (state.blight.open && state.blight.share === 0) },
 	{ id: 'climb', label: 'Climb', unlocked: state => state.climb.open, wants: state => state.climb.waiting },
 	{ id: 'exchange', label: 'Exchange', unlocked: state => state.exchange.open },
 ];
@@ -120,6 +121,7 @@ export function createView(doc, data, handlers) {
 		if (b.dataset.post) handlers.post(b.dataset.post, Number(b.dataset.delta));
 		if (b.dataset.build) handlers.build();
 		if (b.dataset.train) handlers.train(b.dataset.train);
+		if (b.dataset.swarm) handlers.swarm(Number(b.dataset.swarm));
 	});
 	$('tabs').addEventListener('click', e => {
 		const b = e.target.closest('[data-tab]');
@@ -438,6 +440,28 @@ export function createView(doc, data, handlers) {
 		if (focused) $('exchange').querySelector(focused)?.focus();
 	}
 
+	// The Blight: how bad it is, and how much of the swarm stands guard.
+	const pct = v => (v < 0.1 ? (v * 100).toFixed(1) : String(Math.round(v * 100)));
+	const blightSig = state => (state.blight.open
+		? [state.blight.share, state.blight.level, pct(blightRatio(state)), pct(eating(state, data.BLIGHT) * 60)].join(':') : '');
+	function blightBox(state) {
+		const B = data.BLIGHT;
+		const { blight } = state;
+		const button = (label, dir, disabled) => {
+			const b = el('button', { type: 'button', disabled }, label);
+			b.dataset.swarm = String(dir);
+			b.setAttribute('aria-label', dir > 0 ? 'Put more of the swarm on guard' : 'Put less of the swarm on guard');
+			return b;
+		};
+		return el('div', { className: 'box' }, el('h3', { className: 'down' }, 'The Blight'),
+			el('p', {}, `Blighted probes: ${formatNumber(blight.amount)}, ${pct(blightRatio(state))} for every 100 healthy. They are eating ${pct(eating(state, B) * 60)}% of the swarm a minute.`),
+			el('div', { className: 'post' },
+				el('span', {}, el('b', {}, 'Swarm on guard')),
+				button('−', -1, blight.share <= 0), el('span', { className: 'n' }, `${Math.round(blight.share * 100)}%`), button('+', 1, blight.share >= B.maxShare)),
+			el('p', { className: 'muted' }, 'Guards clear the blight, but they do not plant or spread. Too few and the swarm is eaten; too many and it stops growing.'
+				+ (blight.level ? ' It has adapted since it first appeared: it may want more guards than it did.' : '')));
+	}
+
 	// The Guard: the raid that is coming (or going on), who is posted, and the record so far.
 	function guard(state) {
 		const G = data.GUARD;
@@ -453,11 +477,12 @@ export function createView(doc, data, handlers) {
 			return { price, can: !!price && Object.entries(price).every(([c, v]) => state[c] >= v) };
 		});
 		const sig = [left, JSON.stringify(g.roster), g.posts, g.wins, g.losses, JSON.stringify(fight), g.said, canBuild,
-			JSON.stringify(g.levels), state.phase, training.map(x => x.can).join('')].join('|');
+			JSON.stringify(g.levels), state.phase, training.map(x => x.can).join(''), blightSig(state)].join('|');
 		if (shown.get('guard') === sig) return;
 		shown.set('guard', sig);
 		const d = doc.activeElement?.dataset ?? {};
-		const focused = d.post ? `[data-post="${d.post}"][data-delta="${d.delta}"]` : d.build ? '[data-build]' : d.train ? `[data-train="${d.train}"]` : null;
+		const focused = d.post ? `[data-post="${d.post}"][data-delta="${d.delta}"]` : d.build ? '[data-build]' : d.train ? `[data-train="${d.train}"]`
+			: d.swarm ? `[data-swarm="${d.swarm}"]` : null;
 
 		const sum = counts => Object.values(counts).reduce((a, b) => a + b, 0);
 		const tough = G.foes.filter(f => f.tough && g.wave[f.id] > 0).map(f => f.plural.replace(/^./, ch => ch.toUpperCase()));
@@ -496,6 +521,7 @@ export function createView(doc, data, handlers) {
 		const earned = ranksEarned(g, G);
 		const next = nextRank(g, G);
 		$('guard').replaceChildren(
+			...(state.blight.open ? [blightBox(state)] : []),
 			el('div', { className: 'box' }, ...now, g.said ? el('p', { className: 'said' }, g.said) : ''),
 			el('div', { className: 'box' }, el('h3', {}, `Posts · ${used} of ${g.posts} filled`), ...posts,
 				drilled ? el('p', { className: 'muted' }, 'The animals take their own posts now.') : '',
@@ -574,6 +600,8 @@ export function createView(doc, data, handlers) {
 			reveal('space', state.probes > 0);
 			set('probes', formatNumber(state.probes));
 			set('matter', formatNumber(state.matter));
+			show('blight-line', state.blight.open);
+			if (state.blight.open) set('blight-line', `Blight: eating ${pct(eating(state, data.BLIGHT) * 60)}% a minute · ${Math.round(state.blight.share * 100)}% of the swarm on guard`);
 
 			tabs(state);
 			if (tab === 'projects') projects(state);

@@ -12,6 +12,7 @@ import { rulesFor, twistsFor, lineFor } from './runs.js';
 import { createClimb, unlockDue as climbDue, startClimb, arrive, choose as chooseOption, nextEncounter, findEffects } from './climb.js';
 import { createGuard, unlockDue as guardDue, openGuard, step as guardStep, assign, buyPost, train, rankEffects, waveText } from './guard.js';
 import { createExchange, unlockDue as exchangeDue, openExchange, step as exchangeStep, kick, buy as buyShare, sell as sellShare } from './exchange.js';
+import { createBlight, unlockDue as blightDue, step as blightStep, setShare } from './blight.js';
 import { formatNumber } from './format.js';
 
 const VERSION = 1;
@@ -37,6 +38,7 @@ export function createState(data, { golden = 0 } = {}) {
 		climb: createClimb(),
 		guard: createGuard(data.GUARD),
 		exchange: createExchange(),
+		blight: createBlight(),
 		height: 0, phase: 1,
 		log: [],
 		seen: {},          // journal lines that are only worth saying once
@@ -209,9 +211,21 @@ export function tick(state, dt, data, rng) {
 
 	const full = state.grown >= T.universeBeans;
 	if (state.probes > 0 && !full) {
-		state.grown += state.probes * mods.probeYield * dt;
-		state.matter += state.probes * mods.matterRate * dt;
-		state.probes *= Math.exp(mods.replicate * dt);
+		// Probes standing guard against the blight neither plant nor spread.
+		const planting = state.probes * (1 - (state.blight.open ? state.blight.share : 0));
+		state.grown += planting * mods.probeYield * dt;
+		state.matter += planting * mods.matterRate * dt;
+		state.probes += planting * (Math.exp(mods.replicate * dt) - 1);
+		if (blightDue(state, data.BLIGHT)) {
+			state.blight.open = true;
+			events.push({ type: 'blight' });
+			say(state, data, data.BLIGHT.log);
+		}
+		const adapted = blightStep(state, dt, data.BLIGHT);
+		if (adapted) {
+			events.push({ type: 'blightAdapt' });
+			say(state, data, adapted.log);
+		}
 	}
 
 	if (state.rate) {
@@ -344,6 +358,9 @@ export const postAnimal = (state, id, delta, data) => !state.done && assign(stat
 
 // Trains one kind of guard animal up a level.
 export const trainAnimal = (state, id, data) => !state.done && train(state, id, data.GUARD);
+
+// Puts more (dir 1) or less (dir -1) of the probe swarm on guard against the blight.
+export const guardSwarm = (state, dir, data) => !state.done && setShare(state, dir, data.BLIGHT);
 
 // Builds another guard post.
 export const buildPost = (state, data) => !state.done && buyPost(state, data.GUARD);

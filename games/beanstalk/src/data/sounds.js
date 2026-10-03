@@ -35,6 +35,8 @@ export const EVENT_SOUNDS = {
 	ledge: 'milestone',
 	guard: 'meet',
 	exchange: 'meet',
+	blight: 'raid',
+	blightAdapt: 'dislike',
 	raid: 'raid',
 	raidEnd: { won: 'milestone', lost: 'dislike' },
 	fair: { won: 'heart', lost: 'dislike' },
