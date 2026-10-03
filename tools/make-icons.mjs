@@ -86,10 +86,23 @@ export const ICONS = [
 	{ file: 'apple-touch-icon.png', size: 180, fill: 0.8 },
 ];
 
+// The Android app's launcher icons (app/android): the same art at each screen
+// density. `ic_launcher_foreground` is the layer newer phones mask to their own
+// shape, so its art keeps to the middle; the other two are for older phones.
+const DENSITIES = { mdpi: 1, hdpi: 1.5, xhdpi: 2, xxhdpi: 3, xxxhdpi: 4 };
+export const ANDROID_ICONS = Object.entries(DENSITIES).flatMap(([name, d]) => [
+	{ file: `mipmap-${name}/ic_launcher.png`, size: 48 * d, fill: 0.86 },
+	{ file: `mipmap-${name}/ic_launcher_round.png`, size: 48 * d, fill: 0.6 },
+	{ file: `mipmap-${name}/ic_launcher_foreground.png`, size: 108 * d, fill: 0.5 },
+]);
+const ANDROID_RES = new URL('../app/android/app/src/main/res/', import.meta.url);
+
 if (process.argv[1] && import.meta.url.endsWith(process.argv[1].replace(/\\/g, '/').split('/').pop())) {
 	mkdirSync(OUT, { recursive: true });
 	for (const icon of ICONS) {
 		writeFileSync(new URL(icon.file, OUT), encodePng(icon.size, drawIcon(icon.size, icon.fill)));
 		console.log(`wrote ${icon.file} (${icon.size}x${icon.size})`);
 	}
+	for (const icon of ANDROID_ICONS) writeFileSync(new URL(icon.file, ANDROID_RES), encodePng(icon.size, drawIcon(icon.size, icon.fill)));
+	console.log(`wrote ${ANDROID_ICONS.length} Android launcher icons`);
 }

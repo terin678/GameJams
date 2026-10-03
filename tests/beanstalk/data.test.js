@@ -276,6 +276,7 @@ test('the view only uses sprites that exist', () => {
 		assert.ok(SPRITES[name], name);
 	}
 	assert.equal(SPRITES.soil.frames[0].length * VIEW.scale, VIEW.plots.size, 'a soil tile fills a plot');
+	assert.ok(VIEW.fps >= 20 && VIEW.fps <= 60, 'smooth enough, and no faster than a screen');
 	assert.equal(VIEW.skyStops[0].at, 0);
 	assert.equal(VIEW.skyStops.at(-1).at, 1);
 });

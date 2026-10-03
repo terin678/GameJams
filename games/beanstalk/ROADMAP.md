@@ -112,7 +112,8 @@ start a fresh farm.
 **The Capacitor project**
 - [x] `app/` folder with the Capacitor settings, the packages to install and a README with the commands.
 - [x] Android Studio installed; the Android project is made (`app/android`, Capacitor 8) and builds; the app was installed and played on the emulator (2026-10-03).
-- [ ] Run it on a real phone (steps in `app/README.md`): sound, vibration, the back button, the layout round a notch.
+- [ ] Run it on a real Android phone: sound, vibration, the back button, the layout round a notch. The owner has an iPhone, so this needs a tester: send them `app-debug.apk` to install by hand (they must allow installs from unknown sources), or use Play's internal test track once the developer account exists (a link, up to 100 testers, no review wait).
+- [ ] iPhone: the installable web version already works there. A real App Store app needs a Mac with Xcode and Apple's developer programme (yearly fee); not planned yet.
 - [x] No analytics in the app copy (the script that loads it is not bundled).
 - [ ] Saves: check that a farm survives an app update and a phone restart as it is (an app's own storage is not cleared like a browser's); move to Capacitor Preferences only if it does not.
 - [ ] Take the bug and idea links (they open GitHub) and the "in testing" line out of the app copy at launch.
@@ -120,7 +121,7 @@ start a fresh farm.
 - [ ] Keep-awake and vibration through Capacitor plugins (the web versions are patchy inside an app).
 - [ ] Pause the music and the game clock when the app goes to the background; catch up on return (the time-away code already does this for the website).
 - [ ] Local notifications, opt-in: "the fair is tomorrow", "your farm has done all it can without you" (after the 8-hour cap).
-- [ ] App icon and splash screen from `tools/make-icons.mjs` (adaptive icon: foreground and background layers).
+- [x] App icon and splash screen: `node tools/make-icons.mjs` writes the bean at every Android density (adaptive foreground included); the splash is the icon on the game's dark background.
 - [x] Locked to portrait.
 - [ ] Check the layout with a notch and with gesture navigation, on a real phone.
 
@@ -143,6 +144,24 @@ start a fresh farm.
 - [ ] Tips inside the app go through Google Play's billing, as small one-off purchases ("a coffee", "a sack of beans"). Google takes its cut (15% for small developers at the time of writing). This needs the Play Billing plugin and a few lines of code.
 - [ ] A Buy Me a Coffee link can go on the website and the store listing's website field. A button inside the Android app that takes payment outside Play has been against Play's payments policy; the rules have been changing (and differ by country), so check them at launch before adding one.
 - [ ] After launch: decide when the free web version comes down (see Protecting the code).
+
+## Performance on phones
+
+Measured 2026-10-03 on a desktop: one game tick takes about 0.003 ms, drawing
+the farm 0.15 ms, rebuilding the page text 0.4 ms. None of that is heavy; the
+cost on a phone is doing it sixty times a second for hours, which is battery
+and heat rather than speed. In place:
+
+- The page text is rebuilt only after a tick (ten a second) or a press, not every frame.
+- The farm is redrawn 30 times a second (`VIEW.fps`), and not at all while it is scrolled out of sight.
+- A sleeping tab or app stops drawing altogether and catches up when it comes back.
+- Add `#perf` to the web address to see frames a second and milliseconds of work per frame on any device.
+
+Not measured: a real phone. The emulator's numbers are not meaningful. Ask a
+tester to open the site with `#perf` and report the two numbers, early and
+late in a run. If a phone struggles, the next things to try, in order: lower
+`VIEW.fps` to 20, draw the sky once into a cached layer, and tint the ground
+in one pass instead of three.
 
 ## Protecting the code
 

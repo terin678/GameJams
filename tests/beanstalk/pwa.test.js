@@ -2,7 +2,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { ICONS, encodePng, drawIcon } from '../../tools/make-icons.mjs';
+import { ICONS, ANDROID_ICONS, encodePng, drawIcon } from '../../tools/make-icons.mjs';
 import { appHtml, buildApp } from '../../tools/build-app.mjs';
 
 const game = name => new URL(`../../games/beanstalk/${name}`, import.meta.url);
@@ -139,4 +139,13 @@ test('the app build is one minified script with no source map, no service worker
 	assert.doesNotMatch(js, /goatcounter/i);
 	assert.match(js, /Corner the market/, 'the game data is bundled in');
 	for (const f of ['index.html', 'privacy.html', 'icons/icon-192.png']) assert.ok(readFileSync(new URL(f, out)).length > 0, f);
+});
+
+test('the Android app has the bean as its icon, at every density, and it is up to date', () => {
+	const res = name => new URL(`../../app/android/app/src/main/res/${name}`, import.meta.url);
+	assert.equal(ANDROID_ICONS.length, 15);
+	for (const icon of ANDROID_ICONS) {
+		assert.ok(readFileSync(res(icon.file)).equals(encodePng(icon.size, drawIcon(icon.size, icon.fill))), `${icon.file} is stale: run node tools/make-icons.mjs`);
+	}
+	assert.match(readFileSync(res('values/ic_launcher_background.xml'), 'utf8'), /#10131C/i, 'the icon background matches the art');
 });

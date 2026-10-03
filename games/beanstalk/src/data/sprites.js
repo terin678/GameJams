@@ -400,6 +400,7 @@ export const VIEW = {
 	width: 240,
 	height: 320,
 	scale: 2,
+	fps: 30,              // the farm is redrawn this often; pixel art needs no more, and phones run cooler
 	horizon: 232,         // y of the ground line; the sky is above it
 	stalkX: 120,
 	plots: { x: 24, y: 250, cols: 12, rows: 4, size: 16 },

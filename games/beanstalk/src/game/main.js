@@ -175,6 +175,7 @@ async function wake() {
 
 function begin(next) {
 	state = next;
+	stale = true;
 	view.ending(null);
 	measured = { at: state.time, grown: state.grown, rate: 0 };
 	save();
@@ -219,6 +220,7 @@ function advance(dt) {
 	while (pending >= T.tickSeconds) {
 		pending -= T.tickSeconds;
 		react(tick(state, T.tickSeconds, DATA, rng));
+		stale = true;
 	}
 	measure();
 	sinceSave += dt;
@@ -236,15 +238,54 @@ function step() {
 	const now = seconds();
 	const elapsed = now - last;
 	last = now;
-	if (elapsed > T.catchUpSeconds) catchUp(elapsed);
-	else advance(elapsed);
+	if (elapsed > T.catchUpSeconds) {
+		catchUp(elapsed);
+		stale = true;
+	} else advance(elapsed);
 }
 
+// Easy on a phone's battery: the page text is only rebuilt when the game has
+// moved on (a tick, ten times a second) or the player has pressed something;
+// the farm is redrawn VIEW.fps times a second, and not at all while it is
+// scrolled out of sight.
+let stale = true;
+let farmInView = true;
+let drawnAt = -Infinity;
+const perf = location.hash === '#perf' ? { frames: 0, work: 0, since: seconds(), el: null } : null;
 function frame() {
+	const began = seconds();
 	step();
-	farm.draw(state, seconds());
-	view.update(state, measured.rate);
+	if (farmInView && began - drawnAt >= 1 / VIEW.fps - 0.004) {
+		drawnAt = began;
+		farm.draw(state, began);
+	}
+	if (stale) {
+		stale = false;
+		view.update(state, measured.rate);
+	}
+	if (perf) meter(began);
 	requestAnimationFrame(frame);
+}
+for (const type of ['click', 'keydown']) document.addEventListener(type, () => { stale = true; });
+if ('IntersectionObserver' in window) {
+	new IntersectionObserver(entries => { farmInView = entries.at(-1).isIntersecting; }).observe(document.getElementById('farm'));
+}
+
+// Open the page with #perf on the end of the address to see how hard the
+// device is working: frames a second, and milliseconds of work in each.
+function meter(began) {
+	perf.frames++;
+	perf.work += seconds() - began;
+	if (began - perf.since < 1) return;
+	if (!perf.el) {
+		perf.el = document.createElement('div');
+		perf.el.style.cssText = 'position:fixed;left:4px;bottom:4px;z-index:99;font:11px monospace;color:#fff;background:#000a;padding:2px 5px;pointer-events:none';
+		document.body.append(perf.el);
+	}
+	perf.el.textContent = `${Math.round(perf.frames / (began - perf.since))} fps · ${(perf.work / perf.frames * 1000).toFixed(2)} ms a frame`;
+	perf.frames = 0;
+	perf.work = 0;
+	perf.since = began;
 }
 setInterval(step, 1000);
 
@@ -285,6 +326,7 @@ window.game = {
 	get state() { return state; },
 	skip(s) {
 		for (let t = 0; t < s; t += T.tickSeconds) tick(state, T.tickSeconds, DATA, rng);
+		stale = true;
 		view.update(state, measured.rate);
 	},
 	// Redraws the farm for animation time `t` (seconds), e.g. to check a frame.

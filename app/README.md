@@ -35,6 +35,12 @@ The app file is then `app/android/app/build/outputs/apk/debug/app-debug.apk`.
 From a terminal Gradle needs to be told where Java is: set `JAVA_HOME` to
 Android Studio's own copy (`C:\Program Files\Android\Android Studio\jbr`).
 
+## The icon
+
+`node tools/make-icons.mjs` (from the repository root) rewrites the launcher
+icons in `android/app/src/main/res/mipmap-*` from the game's bean art. The
+splash screen is that icon on the colour in `values/ic_launcher_background.xml`.
+
 ## Two things that are not Capacitor's defaults
 
 - **Node 22 for the Capacitor tool.** Capacitor 8's command line needs Node 22
