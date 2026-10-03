@@ -1,7 +1,7 @@
 // Boot: load the save, catch up on time away, then run the loop.
 
 import { DATA, SPRITES, PALETTE, VIEW, SOUNDS, EVENT_SOUNDS, MUSIC } from '../data/index.js';
-import { createState, tick, tend, buyProject, giveGift, nudgePrice, simulateOffline, serialize, restore, newGamePlus } from '../core/sim.js';
+import { createState, tick, tend, buyProject, giveGift, crossSeeds, chooseSeedling, nudgePrice, simulateOffline, serialize, restore, newGamePlus } from '../core/sim.js';
 import { createStore } from '../../../../shared/storage.js';
 import { createRng } from '../../../../shared/rng.js';
 import { Sfx } from '../../../../shared/sfx.js';
@@ -51,6 +51,12 @@ const view = createView(document, DATA, {
 	gift(neighbourId, giftId) {
 		const result = giveGift(state, neighbourId, giftId, DATA);
 		sfx.play(!result ? 'deny' : result.perks.length ? 'heart' : result.reaction);
+	},
+	cross() {
+		sfx.play(crossSeeds(state, DATA, rng) ? 'cross' : 'deny');
+	},
+	seedling(index) {
+		sfx.play(chooseSeedling(state, index, DATA) ? 'buy' : 'deny');
 	},
 	// The player has looked at something new (a tab), so stop flagging it.
 	seen(key) {

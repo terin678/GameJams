@@ -226,6 +226,13 @@ export const SPRITES = {
 	...Object.fromEntries(NEIGHBOURS.map(n => [`friend_${n.id}`, {
 		frames: [recolor(VISITOR, { A: n.look.hat, B: n.look.shirt, S: n.look.skin })],
 	}])),
+	// A prize ribbon, pinned to the farmhouse for each one won at the fair.
+	ribbon: { frames: [[
+		'.bb.',
+		'byyb',
+		'.bb.',
+		'b..b',
+	]] },
 	// Things that appear on the farm when a project is bought (see VIEW.props).
 	can: { frames: [[
 		'.nn..n',
@@ -312,6 +319,7 @@ export const VIEW = {
 	props: { can: 44, compost: 56, library: 76, billboard: 140, sign: 168, stall: 182 },
 	// Scene tags that are effects, not props.
 	effects: ['sprinkle', 'glow'],
+	maxRibbons: 5,        // drawn on the farmhouse
 	maxHelpers: 8,
 	maxProbes: 24,
 };

@@ -7,6 +7,7 @@ import { calendar, advance, rollWeather, growthMult } from './seasons.js';
 import { heightFor, phaseAt, crossed } from './phases.js';
 import { computeMods, buy } from './projects.js';
 import { newlyMet, meet, give, perkEffects } from './neighbours.js';
+import { createSeeds, unlockDue, cross, choose, judge, seedEffects } from './seeds.js';
 
 const VERSION = 1;
 
@@ -22,6 +23,7 @@ export function createState(data, { golden = 0 } = {}) {
 		price: data.TUNING.startPrice,
 		owned: {},
 		friends: {},
+		seeds: createSeeds(data.SEEDS),
 		height: 0, phase: 1,
 		log: [],
 		seen: {},          // journal lines that are only worth saying once
@@ -36,7 +38,8 @@ export function createState(data, { golden = 0 } = {}) {
 // Recomputes everything derived from what is owned. Call after `owned` changes.
 export function refresh(state, data) {
 	const perks = perkEffects(state.friends, data.NEIGHBOURS, data.TUNING.friends);
-	state.mods = computeMods(state.owned, data.PROJECTS, data.TUNING.base, perks);
+	const bred = seedEffects(state.seeds, data.SEEDS);
+	state.mods = computeMods(state.owned, data.PROJECTS, data.TUNING.base, [...perks, ...bred]);
 	state.mods.yield *= 1 + state.golden * data.TUNING.goldenBonus;
 	resize(state.plots, state.mods.plots);
 	return state;
@@ -53,6 +56,20 @@ function sayOnce(state, data, key, text) {
 	if (state.seen[key]) return;
 	state.seen[key] = true;
 	say(state, data, text);
+}
+
+// The county fair: this year's class is judged, and a win is a ribbon.
+function fair(state, data, events) {
+	const S = data.SEEDS;
+	const { year } = calendar(state.day, data.SEASONS, data.TUNING.calendar);
+	const result = judge(state, year, S);
+	if (!result) return;
+	const trait = S.traits.find(t => t.id === result.trait);
+	const line = (result.won ? S.fair.win : S.fair.lose)
+		.replace('{class}', trait.fair).replace('{bar}', result.bar).replace('{level}', result.level);
+	say(state, data, line);
+	events.push({ type: 'fair', id: result.won ? 'won' : 'lost' });
+	if (result.won) refresh(state, data);
 }
 
 // One job on the farm, by you or a helper, taking the plots in rotation.
@@ -102,6 +119,7 @@ export function tick(state, dt, data, rng) {
 		events.push({ type: 'season', id: season.id });
 		const warm = season.cold && mods.greenhouse && season.logWarm;
 		sayOnce(state, data, warm ? `${season.id}:warm` : season.id, warm ? season.logWarm : season.log);
+		if (season.id === data.SEEDS.fair.season) fair(state, data, events);
 	}
 
 	const weather = data.WEATHER.find(w => w.id === state.weather) ?? null;
@@ -159,6 +177,11 @@ export function tick(state, dt, data, rng) {
 		events.push({ type: 'phase', id: phase.id });
 		say(state, data, phase.log);
 	}
+	if (unlockDue(state, data.SEEDS)) {
+		state.seeds.open = true;
+		events.push({ type: 'seeds' });
+		say(state, data, data.SEEDS.log);
+	}
 	for (const def of newlyMet(state, data.NEIGHBOURS)) {
 		meet(state, def);
 		events.push({ type: 'meet', id: def.id });
@@ -189,6 +212,16 @@ export function giveGift(state, neighbourId, giftId, data) {
 	for (const perk of result.perks) say(state, data, `${def.name}, ${perk.hearts} hearts: ${perk.text}`);
 	if (result.perks.length) refresh(state, data);
 	return result;
+}
+
+// Starts a cross: pays for it and sets the seedlings growing.
+export const crossSeeds = (state, data, rng) => !state.done && cross(state, data.SEEDS, rng);
+
+// Keeps seedling `index` (or -1 for the old line) once they have grown out.
+export function chooseSeedling(state, index, data) {
+	if (state.done || !choose(state, index)) return false;
+	refresh(state, data);
+	return true;
 }
 
 export function nudgePrice(state, dir, data) {

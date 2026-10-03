@@ -8,6 +8,7 @@ import { calendar } from '../core/seasons.js';
 import { stalkFrac } from '../core/phases.js';
 import { plotOrder, mixColor } from '../core/layout.js';
 import { heartsOf } from '../core/neighbours.js';
+import { ribbonCount } from '../core/seeds.js';
 
 const CROW_SECONDS = 1.6;
 
@@ -110,6 +111,10 @@ export function createFarmView(canvas, data, { SPRITES, PALETTE, VIEW }) {
 		ctx.fillStyle = mixColor(season.grass, '#000000', 0.25);
 		ctx.fillRect(0, horizon, VIEW.width, 2);
 		put(art.farmhouse[0], 8, horizon - art.farmhouse[0].height + 12);
+		const house = { x: 8, y: horizon - art.farmhouse[0].height + 12 };
+		for (let i = 0; i < Math.min(VIEW.maxRibbons, ribbonCount(state.seeds)); i++) {
+			put(art.ribbon[0], house.x + 3 + i * 5, house.y + 4 + (i % 2) * 2);
+		}
 		if (state.mods.scarecrow) put(art.scarecrow[0], VIEW.width - 30, horizon - art.scarecrow[0].height + 12);
 		for (const [tag, x] of Object.entries(VIEW.props)) {
 			if (has(state, tag)) put(art[tag][0], x, horizon - art[tag][0].height + 12);

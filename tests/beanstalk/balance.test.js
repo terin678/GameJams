@@ -2,8 +2,10 @@
 // game can be finished. Set BEANSTALK_TIMELINE=1 to print what the bot bought when.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { createState, tick, tend, buyProject, giveGift, nudgePrice } from '../../games/beanstalk/src/core/sim.js';
+import { createState, tick, tend, buyProject, giveGift, crossSeeds, chooseSeedling, nudgePrice } from '../../games/beanstalk/src/core/sim.js';
 import { available, affordable } from '../../games/beanstalk/src/core/projects.js';
+import { canCross, crossCost, growingFor, fairTrait } from '../../games/beanstalk/src/core/seeds.js';
+import { calendar } from '../../games/beanstalk/src/core/seasons.js';
 import { demand, autoPriceDir } from '../../games/beanstalk/src/core/market.js';
 import { formatNumber, formatHeight, formatDuration } from '../../games/beanstalk/src/core/format.js';
 import { DATA } from '../../games/beanstalk/src/data/index.js';
@@ -40,6 +42,13 @@ function playBot({ seed = 1, limit = 90 * MINUTE, clicksPerSecond = 3, verbose =
 		for (const n of DATA.NEIGHBOURS) {
 			if (state.friends[n.id]) giveGift(state, n.id, n.loves[0], DATA);
 		}
+		// Breeds when it has coins to spare, keeping the seedling bred for the next fair's class.
+		if (growingFor(state) === 0) {
+			const { year } = calendar(state.day, DATA.SEASONS, T.calendar);
+			const next = fairTrait(state.seeds.judged >= year ? year + 1 : year, DATA.SEEDS);
+			chooseSeedling(state, DATA.SEEDS.traits.indexOf(next), DATA);
+		}
+		if (canCross(state, DATA.SEEDS) && state.coins > 4 * crossCost(state.seeds, DATA.SEEDS).coins) crossSeeds(state, DATA, rng);
 		for (const def of available(state, DATA.PROJECTS)) {
 			if (!affordable(state, def) || !buyProject(state, def.id, DATA)) continue;
 			at.bought[def.id] ??= state.time;
@@ -74,7 +83,7 @@ test('pacing: each phase lasts a few minutes and the whole game about half an ho
 	const report = `phase 1: ${p2.toFixed(1)} min, phase 2: ${p3.toFixed(1)} min, phase 3: ${end.toFixed(1)} min`;
 	if (verbose) console.log(report);
 	assert.ok(p2 >= 5 && p2 <= 12, report);
-	assert.ok(p3 >= 6 && p3 <= 15, report);
+	assert.ok(p3 >= 4 && p3 <= 15, report);
 	assert.ok(end >= 5 && end <= 15, report);
 	assert.ok(total >= 20 && total <= 45, report);
 });

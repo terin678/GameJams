@@ -5,13 +5,14 @@ import assert from 'node:assert/strict';
 import { DATA, SPRITES, PALETTE, VIEW, SOUNDS, EVENT_SOUNDS, MUSIC } from '../../games/beanstalk/src/data/index.js';
 import { validateProject, EFFECTS } from '../../games/beanstalk/src/core/projects.js';
 import { validateNeighbour, validateGift } from '../../games/beanstalk/src/core/neighbours.js';
+import { validateSeeds } from '../../games/beanstalk/src/core/seeds.js';
 import { heightFor } from '../../games/beanstalk/src/core/phases.js';
 import { plotOrder } from '../../games/beanstalk/src/core/layout.js';
 import { parsePixelMap } from '../../shared/pixelart.js';
 import { validateSfx } from '../../shared/sfx.js';
 import { validateSong } from '../../shared/music.js';
 
-const { TUNING: T, PROJECTS, SEASONS, WEATHER, PHASES, MILESTONES, LANDMARKS, NEIGHBOURS, GIFTS } = DATA;
+const { TUNING: T, PROJECTS, SEASONS, WEATHER, PHASES, MILESTONES, LANDMARKS, NEIGHBOURS, GIFTS, SEEDS } = DATA;
 const ascending = list => list.every((v, i) => i === 0 || v > list[i - 1]);
 
 test('every project is well formed', () => {
@@ -74,6 +75,16 @@ test('each neighbour loves a gift you can give when you meet them, and every gif
 		assert.ok(NEIGHBOURS.some(n => n.loves.includes(g.id) || n.likes.includes(g.id)), `nobody wants ${g.id}`);
 	}
 	assert.ok(NEIGHBOURS.some(n => (n.unlock.phase ?? 1) === 1 && (n.unlock.grown ?? 0) <= 100), 'someone to meet early');
+});
+
+test('seed breeding data is well formed', () => {
+	assert.deepEqual(validateSeeds(SEEDS, SEASONS), []);
+	assert.equal(new Set(SEEDS.traits.map(t => t.id)).size, SEEDS.traits.length);
+	for (const k of ['{class}']) assert.ok(SEEDS.fair.win.includes(k) && SEEDS.fair.lose.includes(k), k);
+	// The last ribbon in a class must be reachable.
+	const topBar = SEEDS.fair.firstBar + SEEDS.fair.barStep * Math.floor((SEEDS.maxLevel - SEEDS.fair.firstBar) / SEEDS.fair.barStep);
+	assert.ok(topBar <= SEEDS.maxLevel);
+	assert.ok(SPRITES.ribbon);
 });
 
 test('seasons and weather make sense', () => {
@@ -152,5 +163,5 @@ test('every sound is valid, and every event sound exists', () => {
 	const names = Object.values(EVENT_SOUNDS).flatMap(v => (typeof v === 'string' ? [v] : Object.values(v)));
 	for (const n of names) assert.ok(SOUNDS[n], n);
 	for (const id of Object.keys(EVENT_SOUNDS.weather)) assert.ok(WEATHER.some(w => w.id === id), id);
-	for (const n of ['plant', 'harvest', 'buy', 'deny', 'price', 'ending', 'heart', 'love', 'like', 'neutral', 'dislike']) assert.ok(SOUNDS[n], n);
+	for (const n of ['plant', 'harvest', 'buy', 'deny', 'price', 'ending', 'cross', 'heart', 'love', 'like', 'neutral', 'dislike']) assert.ok(SOUNDS[n], n);
 });

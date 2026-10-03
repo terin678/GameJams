@@ -141,6 +141,11 @@ buttons. It saves itself every few seconds.
   grows. Give each a gift every 30 seconds; you find out what they love by
   trying. Hearts unlock perks (more demand, faster growth, extra helpers).
   Add a neighbour or a gift by adding an entry; `data.test.js` checks it.
+- **Seeds** (`src/data/seeds.js`): from 400 beans you can breed your own seed
+  line. A cross costs coins, grows out for 15 seconds, then offers three
+  seedlings, each better in one trait (size, vigour, flavour) and maybe worse
+  in another. Every autumn the county fair judges one trait; clearing the bar
+  wins a ribbon, which lifts demand and makes crosses luckier.
 - New systems appear as tabs beside Projects, and sections such as the Almanac
   stay hidden until the game reaches them.
 - **Music:** the tune is data as well (`src/data/music.js`): chords, bass, a

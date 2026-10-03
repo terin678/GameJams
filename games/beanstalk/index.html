@@ -133,6 +133,18 @@
 		.gifts .like .mark { color: var(--bean); }
 		.gifts .dislike { opacity: 0.55; }
 
+		.box { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 9px 11px; }
+		.box h3 { margin: 0 0 6px; font-size: 13px; }
+		.box p { font-size: 12px; }
+		.trait { display: grid; grid-template-columns: 4.5rem 1fr auto; gap: 8px; align-items: center; font-size: 13px; margin: 3px 0; }
+		.trait .bar { height: 6px; background: var(--bg); border-radius: 3px; overflow: hidden; }
+		.trait .bar i { display: block; height: 100%; background: var(--bean); }
+		.seedlings { display: grid; gap: 5px; margin-top: 6px; }
+		.seedlings button { text-align: left; font-size: 12px; padding: 6px 9px; background: var(--bg); }
+		.up { color: var(--bean); }
+		.down { color: #ff8a80; }
+		.gold { color: var(--gold); }
+
 		#log {
 			list-style: none; margin: 0; padding: 0; color: var(--muted);
 			height: 9.2rem; overflow-y: auto; scrollbar-width: thin;
@@ -244,6 +256,7 @@
 			<div id="tabs" role="toolbar" aria-label="Panels"></div>
 			<div id="projects" class="panel"></div>
 			<div id="neighbours" class="panel" hidden></div>
+			<div id="seeds" class="panel" hidden></div>
 		</section>
 	</main>
 

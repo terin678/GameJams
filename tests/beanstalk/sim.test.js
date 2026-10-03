@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { createState, refresh, tick, tend, buyProject, giveGift, nudgePrice, simulateOffline, serialize, restore, newGamePlus } from '../../games/beanstalk/src/core/sim.js';
+import { createState, refresh, tick, tend, buyProject, giveGift, crossSeeds, chooseSeedling, nudgePrice, simulateOffline, serialize, restore, newGamePlus } from '../../games/beanstalk/src/core/sim.js';
 import { DATA } from '../../games/beanstalk/src/data/index.js';
 import { createRng } from '../../shared/rng.js';
 
@@ -156,6 +156,35 @@ test('neighbours turn up as the farm grows, and gifts earn perks', () => {
 	assert.ok(s.mods.marketing > marketing, 'the perk is applied');
 	assert.ok(s.log[0].includes(who.perks[0].text));
 	assert.equal(giveGift(s, 'nobody', loved, DATA), null);
+});
+
+test('seed breeding opens, a chosen seedling changes the farm, and the fair gives ribbons', () => {
+	const S = DATA.SEEDS;
+	const s = createState(DATA);
+	assert.equal(crossSeeds(s, DATA, createRng(1)), false, 'not before the catalogue arrives');
+	s.grown = S.unlock.grown;
+	assert.ok(run(s, 0.1).some(e => e.type === 'seeds'));
+	assert.ok(s.log.includes(S.log));
+
+	s.coins = 1e9;
+	const before = { ...s.mods };
+	for (let i = 0; i < 12; i++) {
+		assert.equal(crossSeeds(s, DATA, createRng(i)), true);
+		s.time += S.cross.seconds;
+		assert.equal(chooseSeedling(s, 0, DATA), true);   // seedling 0 is the one bred for the first trait
+	}
+	const first = S.traits[0];
+	assert.ok(s.seeds.traits[first.id] >= 12);
+	assert.ok(s.mods[first.effect] > before[first.effect]);
+
+	// Run to the first fair: the first trait is judged in year one.
+	const untilFair = T.calendar.daySeconds * T.calendar.daysPerSeason * DATA.SEASONS.findIndex(x => x.id === S.fair.season);
+	const marketing = s.mods.marketing;
+	const events = run(s, untilFair + 1, fair, 0.5);
+	assert.ok(events.some(e => e.type === 'fair' && e.id === 'won'));
+	assert.equal(s.seeds.ribbons[first.id], 1);
+	assert.ok(s.mods.marketing > marketing, 'a ribbon lifts demand');
+	assert.ok(s.log.some(l => l.includes(first.fair)));
 });
 
 test('buying a project applies it straight away', () => {

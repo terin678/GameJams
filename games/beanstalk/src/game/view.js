@@ -12,6 +12,7 @@ import { counts, findWork } from '../core/farm.js';
 import { demand } from '../core/market.js';
 import { calendar, growthMult, seasonNote } from '../core/seasons.js';
 import { available, affordable, costOf } from '../core/projects.js';
+import { crossCost, canCross, growingFor, fairTrait, fairBar, ribbonCount, luckOf } from '../core/seeds.js';
 import { heartsOf, heartProgress, giftsFor, giftCost, canGive, waitFor, nextPerk } from '../core/neighbours.js';
 
 // After the project list changes shape, clicks on it are ignored for a moment,
@@ -22,6 +23,7 @@ const GUARD_MS = 350;
 const TABS = [
 	{ id: 'projects', label: 'Projects', unlocked: () => true },
 	{ id: 'neighbours', label: 'Neighbours', unlocked: state => Object.keys(state.friends).length > 0 },
+	{ id: 'seeds', label: 'Seeds', unlocked: state => state.seeds.open },
 ];
 const REACTION_MARK = { love: '♥', like: '+', neutral: '·', dislike: '×' };
 
@@ -70,6 +72,12 @@ export function createView(doc, data, handlers) {
 	$('neighbours').addEventListener('click', e => {
 		const b = e.target.closest('[data-gift]');
 		if (b) handlers.gift(b.dataset.friend, b.dataset.gift);
+	});
+	$('seeds').addEventListener('click', e => {
+		const b = e.target.closest('button');
+		if (!b) return;
+		if (b.dataset.cross) handlers.cross();
+		if (b.dataset.seedling) handlers.seedling(Number(b.dataset.seedling));
 	});
 	$('tabs').addEventListener('click', e => {
 		const b = e.target.closest('[data-tab]');
@@ -188,6 +196,79 @@ export function createView(doc, data, handlers) {
 		if (focused) $('neighbours').querySelector(`[data-friend="${focused[0]}"][data-gift="${focused[1]}"]`)?.focus();
 	}
 
+	// The seed line, the cross in progress (or its seedlings to choose from), and the fair.
+	function seeds(state, year) {
+		const S = data.SEEDS;
+		const { seeds: line } = state;
+		const growing = growingFor(state);
+		const ready = growing === 0;
+		const can = canCross(state, S);
+		const sig = [JSON.stringify(line.traits), line.generation, growing === null ? 'idle' : Math.ceil(growing), can,
+			ribbonCount(line), line.judged, year].join('|');
+		if (shown.get('seeds') === sig) return;
+		shown.set('seeds', sig);
+		const focused = doc.activeElement?.dataset?.seedling ?? (doc.activeElement?.dataset?.cross ? 'cross' : null);
+
+		const traits = S.traits.map(t => {
+			const level = line.traits[t.id];
+			const fill = el('i');
+			fill.style.width = `${level / S.maxLevel * 100}%`;
+			return el('div', { className: 'trait' },
+				el('span', {}, el('b', {}, t.name), ` ${level}`),
+				el('div', { className: 'bar' }, fill),
+				el('span', { className: 'muted' }, `x${(t.per ** level).toFixed(2)} ${t.blurb}`));
+		});
+
+		let work;
+		if (growing === null) {
+			const b = el('button', { type: 'button', disabled: !can }, 'Cross seeds ',
+				el('span', { className: 'gold' }, `(${costText(crossCost(line, S))})`));
+			b.dataset.cross = '1';
+			work = [b, el('p', { className: 'muted' }, 'Grows out three seedlings, each better at one thing. Keep one, or none.')];
+		} else if (!ready) {
+			work = [el('p', {}, `Seedlings are growing out... ${Math.ceil(growing)}s`)];
+		} else {
+			const pick = (index, ...children) => {
+				const b = el('button', { type: 'button' }, ...children);
+				b.dataset.seedling = String(index);
+				return b;
+			};
+			work = [el('p', {}, 'The seedlings are ready. Which one becomes your line?'),
+				el('div', { className: 'seedlings' },
+					...line.pending.options.map((option, i) => pick(i, ...S.traits.flatMap((t, k) => {
+						const change = option[t.id] - line.traits[t.id];
+						const delta = change ? el('span', { className: change > 0 ? 'up' : 'down' }, ` (${change > 0 ? '+' : ''}${change})`) : '';
+						return [k ? ' · ' : '', `${t.name} ${option[t.id]}`, delta];
+					}))),
+					pick(-1, 'Keep the old line'))];
+		}
+
+		const fairYear = line.judged >= year ? year + 1 : year;
+		const judged = fairTrait(fairYear, S);
+		const bar = fairBar(line, judged.id, S);
+		const have = line.traits[judged.id];
+		const ribbons = ribbonCount(line);
+		const last = line.result;
+		const lastTrait = last && S.traits.find(t => t.id === last.trait);
+		const fairSeason = data.SEASONS.find(s => s.id === S.fair.season).name.toLowerCase();
+
+		$('seeds').replaceChildren(
+			el('div', { className: 'box' }, el('h3', {}, `Your seed line · generation ${line.generation}`), ...traits),
+			el('div', { className: 'box' }, el('h3', {}, 'Breeding'), ...work),
+			el('div', { className: 'box' }, el('h3', {}, 'County fair'),
+				el('p', {}, `${fairYear === year ? 'This' : 'Next'} ${fairSeason}: ${judged.fair}. The judges want ${judged.name} ${bar}; yours is ${have}. `,
+					el('span', { className: have >= bar ? 'up' : 'down' }, have >= bar ? 'Good enough to win.' : `${bar - have} to go.`)),
+				el('p', { className: 'muted' }, last
+					? `Last fair, ${lastTrait.fair}: ${last.won ? 'first prize' : `second place (needed ${last.bar}, had ${last.level})`}.`
+					: 'A different class is judged each year.'),
+				el('p', {}, el('span', { className: 'gold' }, `Ribbons: ${ribbons}`),
+					el('span', { className: 'muted' }, ribbons
+						? ` · demand x${(S.fair.ribbonEffect.marketing ** ribbons).toFixed(2)} · crosses ${Math.round(luckOf(line, S) * 100)}% lucky`
+						: ' · each one lifts demand and makes crosses luckier'))));
+		const again = focused === 'cross' ? '[data-cross]' : focused ? `[data-seedling="${focused}"]` : null;
+		if (again) $('seeds').querySelector(again)?.focus();
+	}
+
 	function journal(state) {
 		const sig = `${state.log.length}:${state.log[0]}`;
 		if (shown.get('log') === sig) return;
@@ -217,7 +298,9 @@ export function createView(doc, data, handlers) {
 			set('tend', next < 0 ? 'Growing...' : state.plots[next] === null ? 'Plant a bean' : 'Pick beans');
 			$('tend').disabled = next < 0;
 			const seconds = T.growSeconds / (mods.growth * growthMult(cal.season, weather, mods));
-			set('growing', `Each plant gives ${formatNumber(mods.yield)} ${mods.yield === 1 ? 'bean' : 'beans'} and takes ${seconds.toFixed(1)}s`);
+			// Breeding makes the yield fractional; show a decimal while it is small.
+			const each = mods.yield < 100 ? String(Math.round(mods.yield * 10) / 10) : formatNumber(mods.yield);
+			set('growing', `Each plant gives ${each} ${each === '1' ? 'bean' : 'beans'} and takes ${seconds.toFixed(1)}s`);
 			set('season', seasonNote(cal.season, mods));
 			// Each plot wants one visit per crop; say so when the helpers can't keep up.
 			const wanted = state.plots.length / seconds;
@@ -243,6 +326,7 @@ export function createView(doc, data, handlers) {
 			tabs(state);
 			if (tab === 'projects') projects(state);
 			if (tab === 'neighbours') neighbours(state);
+			if (tab === 'seeds') seeds(state, cal.year);
 			journal(state);
 			shown.set('ready', true);   // from now on, anything that appears is news
 		},
