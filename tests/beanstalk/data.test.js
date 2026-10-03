@@ -153,6 +153,11 @@ test('the guard is well formed, opens in phase 1, and has art for everything', (
 		assert.ok(w.foes.filter(f => !before.includes(f)).length <= 1, `wave at ${w.wins} wins`);
 	});
 	assert.ok(GUARD.waves.at(-1).size <= GUARD.posts.max * 2 + 1, 'the biggest wave can be beaten with every post built');
+	// Training can cancel the toughest pest, and is paid for in a currency its phase has.
+	const toughest = Math.max(...GUARD.foes.map(f => f.tough ?? 1));
+	assert.ok(1 + GUARD.train.per * GUARD.train.max >= toughest, `full training is x${1 + GUARD.train.per * GUARD.train.max}, toughest pest is ${toughest}`);
+	assert.deepEqual(Object.keys(GUARD.train.cost), ['pages']);
+	assert.ok(PHASES.some(p => p.id === GUARD.train.phase));
 });
 
 test('the exchange is well formed, and a year on the board is worth trading', () => {

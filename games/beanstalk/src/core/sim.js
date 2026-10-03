@@ -10,7 +10,7 @@ import { newlyMet, meet, give, perkEffects } from './neighbours.js';
 import { createSeeds, unlockDue, cross, choose, judge, seedEffects } from './seeds.js';
 import { rulesFor, twistsFor, lineFor } from './runs.js';
 import { createClimb, unlockDue as climbDue, startClimb, arrive, choose as chooseOption, nextEncounter, findEffects } from './climb.js';
-import { createGuard, unlockDue as guardDue, openGuard, step as guardStep, assign, buyPost, rankEffects, waveText } from './guard.js';
+import { createGuard, unlockDue as guardDue, openGuard, step as guardStep, assign, buyPost, train, rankEffects, waveText } from './guard.js';
 import { createExchange, unlockDue as exchangeDue, openExchange, step as exchangeStep, kick, buy as buyShare, sell as sellShare } from './exchange.js';
 import { formatNumber } from './format.js';
 
@@ -251,6 +251,7 @@ export function tick(state, dt, data, rng) {
 		events.push({ type: 'guard' });
 		say(state, data, data.GUARD.log);
 	}
+	if (state.guard.open && state.phase >= data.GUARD.train.phase) sayOnce(state, data, 'guard:train', data.GUARD.train.log);
 	for (const e of guardStep(state, dt, data.GUARD, rng)) {
 		raid(state, data, e, rng);
 		events.push(e);
@@ -313,6 +314,9 @@ export function chooseAtLedge(state, index, data, rng) {
 // Posts one more or one fewer of an animal on guard.
 export const postAnimal = (state, id, delta, data) => !state.done && assign(state, id, delta, data.GUARD);
 
+// Trains one kind of guard animal up a level.
+export const trainAnimal = (state, id, data) => !state.done && train(state, id, data.GUARD);
+
 // Builds another guard post.
 export const buildPost = (state, data) => !state.done && buyPost(state, data.GUARD);
 
@@ -366,8 +370,12 @@ export const isSave = saved => !!saved && saved.v === VERSION && Array.isArray(s
 export function restore(saved, data) {
 	const fresh = createState(data);
 	if (!isSave(saved)) return fresh;
-	// Fields added since the save was made keep their fresh values.
-	return refresh({ ...fresh, ...saved }, data);
+	// Fields added since the save was made keep their fresh values, one level
+	// down as well: a saved guard from before training still gets its `levels`.
+	const state = { ...fresh, ...saved };
+	const plain = v => !!v && typeof v === 'object' && !Array.isArray(v);
+	for (const [k, v] of Object.entries(fresh)) if (plain(v) && plain(saved[k])) state[k] = { ...v, ...saved[k] };
+	return refresh(state, data);
 }
 
 export const newGamePlus = (state, data) => createState(data, { golden: state.golden + 1 });

@@ -300,6 +300,33 @@ export const SPRITES = {
 		'.hhhhhh.',
 		'.h....h.',
 	]] },
+	moth: { frames: [[
+		'w...w',
+		'wwNww',
+		'wwNww',
+		'w...w',
+	]] },
+	magpie: { frames: [[
+		'.kk....',
+		'ykkw...',
+		'.kwwkk.',
+		'.kkkkkb',
+		'..k.k..',
+	]] },
+	bat: { frames: [[
+		'P.....P',
+		'PP.P.PP',
+		'PPPPPPP',
+		'.P.k.P.',
+	]] },
+	goose: { frames: [[
+		'.ww....',
+		'oww....',
+		'.w.....',
+		'.wwwww.',
+		'.wwwwww',
+		'..o.o..',
+	]] },
 	// Things that appear on the farm when a project is bought (see VIEW.props).
 	can: { frames: [[
 		'.nn..n',

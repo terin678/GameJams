@@ -2,10 +2,10 @@
 // game can be finished. Set BEANSTALK_TIMELINE=1 to print what the bot bought when.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { createState, tick, tend, buyProject, giveGift, crossSeeds, chooseSeedling, climb, chooseAtLedge, buildPost, buyCrates, sellCrates, nudgePrice } from '../../games/beanstalk/src/core/sim.js';
+import { createState, tick, tend, buyProject, giveGift, crossSeeds, chooseSeedling, climb, chooseAtLedge, buildPost, trainAnimal, buyCrates, sellCrates, nudgePrice } from '../../games/beanstalk/src/core/sim.js';
 import { available, affordable } from '../../games/beanstalk/src/core/projects.js';
 import { nextEncounter, optionBlocked } from '../../games/beanstalk/src/core/climb.js';
-import { createGuard, makeWave, bestRoster, defendersFor, setRoster, postCost, step as guardStep } from '../../games/beanstalk/src/core/guard.js';
+import { createGuard, makeWave, bestRoster, defendersFor, setRoster, postCost, trainCost, step as guardStep } from '../../games/beanstalk/src/core/guard.js';
 import { canCross, crossCost, growingFor, fairTrait } from '../../games/beanstalk/src/core/seeds.js';
 import { calendar } from '../../games/beanstalk/src/core/seasons.js';
 import { demand, autoPriceDir } from '../../games/beanstalk/src/core/market.js';
@@ -66,6 +66,12 @@ function playBot({ seed = 1, limit = 8 * 60 * MINUTE, clicksPerSecond = 3, verbo
 			const cost = postCost(guard, DATA.GUARD);
 			if (cost && state.coins > 3 * cost.coins) buildPost(state, DATA);
 			setRoster(state, bestRoster(guard.wave, guard.posts, defendersFor(guard, DATA.GUARD)), DATA.GUARD);
+			// Trains whoever is good against a tough pest, when it has pages to spare.
+			for (const d of defendersFor(guard, DATA.GUARD)) {
+				const price = trainCost(state, d.id, DATA.GUARD);
+				const needed = d.strong.some(f => DATA.GUARD.foes.find(x => x.id === f).tough);
+				if (price && needed && state.pages > 2 * price.pages) trainAnimal(state, d.id, DATA);
+			}
 		}
 		// Buys crates at harvest and sells them in spring.
 		if (state.exchange.open) {
@@ -157,21 +163,29 @@ test('the guard arrives in the quiet stretch of phase 1, and a careful player wi
 });
 
 // At every size of wave: one matched animal for every two pests usually wins,
-// one more post makes it safe, and the wrong animals lose.
-test('in every wave tier, matching the animals to the pests is what wins', () => {
+// one more post makes it safe, and the wrong animals lose. Against tough pests
+// that holds for animals trained to match; untrained ones do worse, a little
+// at first (few tough pests in the wave) and then a lot.
+test('in every wave tier, matching (and later training) the animals is what wins', () => {
 	const G = DATA.GUARD;
 	const N = 200;
-	const winRate = (tier, posts, how) => {
+	const winRate = (tier, posts, how, trained = true) => {
 		let won = 0;
 		for (let seed = 1; seed <= N; seed++) {
 			const rng = createRng(seed * 13 + tier.wins);
-			const wave = makeWave(tier.wins, G, rng);
+			const wave = makeWave(tier.wins, G, rng, tier.phase);
 			const all = defendersFor({ wins: tier.wins }, G);
 			const lead = Object.keys(wave).sort((x, y) => wave[y] - wave[x])[0];
 			const useless = all.find(d => !d.strong.includes(lead));
 			const roster = how === 'right' ? bestRoster(wave, posts, all) : { [useless.id]: posts };
+			// Each animal trained just enough to cancel the toughest pest it is for.
+			const levels = {};
+			for (const d of all) {
+				const tough = Math.max(...d.strong.map(f => G.foes.find(x => x.id === f).tough ?? 1));
+				levels[d.id] = trained ? Math.ceil((tough - 1) / G.train.per) : 0;
+			}
 			// `wins: 0` keeps the drill from fixing a bad roster.
-			const s = { time: 0, guard: { ...createGuard(G), open: true, wins: 0, posts, wave, roster } };
+			const s = { time: 0, phase: tier.phase ?? 1, guard: { ...createGuard(G), open: true, wins: 0, posts, wave, roster, levels } };
 			for (let end = null; !end; s.time += 0.1) {
 				end = guardStep(s, 0.1, G, rng).find(e => e.type === 'raidEnd');
 				if (end?.id === 'won') won++;
@@ -179,15 +193,18 @@ test('in every wave tier, matching the animals to the pests is what wins', () =>
 		}
 		return won / N;
 	};
+	const pct = v => `${Math.round(v * 100)}%`;
 	const bad = [];
 	for (const tier of G.waves) {
 		const posts = Math.ceil(tier.size / 2);
 		const right = winRate(tier, posts, 'right');
 		const wrong = winRate(tier, posts, 'wrong');
-		const safe = winRate(tier, posts + 1, 'right');
-		const note = `wave of ${tier.size}: ${posts} posts right ${Math.round(right * 100)}%, wrong ${Math.round(wrong * 100)}%; ${posts + 1} posts ${Math.round(safe * 100)}%`;
+		const safe = winRate(tier, Math.min(G.posts.max, posts + 1), 'right');
+		const tough = tier.foes.some(f => G.foes.find(x => x.id === f).tough);
+		const raw = tough ? winRate(tier, posts, 'right', false) : null;
+		const note = `wave of ${tier.size} at ${tier.wins} wins: ${posts} posts right ${pct(right)}, wrong ${pct(wrong)}; one more post ${pct(safe)}${tough ? `; untrained ${pct(raw)}` : ''}`;
 		if (verbose) console.log(note);
-		if (right < 0.65 || wrong > 0.35 || safe < 0.9) bad.push(note);
+		if (right < 0.65 || wrong > 0.35 || (posts < G.posts.max && safe < 0.9) || (tough && raw > right - 0.1)) bad.push(note);
 	}
 	assert.deepEqual(bad, []);
 });

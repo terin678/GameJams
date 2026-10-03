@@ -14,7 +14,7 @@ import { calendar, growthMult, seasonNote } from '../core/seasons.js';
 import { periodAt } from '../core/sky.js';
 import { nextTwist, twistsFor, endingLine } from '../core/runs.js';
 import { nextEncounter, climbBlocked, climbingFor, optionBlocked, findsOf, temper } from '../core/climb.js';
-import { raidIn, postsUsed, postCost, defendersFor, ranksEarned, nextRank, hasDrill, needsAttention, waveText } from '../core/guard.js';
+import { raidIn, postsUsed, postCost, trainCost, defendersFor, ranksEarned, nextRank, hasDrill, needsAttention, waveText } from '../core/guard.js';
 import { valueOf, averageCost } from '../core/exchange.js';
 import { available, affordable, costOf } from '../core/projects.js';
 import { crossCost, canCross, growingFor, fairTrait, fairBar, ribbonCount, luckOf } from '../core/seeds.js';
@@ -129,6 +129,7 @@ export function createView(doc, data, handlers) {
 		if (!b) return;
 		if (b.dataset.post) handlers.post(b.dataset.post, Number(b.dataset.delta));
 		if (b.dataset.build) handlers.build();
+		if (b.dataset.train) handlers.train(b.dataset.train);
 	});
 	$('tabs').addEventListener('click', e => {
 		const b = e.target.closest('[data-tab]');
@@ -453,22 +454,35 @@ export function createView(doc, data, handlers) {
 		const canBuild = !!cost && state.coins >= cost.coins;
 		const used = postsUsed(g);
 		const drilled = hasDrill(g, G);
-		const sig = [left, JSON.stringify(g.roster), g.posts, g.wins, g.losses, JSON.stringify(fight), g.said, canBuild].join('|');
+		const training = defendersFor(g, G).map(def => {
+			const price = trainCost(state, def.id, G);
+			return { price, can: !!price && Object.entries(price).every(([c, v]) => state[c] >= v) };
+		});
+		const sig = [left, JSON.stringify(g.roster), g.posts, g.wins, g.losses, JSON.stringify(fight), g.said, canBuild,
+			JSON.stringify(g.levels), state.phase, training.map(x => x.can).join('')].join('|');
 		if (shown.get('guard') === sig) return;
 		shown.set('guard', sig);
 		const d = doc.activeElement?.dataset ?? {};
-		const focused = d.post ? `[data-post="${d.post}"][data-delta="${d.delta}"]` : d.build ? '[data-build]' : null;
+		const focused = d.post ? `[data-post="${d.post}"][data-delta="${d.delta}"]` : d.build ? '[data-build]' : d.train ? `[data-train="${d.train}"]` : null;
 
 		const sum = counts => Object.values(counts).reduce((a, b) => a + b, 0);
+		const tough = G.foes.filter(f => f.tough && g.wave[f.id] > 0).map(f => f.plural.replace(/^./, ch => ch.toUpperCase()));
 		const now = fight
 			? [el('h3', { className: 'down' }, 'Raid!'),
 				el('p', {}, `${waveText(fight.foes, G)} still in the beans. ${sum(fight.up)} of ${used} animals on their feet.`)]
 			: [el('h3', {}, `Next raid in ${formatDuration(left)}`),
 				el('p', {}, `Coming: ${waveText(g.wave, G)}.`),
-				el('p', { className: 'muted' }, 'Post animals that suit what is coming: about one for every two pests. The wrong animal is little use.')];
+				el('p', { className: 'muted' }, 'Post animals that suit what is coming: about one for every two pests. The wrong animal is little use.'),
+				tough.length ? el('p', { className: 'muted' }, `${tough.join(' and ')} are tough: they take trained animals.`) : ''];
 
-		const posts = defendersFor(g, G).map(def => {
+		const trains = state.phase >= G.train.phase;
+		const posts = defendersFor(g, G).map((def, k) => {
 			const n = g.roster[def.id] ?? 0;
+			const level = g.levels[def.id] ?? 0;
+			const { price, can } = training[k];
+			const coach = el('button', { type: 'button', className: 'train', disabled: !can },
+				price ? `Train to level ${level + 1} ` : `Trained: level ${level}`, price ? el('span', { className: 'gold' }, `(${costText(price)})`) : '');
+			coach.dataset.train = def.id;
 			const button = (label, delta, disabled) => {
 				const b = el('button', { type: 'button', disabled: disabled || !!fight || drilled }, label);
 				b.dataset.post = def.id;
@@ -477,8 +491,9 @@ export function createView(doc, data, handlers) {
 				return b;
 			};
 			return el('div', { className: 'post' },
-				el('span', {}, el('b', {}, def.plural), el('span', { className: 'muted' }, ` ${def.text}`)),
-				button('−', -1, n === 0), el('span', { className: 'n' }, String(n)), button('+', 1, used >= g.posts));
+				el('span', {}, el('b', {}, def.plural), trains && level ? ` lv ${level}` : '', el('span', { className: 'muted' }, ` ${def.text}`)),
+				button('−', -1, n === 0), el('span', { className: 'n' }, String(n)), button('+', 1, used >= g.posts),
+				trains ? coach : '');
 		});
 		const build = el('button', { type: 'button', disabled: !canBuild }, 'Build another post ',
 			el('span', { className: 'gold' }, cost ? `(${costText(cost)})` : ''));

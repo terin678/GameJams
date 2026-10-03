@@ -2,7 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
 	createGuard, unlockDue, openGuard, tierFor, makeWave, defendersFor, postsUsed, setRoster, assign, postCost, buyPost,
-	raidIn, bestRoster, step, ranksEarned, rankEffects, nextRank, hasDrill, needsAttention, waveText, validateGuard,
+	raidIn, bestRoster, step, trainCost, train, hitChance, ranksEarned, rankEffects, nextRank, hasDrill, needsAttention, waveText, validateGuard,
 } from '../../games/beanstalk/src/core/guard.js';
 import { createRng } from '../../shared/rng.js';
 
@@ -13,19 +13,22 @@ const G = {
 	odds: { strong: 0.5, weak: 0.1, tire: 0.1 },
 	loss: { plotsEach: 1, barnShare: 0.25 },
 	bountySeconds: 20,
+	train: { phase: 2, max: 2, per: 0.5, cap: 0.9, cost: { pages: 100 }, costGrowth: 2, log: 'Train them.' },
 	lines: { raid: 'Raid: {wave}.', won: 'Won.', lost: 'Lost.' },
 	foes: [
 		{ id: 'slug', name: 'slug', plural: 'slugs' },
 		{ id: 'mouse', name: 'mouse', plural: 'mice' },
+		{ id: 'moth', name: 'moth', plural: 'moths', tough: 2 },
 	],
 	defenders: [
 		{ id: 'duck', name: 'Duck', plural: 'Ducks', strong: ['slug'], text: 'Eats slugs.', wins: 0 },
 		{ id: 'cat', name: 'Cat', plural: 'Cats', strong: ['mouse'], text: 'Catches mice.', wins: 0 },
-		{ id: 'owl', name: 'Owl', plural: 'Owls', strong: ['mouse'], text: 'Late arrival.', wins: 3 },
+		{ id: 'owl', name: 'Owl', plural: 'Owls', strong: ['mouse', 'moth'], text: 'Late arrival.', wins: 3 },
 	],
 	waves: [
 		{ wins: 0, size: 3, foes: ['slug'] },
 		{ wins: 2, size: 4, foes: ['slug', 'mouse'] },
+		{ wins: 3, phase: 2, size: 5, foes: ['moth'] },
 	],
 	ranks: [
 		{ wins: 1, name: 'Tidy', text: 'Yield +10%.', effect: { yield: 1.1 } },
@@ -79,6 +82,32 @@ test('waves get bigger and more mixed with wins', () => {
 	assert.deepEqual([...seen].sort(), ['mouse', 'slug']);
 	assert.equal(waveText({ slug: 3, mouse: 1 }, G), '3 slugs and 1 mouse');
 	assert.equal(waveText({ mouse: 2 }, G), '2 mice');
+});
+
+test('tough pests wait for a later phase, and training is the answer to them', () => {
+	assert.equal(tierFor(5, G).size, 4, 'still the old waves in phase 1');
+	assert.equal(tierFor(5, G, 2).size, 5);
+	assert.deepEqual(makeWave(5, G, sure, 2), { moth: 5 });
+	const owl = G.defenders[2];
+	assert.equal(hitChance(owl, 'mouse', 0, G), 0.5);
+	assert.equal(hitChance(owl, 'slug', 0, G), 0.1);
+	assert.equal(hitChance(owl, 'moth', 0, G), 0.25, 'tough halves it');
+	assert.equal(hitChance(owl, 'moth', 2, G), 0.5, 'two levels of training double it');
+	assert.equal(hitChance(owl, 'mouse', 2, G), 0.9, 'never a certainty');
+
+	const s = opened({ pages: 350, phase: 1 });
+	assert.equal(trainCost(s, 'duck', G), null, 'no training in phase 1');
+	assert.equal(train(s, 'duck', G), false);
+	s.phase = 2;
+	assert.deepEqual(trainCost(s, 'duck', G), { pages: 100 });
+	assert.equal(train(s, 'owl', G), false, 'no owl yet');
+	assert.equal(train(s, 'duck', G), true);
+	assert.deepEqual(trainCost(s, 'duck', G), { pages: 200 });
+	assert.equal(train(s, 'duck', G), true);
+	assert.equal(s.pages, 50);
+	assert.equal(s.guard.levels.duck, 2);
+	assert.equal(trainCost(s, 'duck', G), null, 'fully trained');
+	assert.equal(train(s, 'cat', G), false, 'cannot afford it');
 });
 
 test('animals are posted up to the number of posts, and only ones that have turned up', () => {
@@ -209,16 +238,17 @@ test('validateGuard accepts good data and explains bad data', () => {
 		raid: { firstSeconds: 0, everySeconds: 10, warnSeconds: 20, roundSeconds: 0, maxSeconds: 0, lead: 2 },
 		odds: { strong: 0.1, weak: 0.5, tire: 0 }, loss: { plotsEach: -1, barnShare: 2 }, bountySeconds: -1,
 		lines: { raid: 'Raid.' },
-		foes: [{ id: 'slug', name: 'slug' }, { id: 'slug', name: 'slug', plural: 'slugs' }, { id: 'moth', name: 'moth', plural: 'moths' }],
+		foes: [{ id: 'slug', name: 'slug' }, { id: 'slug', name: 'slug', plural: 'slugs' }, { id: 'moth', name: 'moth', plural: 'moths', tough: 1 }],
 		defenders: [{ id: 'duck', name: 'Duck', strong: ['snail'], wins: 2 }],
 		waves: [{ wins: 1, size: 0, foes: ['wasp'] }, { wins: 1, size: 2, foes: ['moth'] }],
 		ranks: [{ wins: 3, name: 'A' }, { wins: 2, name: 'B', text: 't', effect: { luck: 1 } }],
+		train: { phase: 2, max: 0, per: 0, cap: 2, cost: {}, costGrowth: 1 },
 	};
 	const errors = validateGuard(bad).join('\n');
 	for (const word of ['unlock.grown', 'log is', 'posts.start', 'posts.max', 'posts.cost', 'costGrowth', 'firstSeconds', 'warnSeconds', 'roundSeconds',
 		'maxSeconds', 'lead', 'odds', 'tire', 'plotsEach', 'barnShare', 'bountySeconds', '{wave}', 'lines.won', 'lines.lost', 'plural', 'slug is listed twice',
 		'unknown foe "snail"', 'duck: text', 'nobody to post', 'first wave', 'size', 'unknown foe "wasp"', 'waves must climb', 'nothing guards against moth',
-		'rank A: text', 'does nothing', 'ranks must climb', 'unknown effect "luck"', 'no drill']) {
+		'train: phase', 'train: cost', 'train: log', 'tough must be', 'tough pests before training', 'rank A: text', 'does nothing', 'ranks must climb', 'unknown effect "luck"', 'no drill']) {
 		assert.match(errors, new RegExp(word.replace(/[{}]/g, '\\$&')), word);
 	}
 });

@@ -9,27 +9,31 @@
 // Wins add up to ranks, which change the farm for good; the pests left at the
 // end of a lost raid eat plots and raid the barn (core/sim.js does that part).
 //
+// Later, up in the clouds, the pests are tough: a tough pest shrugs off most
+// attempts (the chance is divided by its `tough`). The answer is training: each
+// level an animal has been trained multiplies its chances.
+//
 // `G` is GUARD from data/guard.js. state.guard is
 //   { open, posts, roster: { defenderId: n }, wins, losses, wave: { foeId: n },
-//     nextAt, fight: null | { foes, up, t }, acc, said }
+//     nextAt, fight: null | { foes, up, t }, acc, said, levels: { defenderId: n } }
 
 import { EFFECTS } from './projects.js';
 
 export const createGuard = G => ({
 	open: false, posts: G.posts.start, roster: {}, wins: 0, losses: 0,
-	wave: null, nextAt: 0, fight: null, acc: 0, said: '',
+	wave: null, nextAt: 0, fight: null, acc: 0, said: '', levels: {},
 });
 
 const total = counts => Object.values(counts ?? {}).reduce((a, b) => a + b, 0);
 
 export const unlockDue = (state, G) => !state.guard.open && state.grown >= G.unlock.grown;
 
-// The wave table row for this many wins.
-export const tierFor = (wins, G) => G.waves.filter(w => wins >= w.wins).at(-1) ?? G.waves[0];
+// The wave table row for this many wins. Some rows wait for a later phase of the game.
+export const tierFor = (wins, G, phase = 1) => G.waves.filter(w => wins >= w.wins && phase >= (w.phase ?? 1)).at(-1) ?? G.waves[0];
 
 // The next wave: mostly one kind of pest, the rest drawn from the tier's others.
-export function makeWave(wins, G, rng) {
-	const tier = tierFor(wins, G);
+export function makeWave(wins, G, rng, phase = 1) {
+	const tier = tierFor(wins, G, phase);
 	const lead = rng.pick(tier.foes);
 	const others = tier.foes.filter(f => f !== lead);
 	const wave = {};
@@ -78,7 +82,7 @@ function drill(guard, G) {
 export function openGuard(state, G, rng) {
 	const { guard } = state;
 	guard.open = true;
-	guard.wave = makeWave(guard.wins, G, rng);
+	guard.wave = makeWave(guard.wins, G, rng, state.phase);
 	guard.nextAt = state.time + G.raid.firstSeconds;
 	drill(guard, G);
 }
@@ -116,6 +120,33 @@ export function buyPost(state, G) {
 	return true;
 }
 
+// Training: what the next level of an animal costs, or null when it is fully trained
+// (or training has not started yet).
+export function trainCost(state, id, G) {
+	const level = state.guard.levels[id] ?? 0;
+	if ((state.phase ?? 1) < G.train.phase || level >= G.train.max) return null;
+	const cost = {};
+	for (const [c, v] of Object.entries(G.train.cost)) cost[c] = Math.ceil(v * G.train.costGrowth ** level);
+	return cost;
+}
+
+export function train(state, id, G) {
+	const { guard } = state;
+	const cost = trainCost(state, id, G);
+	if (!guard.open || !cost || !defendersFor(guard, G).some(d => d.id === id)) return false;
+	if (Object.entries(cost).some(([c, v]) => state[c] < v)) return false;
+	for (const [c, v] of Object.entries(cost)) state[c] -= v;
+	guard.levels[id] = (guard.levels[id] ?? 0) + 1;
+	return true;
+}
+
+// The chance that one attempt by an animal sees off a pest of this kind.
+export function hitChance(defender, foeId, level, G) {
+	const base = defender.strong.includes(foeId) ? G.odds.strong : G.odds.weak;
+	const tough = G.foes.find(f => f.id === foeId)?.tough ?? 1;
+	return Math.min(G.train.cap, base * (1 + G.train.per * level) / tough);
+}
+
 // Seconds until the next raid; 0 while one is going on.
 export const raidIn = state => (state.guard.fight ? 0 : Math.max(0, state.guard.nextAt - state.time));
 
@@ -133,14 +164,14 @@ export function needsAttention(state, G) {
 // The kind of pest with the most left, from `kinds`.
 const biggest = (foes, kinds) => kinds.filter(f => foes[f] > 0).sort((a, b) => foes[b] - foes[a])[0];
 
-function round(fight, G, rng) {
+function round(fight, G, rng, levels = {}) {
 	const { foes, up } = fight;
 	for (const d of G.defenders) {
 		for (let i = 0; i < (up[d.id] ?? 0); i++) {
 			const good = biggest(foes, d.strong);
 			const target = good ?? biggest(foes, Object.keys(foes));
 			if (!target) return;
-			if (rng.next() < (good ? G.odds.strong : G.odds.weak)) foes[target]--;
+			if (rng.next() < hitChance(d, target, levels[d.id] ?? 0, G)) foes[target]--;
 		}
 	}
 	for (let i = total(foes); i > 0 && total(up) > 0; i--) {
@@ -184,7 +215,7 @@ export function step(state, dt, G, rng) {
 			else guard.losses++;
 			guard.fight = null;
 			const wave = guard.wave;
-			guard.wave = makeWave(guard.wins, G, rng);
+			guard.wave = makeWave(guard.wins, G, rng, state.phase);
 			guard.nextAt = state.time + G.raid.everySeconds;
 			drill(guard, G);
 			events.push({ type: 'raidEnd', id: won ? 'won' : 'lost', left, wave, ranks: ranksEarned(guard, G).filter(r => !before.includes(r)) });
@@ -193,7 +224,7 @@ export function step(state, dt, G, rng) {
 		if (guard.acc < G.raid.roundSeconds) break;
 		guard.acc -= G.raid.roundSeconds;
 		fight.t += G.raid.roundSeconds;
-		round(fight, G, rng);
+		round(fight, G, rng, guard.levels);
 	}
 	return events;
 }
@@ -222,8 +253,13 @@ export function validateGuard(G) {
 	if (!G.lines?.raid?.includes('{wave}')) errors.push('lines.raid must mention {wave}');
 	for (const k of ['won', 'lost']) if (!G.lines?.[k]) errors.push(`lines.${k} is missing`);
 
+	const tr = G.train ?? {};
+	if (!(tr.phase >= 1 && tr.max > 0 && tr.per > 0 && tr.cap > 0 && tr.cap <= 1)) errors.push('train: phase, max, per and cap are needed');
+	if (!(tr.costGrowth > 1) || !Object.keys(tr.cost ?? {}).length) errors.push('train: cost and costGrowth are needed');
+	if (!tr.log) errors.push('train: log is missing');
 	const foes = new Set();
 	for (const f of G.foes ?? []) {
+		if (f.tough !== undefined && !(f.tough > 1)) errors.push(`foe ${f.id}: tough must be > 1`);
 		if (!f.name || !f.plural) errors.push(`foe ${f.id}: name or plural is missing`);
 		if (foes.has(f.id)) errors.push(`foe ${f.id} is listed twice`);
 		foes.add(f.id);
@@ -240,6 +276,7 @@ export function validateGuard(G) {
 	for (const w of G.waves ?? []) {
 		if (!(w.size > 0)) errors.push(`wave at ${w.wins} wins: size must be > 0`);
 		if (!(w.wins > last)) errors.push('waves must climb in wins');
+		if ((w.foes ?? []).some(f => (G.foes ?? []).find(x => x.id === f)?.tough) && !((w.phase ?? 1) >= tr.phase)) errors.push(`wave at ${w.wins} wins: tough pests before training begins`);
 		last = w.wins;
 		for (const f of w.foes ?? []) {
 			if (!foes.has(f)) errors.push(`wave at ${w.wins} wins: unknown foe "${f}"`);

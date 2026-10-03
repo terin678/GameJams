@@ -167,8 +167,10 @@ buttons. It saves itself every few seconds.
   A win pays a bounty and counts towards ranks that change the farm for
   good; a loss costs plots and beans from the barn. It is rolled out one
   idea at a time (one pest, then two, bigger waves, a third pest), and at
-  ten wins the animals learn to post themselves. Pests, animals, waves and
-  ranks are all rows in the data.
+  ten wins the animals learn to post themselves. In phase 2 tougher pests
+  come down the stalk (cloud moths, giant magpies), bats and geese turn up
+  to deal with them, and you train your animals with Almanac pages. Pests,
+  animals, waves and ranks are all rows in the data.
 - **The Exchange** (`src/data/exchange.js`): in phase 2 a desk opens where you
   buy and sell crates of beans. The price follows the year (cheapest at
   harvest, dearest in spring), the weather pushes it about (rain is a glut,

@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { createState, refresh, tick, tend, buyProject, giveGift, crossSeeds, chooseSeedling, climb, chooseAtLedge, postAnimal, buildPost, buyCrates, sellCrates, nudgePrice, simulateOffline, serialize, restore, newGamePlus } from '../../games/beanstalk/src/core/sim.js';
+import { createState, refresh, tick, tend, buyProject, giveGift, crossSeeds, chooseSeedling, climb, chooseAtLedge, postAnimal, buildPost, trainAnimal, buyCrates, sellCrates, nudgePrice, simulateOffline, serialize, restore, newGamePlus } from '../../games/beanstalk/src/core/sim.js';
 import { DATA } from '../../games/beanstalk/src/data/index.js';
 import { createRng } from '../../shared/rng.js';
 
@@ -475,4 +475,16 @@ test('the exchange: opens in phase 2, and weather moves the board', () => {
 	const saved = JSON.parse(JSON.stringify(serialize(s)));
 	delete saved.exchange;
 	assert.equal(restore(saved, DATA).exchange.open, false, 'an old save gets a closed exchange');
+});
+
+test('a save from before a system grew a new field gets the field', () => {
+	const s = createState(DATA);
+	s.guard.open = true;
+	s.guard.wins = 4;
+	const saved = JSON.parse(JSON.stringify(serialize(s)));
+	delete saved.guard.levels;
+	const back = restore(saved, DATA);
+	assert.deepEqual(back.guard.levels, {});
+	assert.equal(back.guard.wins, 4);
+	assert.equal(trainAnimal(back, 'duck', DATA), false, 'and nothing breaks: no training in phase 1');
 });
