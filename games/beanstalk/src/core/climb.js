@@ -71,8 +71,9 @@ export function optionBlocked(state, option, t) {
 }
 
 // Makes the choice. Returns null if it can't be made, otherwise
-// { won, text, find, stomp }. `rng.next()` decides a risky option.
-export function choose(state, index, C, rng, t) {
+// { won, text, find, stomp }. `rng.next()` decides a risky option. `money`
+// names what coins are called and worth when reporting a grant.
+export function choose(state, index, C, rng, t, money = { name: 'coins', per: 1 }) {
 	const { climb } = state;
 	const enc = nextEncounter(state, C);
 	const option = enc?.options[index];
@@ -91,7 +92,8 @@ export function choose(state, index, C, rng, t) {
 	climb.anger = Math.max(0, climb.anger + (option.anger ?? 0));
 	if (option.find) climb.finds.push(option.find.id);
 	climb.ledge++;
-	const gains = Object.entries(option.grant ?? {}).map(([k, v]) => `+${formatNumber(v)} ${k}`).join(', ');
+	const gains = Object.entries(option.grant ?? {})
+		.map(([k, v]) => (k === 'coins' ? `+${formatNumber(v / money.per)} ${money.name}` : `+${formatNumber(v)} ${k}`)).join(', ');
 	climb.said = gains ? `${option.win} (${gains})` : option.win;
 	return { won, text: climb.said, find: option.find ?? null, stomp: false };
 }

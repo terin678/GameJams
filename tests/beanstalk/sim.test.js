@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { createState, refresh, tick, tend, buyProject, giveGift, crossSeeds, chooseSeedling, climb, chooseAtLedge, postAnimal, buildPost, trainAnimal, buyCrates, sellCrates, nudgePrice, simulateOffline, serialize, restore, newGamePlus } from '../../games/beanstalk/src/core/sim.js';
+import { createState, refresh, tick, tend, buyProject, giveGift, crossSeeds, chooseSeedling, climb, chooseAtLedge, postAnimal, buildPost, trainAnimal, moneyOf, buyCrates, sellCrates, nudgePrice, simulateOffline, serialize, restore, newGamePlus } from '../../games/beanstalk/src/core/sim.js';
 import { DATA } from '../../games/beanstalk/src/data/index.js';
 import { createRng } from '../../shared/rng.js';
 
@@ -304,7 +304,7 @@ test('probes multiply, and stop when the universe is full', () => {
 test('planting the last bean ends the game, and nothing moves afterwards', () => {
 	const s = createState(DATA);
 	s.grown = T.universeBeans;
-	s.coins = 10;
+	s.matter = 10;
 	run(s, 0.1);
 	assert.equal(buyProject(s, 'last_bean', DATA), true);
 	assert.equal(s.done, true);
@@ -487,4 +487,47 @@ test('a save from before a system grew a new field gets the field', () => {
 	assert.deepEqual(back.guard.levels, {});
 	assert.equal(back.guard.wins, 4);
 	assert.equal(trainAnimal(back, 'duck', DATA), false, 'and nothing breaks: no training in phase 1');
+});
+
+test('cornering the market: coins become beans, and beans are what you earn and spend', () => {
+	const s = createState(DATA);
+	const rng = createRng(3);
+	s.phase = 2;
+	s.owned = { accountant: 1, futures: 1, market_stall: 1, plot: 3 };
+	refresh(s, DATA);
+	s.farmRate = 8;
+	s.coins = 3e6 + 500;
+	s.beans = 100;
+	assert.deepEqual(moneyOf(s), { name: 'coins', per: 1 });
+	assert.equal(buyProject(s, 'corner', DATA), true);
+	assert.ok(s.rate > 0);
+	assert.equal(s.log[0], DATA.TUNING.market.cornerLog);
+	assert.deepEqual(moneyOf(s), { name: 'beans', per: s.rate });
+	const rate = s.rate;
+
+	// The barn empties into the wallet, at the fixed rate; nothing is sold.
+	const price = s.price;
+	tick(s, 0.1, DATA, rng);
+	assert.equal(s.beans, 0);
+	assert.ok(Math.abs(s.coins - (500 + 100 * rate)) < 1e-6);
+	s.plots.fill(1);
+	const before = s.coins;
+	tend(s, DATA);
+	tick(s, 0.1, DATA, rng);
+	assert.ok(Math.abs(s.coins - before - s.mods.yield * rate) < 1e-6, 'a picked bean is money in hand');
+	for (let t = 0; t < 5; t += 0.1) tick(s, 0.1, DATA, rng);
+	assert.equal(s.price, price, 'nobody sets a price any more');
+	assert.equal(s.rate, rate, 'the rate is fixed for good');
+
+	// Demand won after that counts towards the harvest instead.
+	const yieldBefore = s.mods.yield;
+	s.owned.cuisine = 1;
+	refresh(s, DATA);
+	const cuisine = DATA.PROJECTS.find(p => p.id === 'cuisine').effect.marketing;
+	assert.ok(Math.abs(s.mods.yield - yieldBefore * Math.sqrt(cuisine)) < 1e-9);
+
+	// A save keeps it.
+	const back = restore(JSON.parse(JSON.stringify(serialize(s))), DATA);
+	assert.equal(back.rate, rate);
+	assert.ok(Math.abs(back.mods.yield - s.mods.yield) < 1e-9);
 });

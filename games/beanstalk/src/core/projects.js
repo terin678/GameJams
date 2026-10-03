@@ -7,7 +7,7 @@
 export const EFFECTS = {
 	plots: 'add', tend: 'add', pagesRate: 'add', replicate: 'add', pricing: 'add', coinsRate: 'add',
 	growth: 'mul', yield: 'mul', marketing: 'mul', probeYield: 'mul', matterRate: 'mul',
-	scarecrow: 'flag', greenhouse: 'flag', autoprice: 'flag', rainmaker: 'flag',
+	scarecrow: 'flag', greenhouse: 'flag', autoprice: 'flag', rainmaker: 'flag', barter: 'flag',
 };
 export const GRANTS = ['probes', 'done'];
 export const CURRENCIES = ['coins', 'pages', 'matter'];

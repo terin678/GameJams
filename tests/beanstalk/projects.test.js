@@ -16,7 +16,7 @@ test('computeMods starts from the base and applies every owned project', () => {
 	assert.deepEqual(computeMods({}, DEFS, base), {
 		plots: 1, tend: 0, pagesRate: 0, replicate: 0, pricing: 0, coinsRate: 0,
 		growth: 1, yield: 1, marketing: 1, probeYield: 1, matterRate: 1,
-		scarecrow: false, greenhouse: false, autoprice: false, rainmaker: false,
+		scarecrow: false, greenhouse: false, autoprice: false, rainmaker: false, barter: false,
 	});
 	const mods = computeMods({ plot: 2, can: 1, hose: 1 }, DEFS, base);
 	assert.equal(mods.plots, 3);

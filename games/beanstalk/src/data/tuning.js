@@ -15,6 +15,8 @@ export const TUNING = {
 		priceStep: 1.1,
 		priceMin: 0.05,
 		priceMax: 100,
+		// Said when the market is cornered and beans become the money.
+		cornerLog: 'You own the market, so there is no market. Your coins are counted out in beans, and beans are what things cost now. Anything that used to raise demand raises the harvest instead.',
 		// Who sets the price, by the `pricing` modifier (0 = you). A stepper nudges
 		// the price one step at a time; the analyst works out the right price.
 		autoprice: {

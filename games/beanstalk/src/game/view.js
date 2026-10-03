@@ -16,6 +16,7 @@ import { nextTwist, twistsFor, endingLine } from '../core/runs.js';
 import { nextEncounter, climbBlocked, climbingFor, optionBlocked, findsOf, temper } from '../core/climb.js';
 import { raidIn, postsUsed, postCost, trainCost, defendersFor, ranksEarned, nextRank, hasDrill, needsAttention, waveText } from '../core/guard.js';
 import { valueOf, averageCost } from '../core/exchange.js';
+import { moneyOf } from '../core/sim.js';
 import { available, affordable, costOf } from '../core/projects.js';
 import { crossCost, canCross, growingFor, fairTrait, fairBar, ribbonCount, luckOf } from '../core/seeds.js';
 import { heartsOf, heartProgress, giftsFor, giftCost, canGive, waitFor, nextPerk } from '../core/neighbours.js';
@@ -35,9 +36,15 @@ const TABS = [
 ];
 const REACTION_MARK = { love: '♥', like: '+', neutral: '·', dislike: '×' };
 
+// What coins are called and worth: beans, once the market is cornered (see moneyOf in core/sim.js).
+let money = { name: 'coins', per: 1 };
+const cash = v => (money.per === 1 ? formatMoney(v) : formatNumber(v / money.per));
 // Currencies are named in the plural ("coins"); one of them drops the s.
-const costText = cost => Object.entries(cost)
-	.map(([c, v]) => `${formatNumber(v)} ${v === 1 ? c.replace(/s$/, '') : c}`).join(' + ');
+const costText = cost => Object.entries(cost).map(([c, v]) => {
+	const n = c === 'coins' ? v / money.per : v;
+	const name = c === 'coins' ? money.name : c;
+	return `${formatNumber(n)} ${n === 1 ? name.replace(/s$/, '') : name}`;
+}).join(' + ');
 const perSecond = n => (n < 10 ? n.toFixed(1) : formatNumber(n));
 const repeatable = def => (def.max ?? 1) > 1;
 
@@ -399,6 +406,10 @@ export function createView(doc, data, handlers) {
 		const d = doc.activeElement?.dataset ?? {};
 		const focused = d.buy ? `[data-buy="${d.buy}"]` : d.sell ? `[data-sell="${d.sell}"]` : null;
 
+		// With coins gone, what is traded is a promise of beans: a contract.
+		const lot = state.rate ? 'contract' : 'crate';
+		const lots = `${lot}s`;
+		const each = v => (v / money.per).toFixed(2);
 		const cost = averageCost(ex);
 		const worth = valueOf(ex);
 		const change = ex.paid > 0 ? (worth / ex.paid - 1) * 100 : 0;
@@ -406,24 +417,24 @@ export function createView(doc, data, handlers) {
 			...X.shares.map(share => {
 				const b = el('button', { type: 'button', disabled: !can }, share === 1 ? 'all' : `${Math.round(share * 100)}%`);
 				b.dataset[key] = String(share);
-				b.setAttribute('aria-label', `${label} ${share === 1 ? 'all' : `${Math.round(share * 100)}%`} of your ${key === 'buy' ? 'coins' : 'crates'}`);
+				b.setAttribute('aria-label', `${label} ${share === 1 ? 'all' : `${Math.round(share * 100)}%`} of your ${key === 'buy' ? money.name : lots}`);
 				return b;
 			}));
 		const crates = ex.crates < 100 ? String(Math.round(ex.crates * 10) / 10) : formatNumber(ex.crates);
 		$('exchange').replaceChildren(
-			el('div', { className: 'box' }, el('h3', {}, `Bean crates · ${ex.price.toFixed(2)} coins each`),
+			el('div', { className: 'box' }, el('h3', {}, `Bean ${state.rate ? 'futures' : 'crates'} · ${each(ex.price)} ${money.name} a ${lot}`),
 				chart(ex.history, cost),
 				el('p', { className: 'muted' }, X.hint)),
-			el('div', { className: 'box' }, el('h3', {}, 'Your crates'),
+			el('div', { className: 'box' }, el('h3', {}, `Your ${lots}`),
 				ex.crates > 0
-					? el('p', {}, `${crates} crates, bought at ${cost.toFixed(2)} each. Worth ${formatMoney(worth)} coins now `,
+					? el('p', {}, `${crates} ${lots}, bought at ${each(cost)} each. Worth ${cash(worth)} ${money.name} now `,
 						el('span', { className: change >= 0 ? 'up' : 'down' }, `(${change >= 0 ? '+' : ''}${change.toFixed(0)}%)`), '.')
-					: el('p', { className: 'muted' }, 'You hold no crates.'),
+					: el('p', { className: 'muted' }, `You hold no ${lots}.`),
 				row('Buy', 'buy', canBuy), row('Sell', 'sell', ex.crates > 0),
-				el('p', { className: 'muted' }, `Buying spends that share of your coins. Selling pays the price on the board, less a ${Math.round(X.fee * 100)}% fee.`)),
+				el('p', { className: 'muted' }, `Buying spends that share of your ${money.name}. Selling pays the price on the board, less a ${Math.round(X.fee * 100)}% fee.`)),
 			el('div', { className: 'box' }, el('h3', {}, 'Account'),
 				el('p', {}, 'Made at the exchange so far: ',
-					el('span', { className: ex.profit >= 0 ? 'up' : 'down' }, `${ex.profit < 0 ? '−' : ''}${formatMoney(Math.abs(ex.profit))} coins`))));
+					el('span', { className: ex.profit >= 0 ? 'up' : 'down' }, `${ex.profit < 0 ? '−' : ''}${cash(Math.abs(ex.profit))} ${money.name}`))));
 		if (focused) $('exchange').querySelector(focused)?.focus();
 	}
 
@@ -509,6 +520,12 @@ export function createView(doc, data, handlers) {
 		// `rate` is beans grown per second, measured by the caller.
 		update(state, rate) {
 			const { mods } = state;
+			// When the money changes, every panel that quotes a price is redrawn.
+			money = moneyOf(state);
+			if (shown.get('rate') !== state.rate) {
+				for (const k of ['projects', 'neighbours', 'seeds', 'climb', 'guard', 'exchange']) shown.delete(k);
+				shown.set('rate', state.rate);
+			}
 			const cal = calendar(state.day, data.SEASONS, T.calendar);
 			const weather = data.WEATHER.find(w => w.id === state.weather) ?? null;
 			const phase = data.PHASES.find(p => p.id === state.phase);
@@ -537,7 +554,10 @@ export function createView(doc, data, handlers) {
 			set('helpers', !mods.tend ? 'No helpers yet: it is all you'
 				: `Helpers tend ${perSecond(mods.tend)} plots/sec${mods.tend < wanted ? ` (farm could use ${perSecond(wanted)})` : ''}`);
 
-			set('coins', formatMoney(state.coins));
+			set('coins', cash(state.coins));
+			set('wallet-label', state.rate ? 'Beans' : 'Coins');
+			set('market-title', state.rate ? 'Barn' : 'Market');
+			for (const id of ['barn-row', 'price-row', 'demand']) show(id, !state.rate);
 			set('beans', formatNumber(state.beans));
 			set('price', state.price.toFixed(2));
 			$('price-up').disabled = $('price-down').disabled = mods.autoprice;
@@ -598,7 +618,7 @@ export function createView(doc, data, handlers) {
 				`You were gone for ${summary.capped ? 'more than ' : ''}${formatDuration(summary.seconds)}.`,
 				`Without you the farm takes it easy: it got ${formatDuration(summary.worked)} of work done, over ${summary.days} days.`,
 				`${formatNumber(summary.grown)} beans grown.`,
-				`${formatMoney(summary.coins)} coins earned.`,
+				`${(money = summary.money, cash(summary.coins))} ${summary.money.name} earned.`,
 			].map(text => el('p', {}, text)));
 			show('away', true);
 			$('away-ok').focus();

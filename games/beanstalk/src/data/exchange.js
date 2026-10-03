@@ -14,5 +14,5 @@ export const EXCHANGE = {
 	history: 72,              // prices kept for the chart: six minutes, half a year
 	fee: 0.02,                // taken from every sale
 	shares: [0.1, 0.5, 1],    // the buttons: a tenth, half, all
-	hint: 'Crates are cheapest at harvest, in autumn, and dearest in spring, when the barns are empty. Rain brings the price down; a dry spell sends it up.',
+	hint: 'The price is lowest at harvest, in autumn, and highest in spring, when the barns are empty. Rain brings it down; a dry spell sends it up.',
 };

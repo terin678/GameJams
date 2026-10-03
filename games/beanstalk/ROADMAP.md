@@ -31,6 +31,7 @@ Where things unlock today (minutes are for the pacing bot; a person is slower):
 | ~48 min | the Guard drills itself (10 wins) | a mastered job is automated, like the price |
 | ~55 min | Exchange tab: crates, a price chart | timing: buy low, sell high, with the seasons |
 | ~60 min (13 wins) | tough pests from up the stalk, training | invest in the animals, not just place them |
+| ~63 min | Corner the market: coins end, beans are the money | the Paperclips beat: money stops mattering |
 | ~45-85 min | drones, analyst, Dr. Quill, the Giant | scale; the Climb's stakes rise |
 | ~85 min (phase 3) | seed probes, matter, the Visitor | exponential growth |
 
@@ -60,6 +61,14 @@ with the "beanstalk realm". Agreed shape; stage one is built:
 
 One system that changes scale three times teaches itself once and keeps
 paying off, which fits the rollout rule above.
+
+## The shape of a run, against Universal Paperclips
+
+Paperclips has three beats: a business (money, prices, marketing), then money
+becoming irrelevant as the thing itself takes over, then space. Ours: phase 1
+and the first half of phase 2 are the business; "Corner the market" ends money
+and beans become what you spend (owner's choice, 2026-10-03, over ending money
+at the start of phase 2 or at space); phase 3 is space, paid for in matter.
 
 ## Target playtime
 

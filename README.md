@@ -176,6 +176,12 @@ buttons. It saves itself every few seconds.
   harvest, dearest in spring), the weather pushes it about (rain is a glut,
   a dry spell a shortage) and there is a chart of the last few minutes. Buy
   with a share of your coins, sell later for more, less a small fee.
+- **The end of money**: midway through phase 2 the project "Corner the
+  market" closes the market for good. A bean is fixed at the price it was
+  fetching, your coins are counted out in beans, and from then on every
+  price in the game is quoted and paid in beans. Demand bonuses earned
+  after that raise the harvest instead. (Inside, `coins` is still the
+  wallet; `rate` in the state says what a bean is worth.)
 - New systems appear as tabs beside Projects, and sections such as the Almanac
   stay hidden until the game reaches them.
 - **Light** (`src/data/sky.js`): a farm day is a minute, with dawn, sunset and

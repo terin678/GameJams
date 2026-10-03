@@ -41,7 +41,7 @@ export const PROJECTS = [
 	{ id: 'county_fair', phase: 1, title: 'Sponsor the fair', flavor: 'Your name on the big tent. Demand doubles.',
 		cost: { coins: 20000 }, requires: { grown: 22000, has: ['road_sign'] }, effect: { marketing: 2 } },
 
-	// ---- Phase 2: Agribusiness (coins and almanac pages) ----
+	// ---- Phase 2: Agribusiness (coins and almanac pages, then beans) ----
 	{ id: 'library', phase: 2, title: 'Almanac library', flavor: 'Someone should be writing this down. A page every two seconds.',
 		cost: { coins: 30000 }, effect: { pagesRate: 0.5 }, scene: 'library' },
 	{ id: 'scholar', phase: 2, title: 'Hire a bean scholar', flavor: 'Has opinions about pods. Another page every two seconds.',
@@ -70,6 +70,10 @@ export const PROJECTS = [
 		cost: { pages: 1200 }, requires: { has: ['gene_pods'] }, effect: { yield: 1.5 } },
 	{ id: 'futures', phase: 2, title: 'Bean futures', flavor: 'Wall Street discovers legumes. Demand x4.',
 		cost: { coins: 1.5e6 }, requires: { has: ['coop_truck'] }, effect: { marketing: 4 } },
+	// The end of money. From here the market is closed and everything is paid in
+	// beans (see `cornered` in core/sim.js); demand bonuses turn into harvest.
+	{ id: 'corner', phase: 2, title: 'Corner the market', flavor: 'Buy every stall, cart and shelf. With nobody left to sell to, coins stop meaning anything: from now on you pay in beans.',
+		cost: { coins: 3e6 }, requires: { has: ['futures', 'accountant'] }, effect: { barter: true } },
 	{ id: 'gene_giant', phase: 2, title: 'Giant beans', flavor: 'One per wheelbarrow. Yield doubles.',
 		cost: { pages: 1800 }, requires: { has: ['gene_fast'] }, effect: { yield: 2 } },
 	{ id: 'weather_balloon', phase: 2, title: 'Weather balloons', flavor: 'Tied to the stalk at every mile. Growth +30%.',
@@ -115,5 +119,5 @@ export const PROJECTS = [
 	{ id: 'vacuum_beans', phase: 3, title: 'Vacuum-rooted beans', flavor: 'They grow in nothing at all. Probe yield x100.',
 		cost: { matter: 2e20 }, requires: { has: ['co_op'] }, effect: { probeYield: 100 } },
 	{ id: 'last_bean', phase: 3, title: 'Plant the last bean', flavor: 'There is one plot left. It is where your first one was.',
-		cost: { coins: 1 }, requires: { grown: 1e30 }, grant: { done: true } },
+		cost: { matter: 1 }, requires: { grown: 1e30 }, grant: { done: true } },
 ];

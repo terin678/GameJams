@@ -2,7 +2,7 @@
 // `data` is DATA from src/data/index.js. Nothing here touches the page.
 
 import { resize, grow, findWork, tendPlot, eatOne } from './farm.js';
-import { demand, sell, adjustPrice, autoPriceDir, analystPrice } from './market.js';
+import { demand, sell, adjustPrice, autoPriceDir, analystPrice, clearingPrice } from './market.js';
 import { calendar, advance, rollWeather, growthMult } from './seasons.js';
 import { heightFor, phaseAt, crossed } from './phases.js';
 import { computeMods, buy } from './projects.js';
@@ -27,6 +27,10 @@ export function createState(data, { golden = 0 } = {}) {
 		grown: 0,          // ever grown; this is what the stalk is made of
 		coins: 0, pages: 0, matter: 0, probes: 0,
 		price: data.TUNING.startPrice,
+		// Once the market is cornered: what a bean is worth in coins, for good, and
+		// the demand at that moment. 0 until then. `coins` stays the wallet; it is
+		// shown, and prices are quoted, in beans (coins / rate).
+		rate: 0, demandAtCorner: 0,
 		owned: {},
 		friends: {},
 		seeds: createSeeds(data.SEEDS),
@@ -54,9 +58,24 @@ export function refresh(state, data) {
 	const ranks = rankEffects(state.guard, data.GUARD);
 	state.mods = computeMods(state.owned, data.PROJECTS, data.TUNING.base, [...perks, ...bred, ...found, ...ranks]);
 	for (const [key, share] of Object.entries(data.TUNING.golden)) state.mods[key] *= 1 + state.golden * share;
+	if (state.mods.barter && !state.rate) cornered(state, data);
+	// With no market, demand won since then counts towards the harvest, as much as it used to earn.
+	if (state.rate) state.mods.yield *= Math.sqrt(Math.max(1, state.mods.marketing / state.demandAtCorner));
 	resize(state.plots, state.mods.plots);
 	return state;
 }
+
+// The market has just been cornered: a bean is fixed at what it was fetching,
+// and the barn is emptied into the wallet.
+function cornered(state, data) {
+	const M = data.TUNING.market;
+	state.rate = state.farmRate > 0 ? clearingPrice(state.farmRate, state.mods.marketing, M) : state.price;
+	state.demandAtCorner = state.mods.marketing;
+	say(state, data, M.cornerLog);
+}
+
+// What coins are called and worth, for text: beans once the market is cornered.
+export const moneyOf = state => (state.rate ? { name: 'beans', per: state.rate } : { name: 'coins', per: 1 });
 
 function say(state, data, text) {
 	if (!text) return;
@@ -109,14 +128,17 @@ function raid(state, data, e, rng) {
 		return;
 	}
 	if (e.id === 'won') {
-		const bounty = Math.round(G.bountySeconds * Math.max(1, state.farmRate) * state.price);
+		const money = moneyOf(state);
+		const bounty = Math.round(G.bountySeconds * Math.max(1, state.farmRate) * (state.rate || state.price));
 		state.coins += bounty;
-		guard.said = `${G.lines.won} Bounty: ${formatNumber(bounty)} coins.`;
+		guard.said = `${G.lines.won} Bounty: ${formatNumber(bounty / money.per)} ${money.name}.`;
 	} else {
 		let eaten = 0;
 		for (let i = 0; i < e.left * G.loss.plotsEach; i++) if (eatOne(state.plots, rng) >= 0) eaten++;
-		const taken = Math.floor(state.beans * G.loss.barnShare);
-		state.beans -= taken;
+		// With no market there is no barn to raid: the beans come out of the wallet.
+		const taken = Math.floor((state.rate ? state.coins / state.rate : state.beans) * G.loss.barnShare);
+		if (state.rate) state.coins -= taken * state.rate;
+		else state.beans -= taken;
 		guard.said = `${G.lines.lost} They ate ${eaten} ${eaten === 1 ? 'plot' : 'plots'} and took ${formatNumber(taken)} beans from the barn.`;
 	}
 	say(state, data, guard.said);
@@ -192,15 +214,21 @@ export function tick(state, dt, data, rng) {
 		state.probes *= Math.exp(mods.replicate * dt);
 	}
 
-	const sale = sell(state.beans, state.price, mods.marketing, dt, T.market, state.saleAcc);
-	state.beans -= sale.sold;
-	state.coins += sale.revenue;
-	state.saleAcc = sale.acc;
+	if (state.rate) {
+		// No market: every bean picked is money in hand.
+		state.coins += state.beans * state.rate;
+		state.beans = 0;
+	} else {
+		const sale = sell(state.beans, state.price, mods.marketing, dt, T.market, state.saleAcc);
+		state.beans -= sale.sold;
+		state.coins += sale.revenue;
+		state.saleAcc = sale.acc;
+	}
 	// How fast the farm is producing, smoothed, for the analyst.
 	const A = T.market.autoprice;
 	state.farmRate += (harvested * mods.yield / dt - state.farmRate) * Math.min(1, dt / A.rateSeconds);
 	const pricer = A.levels[Math.min(mods.pricing, A.levels.length - 1)];
-	if (pricer) {
+	if (pricer && !state.rate) {
 		state.priceAcc += dt;
 		if (state.priceAcc >= pricer.everySeconds) {
 			state.priceAcc = 0;
@@ -302,7 +330,7 @@ export const climb = (state, data) => !state.done && startClimb(state, data.CLIM
 // When the Giant stamps, every plot on the farm is emptied.
 export function chooseAtLedge(state, index, data, rng) {
 	if (state.done) return null;
-	const result = chooseOption(state, index, data.CLIMB, rng, data.TUNING.friends);
+	const result = chooseOption(state, index, data.CLIMB, rng, data.TUNING.friends, moneyOf(state));
 	if (!result) return null;
 	say(state, data, result.text);
 	if (result.find) say(state, data, `Found: ${result.find.name}. ${result.find.text}`);
@@ -354,6 +382,7 @@ export function simulateOffline(state, seconds, data, rng) {
 		capped: seconds > T.capSeconds,
 		grown: state.grown - before.grown,
 		coins: state.coins - before.coins,
+		money: moneyOf(state),
 		days: state.day - before.day,
 	};
 }

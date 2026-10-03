@@ -58,6 +58,17 @@ test('every level of bookkeeping you can buy has someone to do it', () => {
 	for (const p of PROJECTS) if (p.effect?.autoprice) assert.ok(p.effect.pricing > 0, p.id);
 });
 
+test('money ends once, in the middle of phase 2, when the market is cornered', () => {
+	const corners = PROJECTS.filter(p => p.effect?.barter);
+	assert.equal(corners.length, 1);
+	assert.equal(corners[0].phase, 2);
+	assert.ok(corners[0].requires.has.includes('accountant'), 'someone is setting a fair price when it is fixed');
+	assert.ok(T.market.cornerLog);
+	// Nothing after phase 1 is priced in barn beans: there is no barn once the market has gone.
+	for (const e of CLIMB.encounters) for (const o of e.options) assert.ok(!o.cost?.beans, e.id);
+	assert.ok(!PROJECTS.at(-1).cost.coins, 'the last bean is not bought with money');
+});
+
 test('there is exactly one way to end the game, at a full universe', () => {
 	const endings = PROJECTS.filter(p => p.grant?.done);
 	assert.equal(endings.length, 1);
