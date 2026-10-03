@@ -168,7 +168,8 @@ document.addEventListener('keydown', e => {
 	e.preventDefault();
 	if (!e.repeat) document.getElementById('tend').click();
 });
-document.addEventListener('pointerup', audio);
+// Phones differ on which event counts as "the user did something", so listen to all of them.
+for (const type of ['pointerup', 'touchend', 'click']) document.addEventListener(type, audio);
 
 const savedAt = store.get('savedAt');
 if (savedAt) catchUp((Date.now() - savedAt) / 1000);

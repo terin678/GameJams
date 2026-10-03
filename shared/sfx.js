@@ -32,22 +32,36 @@ export class Sfx {
 		this.noise = null;
 	}
 
-	// Browsers only allow audio after a user gesture; call this from one.
+	// Browsers only allow audio after a user gesture; call this from one
+	// (a click, a touchend or a key press), every time, until it is running.
 	unlock() {
-		if (this.ctx) {
-			if (this.ctx.state === 'suspended') this.ctx.resume();
-			return;
+		if (!this.ctx) {
+			const AC = globalThis.AudioContext ?? globalThis.webkitAudioContext;
+			if (!AC) return;
+			// iPhones mute web audio when the ringer switch is off, unless the page
+			// says it is playing media (Safari 16.4 and later).
+			try {
+				const session = globalThis.navigator?.audioSession;
+				if (session) session.type = 'playback';
+			} catch (e) { /* not supported: the ringer switch decides */ }
+			this.ctx = new AC();
+			this.master = this.ctx.createGain();
+			this.master.gain.value = 0.5;
+			this.master.connect(this.ctx.destination);
+			const len = this.ctx.sampleRate;
+			this.noise = this.ctx.createBuffer(1, len, this.ctx.sampleRate);
+			const data = this.noise.getChannelData(0);
+			for (let i = 0; i < len; i++) data[i] = Math.random() * 2 - 1;
 		}
-		const AC = globalThis.AudioContext ?? globalThis.webkitAudioContext;
-		if (!AC) return;
-		this.ctx = new AC();
-		this.master = this.ctx.createGain();
-		this.master.gain.value = 0.5;
-		this.master.connect(this.ctx.destination);
-		const len = this.ctx.sampleRate;
-		this.noise = this.ctx.createBuffer(1, len, this.ctx.sampleRate);
-		const data = this.noise.getChannelData(0);
-		for (let i = 0; i < len; i++) data[i] = Math.random() * 2 - 1;
+		if (this.ctx.state === 'running') return;
+		// Phones often hand over a suspended context even inside a gesture. Ask
+		// for it to start, and play one silent sample: older iOS only unlocks
+		// audio when a sound is actually started from the gesture.
+		this.ctx.resume?.()?.catch?.(() => {});
+		const tick = this.ctx.createBufferSource();
+		tick.buffer = this.ctx.createBuffer(1, 1, this.ctx.sampleRate);
+		tick.connect(this.ctx.destination);
+		tick.start(0);
 	}
 
 	play(name) {

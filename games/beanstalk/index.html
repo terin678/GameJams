@@ -12,6 +12,9 @@
 			color-scheme: dark;
 		}
 		* { box-sizing: border-box; }
+		/* Fast taps must not zoom the page (pinch still does), select text or flash. */
+		html { touch-action: manipulation; -webkit-text-size-adjust: 100%; }
+		button { touch-action: manipulation; user-select: none; -webkit-user-select: none; -webkit-tap-highlight-color: transparent; }
 		body {
 			margin: 0; background: var(--bg); color: var(--ink);
 			font: 14px/1.5 ui-monospace, 'Cascadia Mono', Menlo, Consolas, monospace;
