@@ -53,6 +53,25 @@ test('a sky-high price cannot earn coins without beans leaving the barn', () => 
 	assert.ok(Number.isInteger(s.beans));
 });
 
+test('better bookkeeping finds the right price sooner', () => {
+	// A farm with plenty of hands, and a price that is far too high.
+	const settle = (...staff) => {
+		const s = createState(DATA);
+		own(s, 'plot', 'plot', 'plot', 'farmhand', 'farmhand', 'farmhand', 'farmhand', 'farmhand', ...staff);
+		run(s, 60);                // let the farm get going
+		s.price = 40;
+		run(s, 8);
+		return s;
+	};
+	const slow = settle('accountant');
+	const quick = settle('accountant', 'adding_machine');
+	const analyst = settle('accountant', 'adding_machine', 'analyst');
+	assert.ok(slow.price > 15, `the accountant is still creeping down from 40: ${slow.price}`);
+	assert.ok(quick.price < slow.price / 2, `four times as fast: ${quick.price}`);
+	assert.ok(analyst.price < 3, `the analyst went straight there: ${analyst.price}`);
+	assert.ok(analyst.farmRate > 0);
+});
+
 test('the price buttons move the price', () => {
 	const s = createState(DATA);
 	nudgePrice(s, 1, DATA);

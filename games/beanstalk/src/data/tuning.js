@@ -15,7 +15,20 @@ export const TUNING = {
 		priceStep: 1.1,
 		priceMin: 0.05,
 		priceMax: 100,
-		autoprice: { everySeconds: 1, lowSeconds: 0.5, highSeconds: 5 },
+		// Who sets the price, by the `pricing` modifier (0 = you). A stepper nudges
+		// the price one step at a time; the analyst works out the right price.
+		autoprice: {
+			lowSeconds: 0.5,      // raise the price when the barn holds less than this much demand
+			highSeconds: 5,       // cut it when the barn holds more
+			glutDiscount: 0.85,   // the analyst's markdown while clearing a backlog
+			rateSeconds: 4,       // how quickly the measured production rate follows the farm
+			levels: [
+				null,
+				{ name: "Accountant's price", everySeconds: 1 },
+				{ name: "Accountant's price", everySeconds: 0.25 },
+				{ name: "Analyst's price", everySeconds: 0.25, analyst: true },
+			],
+		},
 	},
 	// Stalk height: [beans ever grown, metres] points (see heightFor). The middle
 	// two set how many beans the clouds (phase 2) and space (phase 3) take.

@@ -45,6 +45,16 @@ test('the tuning base only sets real modifiers', () => {
 	for (const [k, v] of Object.entries(T.golden)) assert.ok(EFFECTS[k] && EFFECTS[k] !== 'flag' && v > 0, `golden ${k}`);
 });
 
+test('every level of bookkeeping you can buy has someone to do it', () => {
+	const top = PROJECTS.reduce((n, p) => n + (p.effect?.pricing ?? 0) * (p.max ?? 1), 0);
+	const { levels } = T.market.autoprice;
+	assert.equal(levels.length - 1, top);
+	assert.equal(levels[0], null, 'level 0 is you');
+	for (const l of levels.slice(1)) assert.ok(l.name && l.everySeconds > 0);
+	assert.ok(levels.at(-1).analyst);
+	for (const p of PROJECTS) if (p.effect?.autoprice) assert.ok(p.effect.pricing > 0, p.id);
+});
+
 test('there is exactly one way to end the game, at a full universe', () => {
 	const endings = PROJECTS.filter(p => p.grant?.done);
 	assert.equal(endings.length, 1);

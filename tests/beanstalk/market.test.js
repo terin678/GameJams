@@ -1,8 +1,8 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { demand, sell, adjustPrice, autoPriceDir } from '../../games/beanstalk/src/core/market.js';
+import { demand, sell, adjustPrice, autoPriceDir, clearingPrice, analystPrice } from '../../games/beanstalk/src/core/market.js';
 
-const T = { demandBase: 2, elasticity: 2, priceStep: 1.1, priceMin: 0.05, priceMax: 100, autoprice: { lowSeconds: 1, highSeconds: 5 } };
+const T = { demandBase: 2, elasticity: 2, priceStep: 1.1, priceMin: 0.05, priceMax: 100, autoprice: { lowSeconds: 1, highSeconds: 5, glutDiscount: 0.8 } };
 
 test('demand falls with price and rises with marketing', () => {
 	assert.equal(demand(1, 1, T), 2);
@@ -36,6 +36,21 @@ test('adjustPrice steps by a ratio, in whole cents, inside the limits', () => {
 	assert.equal(adjustPrice(0.05, -1, T), 0.05);
 	assert.equal(adjustPrice(0.05, 1, T), 0.06);
 	assert.equal(adjustPrice(99, 1, T), 100);
+});
+
+test('clearingPrice is where demand equals production', () => {
+	assert.equal(clearingPrice(2, 1, T), 1);
+	assert.equal(clearingPrice(8, 1, T), 0.5);
+	assert.equal(clearingPrice(8, 4, T), 1);
+	assert.equal(demand(clearingPrice(50, 3, T), 3, T) > 45, true);
+	assert.equal(clearingPrice(0, 1, T), T.priceMax, 'nothing to sell: ask the moon');
+	assert.equal(clearingPrice(1e12, 1, T), T.priceMin);
+});
+
+test('the analyst charges the clearing price, less a discount while the barn is full', () => {
+	assert.equal(analystPrice(0, 8, 1, T), 0.5);
+	assert.equal(analystPrice(39, 8, 1, T), 0.5, 'under five seconds of sales is not a glut');
+	assert.equal(analystPrice(1000, 8, 1, T), 0.4);
 });
 
 test('the accountant raises the price when sold out and cuts it when stock piles up', () => {

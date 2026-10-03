@@ -2,7 +2,7 @@
 // `data` is DATA from src/data/index.js. Nothing here touches the page.
 
 import { resize, grow, findWork, tendPlot, eatOne } from './farm.js';
-import { demand, sell, adjustPrice, autoPriceDir } from './market.js';
+import { demand, sell, adjustPrice, autoPriceDir, analystPrice } from './market.js';
 import { calendar, advance, rollWeather, growthMult } from './seasons.js';
 import { heightFor, phaseAt, crossed } from './phases.js';
 import { computeMods, buy } from './projects.js';
@@ -18,6 +18,7 @@ export function createState(data, { golden = 0 } = {}) {
 		time: 0,
 		day: 0, dayT: 0, weather: null, weatherT: 0,
 		plots: [], tendAcc: 0, tendAt: 0, priceAcc: 0, saleAcc: 0,
+		farmRate: 0,       // beans a second off the plots lately, for whoever sets the price
 		beans: 0,          // in the barn, unsold
 		grown: 0,          // ever grown; this is what the stalk is made of
 		coins: 0, pages: 0, matter: 0, probes: 0,
@@ -159,12 +160,20 @@ export function tick(state, dt, data, rng) {
 	state.beans -= sale.sold;
 	state.coins += sale.revenue;
 	state.saleAcc = sale.acc;
-	if (mods.autoprice) {
+	// How fast the farm is producing, smoothed, for the analyst.
+	const A = T.market.autoprice;
+	state.farmRate += (harvested * mods.yield / dt - state.farmRate) * Math.min(1, dt / A.rateSeconds);
+	const pricer = A.levels[Math.min(mods.pricing, A.levels.length - 1)];
+	if (pricer) {
 		state.priceAcc += dt;
-		if (state.priceAcc >= T.market.autoprice.everySeconds) {
+		if (state.priceAcc >= pricer.everySeconds) {
 			state.priceAcc = 0;
-			const dir = autoPriceDir(state.beans, demand(state.price, mods.marketing, T.market), T.market);
-			if (dir) state.price = adjustPrice(state.price, dir, T.market);
+			if (pricer.analyst) {
+				state.price = analystPrice(state.beans, state.farmRate, mods.marketing, T.market);
+			} else {
+				const dir = autoPriceDir(state.beans, demand(state.price, mods.marketing, T.market), T.market);
+				if (dir) state.price = adjustPrice(state.price, dir, T.market);
+			}
 		}
 	}
 

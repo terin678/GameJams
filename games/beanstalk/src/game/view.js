@@ -318,7 +318,9 @@ export function createView(doc, data, handlers) {
 			// A trickle reads better as "one every 40s" than as "0.0 a second".
 			const buyRate = demand(state.price, mods.marketing, T.market);
 			const selling = buyRate >= 0.1 ? `${perSecond(buyRate)} a second` : `one every ${formatDuration(1 / buyRate)}`;
-			set('demand', mods.autoprice ? `Accountant's price · people buy ${selling}` : `At that price people buy ${selling}`);
+			const levels = T.market.autoprice.levels;
+			const pricer = levels[Math.min(mods.pricing, levels.length - 1)];
+			set('demand', pricer ? `${pricer.name} · people buy ${selling}` : `At that price people buy ${selling}`);
 
 			reveal('research', mods.pagesRate > 0 || state.pages > 0);
 			set('pages', formatNumber(state.pages));
