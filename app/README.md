@@ -35,6 +35,38 @@ The app file is then `app/android/app/build/outputs/apk/debug/app-debug.apk`.
 From a terminal Gradle needs to be told where Java is: set `JAVA_HOME` to
 Android Studio's own copy (`C:\Program Files\Android\Android Studio\jbr`).
 
+## A release for Google Play
+
+Play wants a signed bundle (`.aab`). The signing key is yours to make and keep:
+lose it, or its password, and you cannot publish updates without asking Google
+to reset it. Do this once, somewhere outside the repository:
+
+```bash
+keytool -genkeypair -v -keystore beanstalk-upload.jks -alias upload -keyalg RSA -keysize 2048 -validity 10000
+```
+
+(`keytool` is in Android Studio's `jbrin` folder.) It asks for a password and
+a name. Then make `app/android/keystore.properties`, which is never committed:
+
+```
+storeFile=C:/path/to/beanstalk-upload.jks
+storePassword=...
+keyAlias=upload
+keyPassword=...
+```
+
+Build the bundle:
+
+```bash
+cd app
+npm run sync
+cd android
+./gradlew bundleRelease
+```
+
+The file to upload is `app/android/app/build/outputs/bundle/release/app-release.aab`.
+Before each new upload, raise `versionCode` in `android/app/build.gradle` by one.
+
 ## The icon
 
 `node tools/make-icons.mjs` (from the repository root) rewrites the launcher

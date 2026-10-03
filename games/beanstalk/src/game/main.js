@@ -315,6 +315,13 @@ wake();
 if (state.done) view.ending(state);
 requestAnimationFrame(frame);
 
+// In the phone app, Android's back button closes whatever card is open; with
+// nothing open it puts the app away (it keeps running, as the home button does).
+const phone = globalThis.Capacitor?.Plugins?.App;
+phone?.addListener('backButton', () => {
+	if (!view.closeOverlay()) phone.minimizeApp();
+});
+
 // The service worker makes the game open offline and always fetch the newest
 // files when online (see sw.js). Browsers only allow it on https or localhost.
 // The phone app (tools/build-app.mjs) is already offline and leaves it out.

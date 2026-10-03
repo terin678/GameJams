@@ -641,6 +641,13 @@ export function createView(doc, data, handlers) {
 			show('menu', false);
 		},
 
+		// Closes the menu or the time-away card if one is open. Returns whether it did.
+		closeOverlay() {
+			const open = ['menu', 'away'].find(id => !$(id).hidden);
+			if (open) show(open, false);
+			return !!open;
+		},
+
 		away(summary) {
 			$('away-body').replaceChildren(...[
 				`You were gone for ${summary.capped ? 'more than ' : ''}${formatDuration(summary.seconds)}.`,

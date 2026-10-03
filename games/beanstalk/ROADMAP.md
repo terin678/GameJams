@@ -115,9 +115,9 @@ start a fresh farm.
 - [ ] Run it on a real Android phone: sound, vibration, the back button, the layout round a notch. The owner has an iPhone, so this needs a tester: send them `app-debug.apk` to install by hand (they must allow installs from unknown sources), or use Play's internal test track once the developer account exists (a link, up to 100 testers, no review wait).
 - [ ] iPhone: the installable web version already works there. A real App Store app needs a Mac with Xcode and Apple's developer programme (yearly fee); not planned yet.
 - [x] No analytics in the app copy (the script that loads it is not bundled).
-- [ ] Saves: check that a farm survives an app update and a phone restart as it is (an app's own storage is not cleared like a browser's); move to Capacitor Preferences only if it does not.
+- [x] Saves: a farm survived an app update and a cold restart on the emulator (2026-10-03), so it stays in the app's own web storage. Recheck once on a real phone.
 - [ ] Take the bug and idea links (they open GitHub) and the "in testing" line out of the app copy at launch.
-- [ ] Android back button: close an open overlay, otherwise ask before leaving.
+- [x] Android back button: closes the menu or the time-away card; with nothing open it puts the app away, still running.
 - [ ] Keep-awake and vibration through Capacitor plugins (the web versions are patchy inside an app).
 - [ ] Pause the music and the game clock when the app goes to the background; catch up on return (the time-away code already does this for the website).
 - [ ] Local notifications, opt-in: "the fair is tomorrow", "your farm has done all it can without you" (after the 8-hour cap).
@@ -126,9 +126,9 @@ start a fresh farm.
 - [ ] Check the layout with a notch and with gesture navigation, on a real phone.
 
 **Play Console**
-- [ ] Developer account (one-off fee, identity check; allow a few days).
-- [ ] Create the app; choose app signing by Google Play; keep the upload key and its password somewhere safe and backed up.
-- [ ] Store listing: short and full description, 512 px icon, 1024x500 feature graphic, at least four phone screenshots.
+- [ ] Play Console developer account at play.google.com/console (one-off fee, identity check; allow a few days). This is separate from an account on developer.android.com.
+- [ ] Create the app; choose app signing by Google Play; make the upload key (steps in `app/README.md`; the build is already set up to use it) and keep it and its password somewhere safe and backed up.
+- [ ] Store listing: draft text and form answers are in `app/store-listing.md`. Still to make: the 1024x500 feature graphic and the phone screenshots.
 - [x] Privacy policy page (`games/beanstalk/privacy.html`, linked from the Menu). Update it when tips are added: it says there are no purchases in the game.
 - [ ] Link the privacy page from the store listing.
 - [ ] Forms: data safety, content rating questionnaire, target audience, ads declaration.
