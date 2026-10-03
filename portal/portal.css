@@ -94,7 +94,9 @@ main { flex: 1; }
 .meta { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; font: 12px ui-monospace, monospace; color: var(--muted); }
 .meta time { margin-right: 4px; }
 .tag { padding: 1px 8px; border-radius: 999px; background: #2a3247; color: var(--accent-2); }
-.ext { margin-left: auto; }
+.ext, .plays { margin-left: auto; }
+.plays { color: var(--accent); }
+.visitors { margin-left: 8px; color: var(--accent-2); font: 13px ui-monospace, monospace; white-space: nowrap; }
 
 .error { color: #ff8a80; }
 

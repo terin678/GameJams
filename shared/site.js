@@ -21,7 +21,31 @@ export function issueUrl(repo, { kind, game } = {}) {
 }
 
 export const goatcounterEndpoint = code =>
-	/^[a-z0-9][a-z0-9-]*$/.test(code ?? '') ? `https://${code}.goatcounter.com/count` : null;
+	validCode(code) ? `https://${code}.goatcounter.com/count` : null;
+
+// Public counts (enabled in GoatCounter's settings): one page, or the site total.
+const validCode = code => /^[a-z0-9][a-z0-9-]*$/.test(code ?? '');
+export function counterUrl(code, path) {
+	if (!validCode(code)) return null;
+	return `https://${code}.goatcounter.com/counter/${path ? encodeURIComponent(path) : 'TOTAL'}.json`;
+}
+
+const toInt = s => Number(String(s ?? '0').replace(/[^0-9]/g, '')) || 0;
+export const parseCount = json => ({ views: toInt(json?.count), unique: toInt(json?.count_unique) });
+
+export const formatCount = (n, noun) => `${n.toLocaleString('en-US')} ${noun}${n === 1 ? '' : 's'}`;
+
+// Never throws: a page GoatCounter hasn't seen yet answers 404 with zeros.
+export async function fetchCount(path, site = SITE) {
+	const url = counterUrl(site.goatcounter, path);
+	if (!url) return null;
+	try {
+		const res = await fetch(url);
+		return parseCount(await res.json());
+	} catch (e) {
+		return null;
+	}
+}
 
 export function installAnalytics(doc = document, site = SITE) {
 	const endpoint = goatcounterEndpoint(site.goatcounter);

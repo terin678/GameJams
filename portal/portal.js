@@ -1,7 +1,34 @@
 import { validateEntry, entryHref, sortEntries } from './manifest.js';
-import { installPage } from '../shared/site.js';
+import { installPage, fetchCount, formatCount } from '../shared/site.js';
 
 installPage();
+
+// Public GoatCounter counts: site visitors in the header, plays on each card.
+const plays = new Map(); // slug -> views
+const pathOf = g => new URL(entryHref(g), location.href).pathname;
+
+async function showVisitors() {
+	const total = await fetchCount();
+	const out = document.getElementById('visitors');
+	if (!total || !out) return;
+	out.textContent = `👀 ${formatCount(total.unique, 'visitor')}`;
+	out.hidden = false;
+}
+
+async function loadPlays(games) {
+	await Promise.all(games.filter(g => g.path).map(async g => {
+		const c = await fetchCount(pathOf(g));
+		if (c) plays.set(g.slug, c.views);
+	}));
+	for (const span of grid.querySelectorAll('[data-plays]')) showPlays(span);
+}
+
+function showPlays(span) {
+	const n = plays.get(span.dataset.plays);
+	if (n === undefined) return;
+	span.textContent = `▶ ${formatCount(n, 'play')}`;
+	span.hidden = false;
+}
 
 const grid = document.getElementById('games');
 const filters = document.getElementById('filters');
@@ -27,11 +54,18 @@ function card(g) {
 				el('div', { className: 'meta' },
 					el('time', { dateTime: g.date, textContent: g.date }),
 					...(g.tags ?? []).map(t => el('span', { className: 'tag', textContent: t })),
-					external ? el('span', { className: 'ext', textContent: 'external ↗' }) : null,
+					external ? el('span', { className: 'ext', textContent: 'external ↗' }) : playsBadge(g),
 				),
 			),
 		),
 	);
+}
+
+function playsBadge(g) {
+	const span = el('span', { className: 'plays', hidden: true });
+	span.dataset.plays = g.slug;
+	showPlays(span);
+	return span;
 }
 
 function render(list, tag) {
@@ -57,6 +91,8 @@ async function main() {
 		};
 		filters.replaceChildren(button('all', null), ...tags.map(t => button(t, t)));
 		render(games, null);
+		showVisitors();
+		loadPlays(games);
 	} catch (e) {
 		errorEl.hidden = false;
 		errorEl.textContent = `Couldn't load the game list (${e.message}).`;
