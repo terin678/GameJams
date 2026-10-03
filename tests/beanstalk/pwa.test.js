@@ -3,6 +3,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { ICONS, encodePng, drawIcon } from '../../tools/make-icons.mjs';
+import { appHtml, buildApp } from '../../tools/build-app.mjs';
 
 const game = name => new URL(`../../games/beanstalk/${name}`, import.meta.url);
 const manifest = JSON.parse(readFileSync(game('manifest.webmanifest'), 'utf8'));
@@ -101,4 +102,40 @@ test('it leaves other sites and non-GET requests alone', () => {
 test('the page registers the service worker from the game folder', () => {
 	const main = readFileSync(game('src/game/main.js'), 'utf8');
 	assert.match(main, /serviceWorker[\s\S]*register\('sw\.js'\)/);
+});
+
+test('there is a privacy page, linked from the menu', () => {
+	const privacy = readFileSync(game('privacy.html'), 'utf8');
+	assert.match(page, /<a href="privacy\.html">Privacy<\/a>/);
+	assert.match(privacy, /GoatCounter/);
+	assert.match(privacy, /no purchases inside the game/);
+	assert.doesNotMatch(privacy, /<script/);
+});
+
+test('the app copy of the page loads one bundled script and nothing from the website around it', () => {
+	const html = appHtml(page);
+	assert.match(html, /<script type="module" src="app\.js"><\/script>/);
+	assert.equal(html.match(/<script/g).length, 1);
+	assert.doesNotMatch(html, /\.\.\/\.\.\//, 'nothing outside the app folder');
+	assert.doesNotMatch(html, /manifest|site\.js|src\/game/);
+	assert.match(html, /id="tend"/);
+	assert.throws(() => appHtml('<html></html>'), /scripts are not where/);
+});
+
+test('the app build is one minified script with no source map, no service worker and no counting', async t => {
+	try {
+		await import('esbuild');
+	} catch (e) {
+		return t.skip('esbuild is not installed: run npm install');
+	}
+	const out = await buildApp();
+	const js = readFileSync(new URL('app.js', out), 'utf8');
+	const source = readFileSync(game('src/core/sim.js'), 'utf8').length;
+	assert.ok(js.length > source, 'the whole game is in there');
+	assert.ok(js.split('\n').length < 50, 'minified');
+	assert.doesNotMatch(js, /sourceMappingURL/);
+	assert.doesNotMatch(js, /serviceWorker/);
+	assert.doesNotMatch(js, /goatcounter/i);
+	assert.match(js, /Corner the market/, 'the game data is bundled in');
+	for (const f of ['index.html', 'privacy.html', 'icons/icon-192.png']) assert.ok(readFileSync(new URL(f, out)).length > 0, f);
 });

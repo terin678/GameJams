@@ -1,0 +1,8 @@
+{
+	"appId": "com.example.beanstalk",
+	"appName": "Beanstalk",
+	"webDir": "www",
+	"android": {
+		"backgroundColor": "#10131c"
+	}
+}

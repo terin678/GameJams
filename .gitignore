@@ -1,4 +1,7 @@
 node_modules/
+app/www/
+app/android/
+app/ios/
 .DS_Store
 Thumbs.db
 *.log

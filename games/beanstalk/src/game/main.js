@@ -276,7 +276,8 @@ requestAnimationFrame(frame);
 
 // The service worker makes the game open offline and always fetch the newest
 // files when online (see sw.js). Browsers only allow it on https or localhost.
-if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => {});
+// The phone app (tools/build-app.mjs) is already offline and leaves it out.
+if (!globalThis.BEANSTALK_APP && 'serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => {});
 
 // For poking at the game from the console: game.state, game.skip(60).
 window.game = {

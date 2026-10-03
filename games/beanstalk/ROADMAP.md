@@ -87,24 +87,34 @@ the bot's time and move the bounds if the ratio is not about 2 to 3.
 
 ## Step 5 checklist: Capacitor and the Play Store
 
-Not started. Tick these off in order; each group depends on the one before.
+Started: everything that could be added without touching how the website
+works is in (ticked below). The rest waits for launch. Tick these off in
+order; each group depends on the one before.
+
+Decided (owner, 2026-10-03): testers play free on the website for now. At
+launch the app is a paid app at about $1, with optional tips, and the swap
+away from the free site starts then. Nothing carries over: app players
+start a fresh farm.
 
 **Before any of it**
 - [ ] The phone web version is play-tested to the end at least once, on a real phone.
 - [ ] Sound with the ringer off is confirmed on a phone (GitHub issue 2), then the issue is closed.
-- [ ] Decide the price: free, paid, or free with a tip. It changes the store forms below. No ads or purchases are planned.
-- [ ] Decide what happens to web saves. A farm on the website cannot be read by the app (different storage), and the save codes that could have moved one were cut. Either accept that app players start fresh, or bring back a one-way "send my farm to the app" import.
+- [x] Price decided: paid, about $1, with optional tips. No ads.
+- [x] Web saves decided: nothing carries over.
+- [ ] Choose the app id and put it in `app/capacitor.config.json` (it says `com.example.beanstalk` now). It can never change after release.
+- [ ] Choose the name for the copyright line (app About text and store listing).
 
 **A build step, for the app only**
-- [ ] Add a bundler script (esbuild is enough) that takes `games/beanstalk` plus the `shared` files it imports and writes one minified file, with no source maps, into a `dist` folder. The website keeps running unbundled.
-- [ ] Run the test suite against the source as now, and add one test that the bundle loads and a game can be ticked.
-- [ ] Leave out of the bundle: the portal, the other games, the tests, the service worker (the app is already offline).
+- [x] `npm run build:app` (tools/build-app.mjs, using esbuild) writes `app/www`: one minified script with no source map, the page, the icons, the privacy page. The website keeps running unbundled.
+- [x] Tests check the built copy: minified, no source map, no service worker, no visit counting, game data bundled in. Checked by hand that it runs in a browser.
+- [x] Left out of the app copy: the portal link, the other games, the tests, the service worker, the web manifest.
 
 **The Capacitor project**
-- [ ] `npm init @capacitor/app` in a new `app/` folder; app id (for example `com.<yourname>.beanstalk`) and name. The id can never be changed after release.
-- [ ] Point `webDir` at the bundle's `dist`; add the Android platform; open in Android Studio and run on a phone.
-- [ ] Replace the analytics call (GoatCounter, in `shared/site.js`) with nothing, or declare it in the privacy policy and data form.
-- [ ] Saves: move from `localStorage` to Capacitor Preferences, so Android clearing the web cache cannot lose a farm.
+- [x] `app/` folder with the Capacitor settings, the packages to install and a README with the commands.
+- [ ] Install Android Studio; `npx cap add android`; run on a phone (steps in `app/README.md`).
+- [x] No analytics in the app copy (the script that loads it is not bundled).
+- [ ] Saves: check that a farm survives an app update and a phone restart as it is (an app's own storage is not cleared like a browser's); move to Capacitor Preferences only if it does not.
+- [ ] Take the bug and idea links (they open GitHub) and the "in testing" line out of the app copy at launch.
 - [ ] Android back button: close an open overlay, otherwise ask before leaving.
 - [ ] Keep-awake and vibration through Capacitor plugins (the web versions are patchy inside an app).
 - [ ] Pause the music and the game clock when the app goes to the background; catch up on return (the time-away code already does this for the website).
@@ -116,7 +126,8 @@ Not started. Tick these off in order; each group depends on the one before.
 - [ ] Developer account (one-off fee, identity check; allow a few days).
 - [ ] Create the app; choose app signing by Google Play; keep the upload key and its password somewhere safe and backed up.
 - [ ] Store listing: short and full description, 512 px icon, 1024x500 feature graphic, at least four phone screenshots.
-- [ ] Privacy policy on a public web page, linked from the listing.
+- [x] Privacy policy page (`games/beanstalk/privacy.html`, linked from the Menu). Update it when tips are added: it says there are no purchases in the game.
+- [ ] Link the privacy page from the store listing.
 - [ ] Forms: data safety, content rating questionnaire, target audience, ads declaration.
 - [ ] Build a release bundle (.aab) targeting the API level Play currently requires.
 
@@ -124,6 +135,12 @@ Not started. Tick these off in order; each group depends on the one before.
 - [ ] Internal test track first, with your own phone.
 - [ ] Closed test: 12 testers opted in for 14 days running (required for new personal accounts before production).
 - [ ] Fix what they find; apply for production access; staged rollout.
+
+**Money**
+- [ ] Set the app up as paid (about $1) in the Play Console. A paid app can never be made free and then paid again, and needs a payments profile (tax and bank details).
+- [ ] Tips inside the app go through Google Play's billing, as small one-off purchases ("a coffee", "a sack of beans"). Google takes its cut (15% for small developers at the time of writing). This needs the Play Billing plugin and a few lines of code.
+- [ ] A Buy Me a Coffee link can go on the website and the store listing's website field. A button inside the Android app that takes payment outside Play has been against Play's payments policy; the rules have been changing (and differ by country), so check them at launch before adding one.
+- [ ] After launch: decide when the free web version comes down (see Protecting the code).
 
 ## Protecting the code
 

@@ -188,6 +188,9 @@ buttons. It saves itself every few seconds.
   price in the game is quoted and paid in beans. Demand bonuses earned
   after that raise the harvest instead. (Inside, `coins` is still the
   wallet; `rate` in the state says what a bean is worth.)
+- **Phone app (not released)**: `npm run build:app` makes a bundled, minified
+  copy of the game in `app/www` for wrapping with Capacitor; see
+  `app/README.md`. The website does not use it and has no build step.
 - New systems appear as tabs beside Projects, and sections such as the Almanac
   stay hidden until the game reaches them.
 - **Light** (`src/data/sky.js`): a farm day is a minute, with dawn, sunset and

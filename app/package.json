@@ -1,0 +1,18 @@
+{
+	"name": "beanstalk-app",
+	"version": "0.1.0",
+	"private": true,
+	"description": "The phone app wrapper for Beanstalk (Capacitor). See README.md.",
+	"scripts": {
+		"build": "cd .. && node tools/build-app.mjs",
+		"sync": "npm run build && npx cap sync android",
+		"open": "npx cap open android"
+	},
+	"dependencies": {
+		"@capacitor/android": "^7.0.0",
+		"@capacitor/core": "^7.0.0"
+	},
+	"devDependencies": {
+		"@capacitor/cli": "^7.0.0"
+	}
+}
