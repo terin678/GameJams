@@ -1,6 +1,6 @@
 // Seed breeding and the county fair. How it works is described in core/seeds.js.
 export const SEEDS = {
-	unlock: { grown: 400 },
+	unlock: { grown: 1500 },
 	log: 'A seed catalogue arrives, and with it an idea: you could breed your own. The fair is every autumn.',
 	maxLevel: 20,
 	// Each level multiplies `effect` (a modifier from core/projects.js) by `per`.
@@ -11,9 +11,9 @@ export const SEEDS = {
 		{ id: 'flavour', name: 'Flavour', effect: 'marketing', per: 1.1, blurb: 'demand', fair: 'Tastiest bean' },
 	],
 	cross: {
-		cost: { coins: 30 },
-		costGrowth: 1.25,     // each generation costs this much more
-		seconds: 15,          // growing out the seedlings
+		cost: { coins: 100 },
+		costGrowth: 1.3,     // each generation costs this much more
+		seconds: 20,          // growing out the seedlings
 		luck: 0.3,            // chance the best trait jumps two; half this for the others to rise
 		luckPerRibbon: 0.02,
 		maxLuck: 0.6,

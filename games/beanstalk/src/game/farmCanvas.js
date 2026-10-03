@@ -92,6 +92,12 @@ export function createFarmView(canvas, data, { SPRITES, PALETTE, VIEW, SKY }) {
 		ctx.fillStyle = PALETTE.g;
 		ctx.fillRect(stalkX - 2, top, 1, horizon - top);
 		ctx.fillRect(stalkX - 3, top - 2, 6, 3);
+		// A stalk grown from a Golden Bean has a gold seam and a gold tip.
+		if (state.golden > 0) {
+			ctx.fillStyle = PALETTE.y;
+			ctx.fillRect(stalkX + 1, top, 1, horizon - top);
+			ctx.fillRect(stalkX - 2, top - 2, 4, 2);
+		}
 		const leaf = art.leaf[0];
 		// With canopy solar, the leaves above the clouds catch the light.
 		const glowAbove = has(state, 'glow') ? skyY(data.LANDMARKS.find(m => m.sprite === 'cloud').y) : -1;
@@ -147,7 +153,7 @@ export function createFarmView(canvas, data, { SPRITES, PALETTE, VIEW, SKY }) {
 			const { x, y } = cell(i);
 			put(art.soil[0], x, y);
 			const stage = stageOf(g, stages);
-			if (stage >= 0) put(art.bean[stage], x, y);
+			if (stage >= 0) put((i === 0 && state.golden > 0 ? art.bean_gold : art.bean)[stage], x, y);
 		});
 
 		const n = state.plots.length;

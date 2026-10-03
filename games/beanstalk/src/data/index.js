@@ -5,8 +5,9 @@ import { PHASES, MILESTONES, LANDMARKS } from './journey.js';
 import { PROJECTS } from './projects.js';
 import { NEIGHBOURS, GIFTS } from './neighbours.js';
 import { SEEDS } from './seeds.js';
+import { RUNS } from './runs.js';
 
-export const DATA = { TUNING, SEASONS, WEATHER, PHASES, MILESTONES, LANDMARKS, PROJECTS, NEIGHBOURS, GIFTS, SEEDS };
+export const DATA = { TUNING, SEASONS, WEATHER, PHASES, MILESTONES, LANDMARKS, PROJECTS, NEIGHBOURS, GIFTS, SEEDS, RUNS };
 export { SPRITES, PALETTE, VIEW } from './sprites.js';
 export { SOUNDS, EVENT_SOUNDS } from './sounds.js';
 export { MUSIC } from './music.js';

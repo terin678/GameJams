@@ -1,7 +1,19 @@
 // How tall the stalk is, and what that means.
 
-// `h` is TUNING.height. Metres from lifetime beans grown.
-export const heightFor = (grown, h) => h.scale * grown ** h.power;
+// Metres of stalk from lifetime beans grown. `h` is TUNING.height: a list of
+// [beans, metres] points, joined by straight lines on a log-log chart, so each
+// stretch of the game can be given its own length. Flat past the last point.
+export function heightFor(grown, h) {
+	const pts = h.points;
+	if (grown <= 0) return 0;
+	if (grown <= pts[0][0]) return pts[0][1] * grown / pts[0][0];
+	for (let i = 1; i < pts.length; i++) {
+		const [g0, m0] = pts[i - 1];
+		const [g1, m1] = pts[i];
+		if (grown <= g1) return m0 * (m1 / m0) ** (Math.log(grown / g0) / Math.log(g1 / g0));
+	}
+	return pts.at(-1)[1];
+}
 
 export function phaseAt(height, phases) {
 	let current = phases[0];

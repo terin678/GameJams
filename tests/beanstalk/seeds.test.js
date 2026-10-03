@@ -96,6 +96,13 @@ test('the fair judges one trait a year, in turn, against a bar that rises with e
 	assert.equal(ribbonCount(s.seeds), 1);
 });
 
+test('picky judges raise every bar', () => {
+	const s = state();
+	s.seeds.traits.size = 2;
+	assert.equal(fairBar(s.seeds, 'size', S, 1), 3);
+	assert.equal(judge(s, 1, S, 1).won, false);
+});
+
 test('ribbons make crosses luckier, up to a limit', () => {
 	const seeds = createSeeds(S);
 	assert.equal(luckOf(seeds, S), 0.2);

@@ -76,14 +76,15 @@ export function choose(state, index) {
 // The fair judges the traits in turn, one a year.
 export const fairTrait = (year, S) => S.traits[(year - 1) % S.traits.length];
 
-export const fairBar = (seeds, traitId, S) => S.fair.firstBar + S.fair.barStep * seeds.ribbons[traitId];
+// `extra` raises every bar (a New Game+ rule).
+export const fairBar = (seeds, traitId, S, extra = 0) => S.fair.firstBar + S.fair.barStep * seeds.ribbons[traitId] + extra;
 
 // Runs this year's fair, once. Returns { trait, bar, level, won } or null if already judged.
-export function judge(state, year, S) {
+export function judge(state, year, S, extra = 0) {
 	const { seeds } = state;
 	if (!seeds.open || seeds.judged >= year) return null;
 	const trait = fairTrait(year, S);
-	const bar = fairBar(seeds, trait.id, S);
+	const bar = fairBar(seeds, trait.id, S, extra);
 	const level = seeds.traits[trait.id];
 	const won = level >= bar;
 	if (won) seeds.ribbons[trait.id]++;

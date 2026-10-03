@@ -118,19 +118,26 @@ all in `src/data/`.
 ## Beanstalk
 
 An idle farming game. Plant one bean, sell beans, buy projects, and watch the
-stalk grow from the garden to the edge of the universe. About half an hour,
-in three phases: The Plot, Agribusiness, Beyond. Finishing gives a Golden Bean
-(double yield) for New Game+.
+stalk grow from the garden to the edge of the universe. A run is a few hours,
+in three phases: The Plot, Agribusiness, Beyond. Where it is heading is in
+[games/beanstalk/ROADMAP.md](games/beanstalk/ROADMAP.md).
+
+Finishing gives a Golden Bean for **New Game+**: it doubles your harvest and
+speeds the next run up. The world remembers (neighbours half-recognise you,
+the first plot grows a golden bean) and each run adds a twist, such as harder
+winters or pickier fair judges (`src/data/runs.js`).
 
 Click **Tend** (or press Space / Enter) to plant and pick. Everything else is
 buttons. It saves itself every few seconds.
 
-- **Time away:** the farm keeps working while the tab is closed, at a quarter
-  speed, for up to 8 hours of absence. You get a summary when you come back.
+- **Time away:** the farm keeps working while the tab is closed, at 15% speed,
+  for up to 8 hours of absence (about 70 minutes of work at most). You get a
+  summary when you come back.
 - **Add a project:** add a line to `src/data/projects.js` (cost, what it
   requires, what it does). `data.test.js` checks it, and `balance.test.js`
-  plays the whole game with a bot to make sure it can still be finished in
-  25 to 45 minutes. See the bot's timeline with:
+  plays the whole game with a bot. The bot plays perfectly and should take
+  2 to 2.8 hours, with never more than 7 minutes between purchases; a person
+  takes rather longer. See the bot's timeline with:
 
   ```bash
   BEANSTALK_TIMELINE=1 node --test tests/beanstalk/balance.test.js

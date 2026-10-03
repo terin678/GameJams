@@ -8,6 +8,7 @@ import { heightFor, phaseAt, crossed } from './phases.js';
 import { computeMods, buy } from './projects.js';
 import { newlyMet, meet, give, perkEffects } from './neighbours.js';
 import { createSeeds, unlockDue, cross, choose, judge, seedEffects } from './seeds.js';
+import { rulesFor, twistsFor, lineFor } from './runs.js';
 
 const VERSION = 1;
 
@@ -31,16 +32,18 @@ export function createState(data, { golden = 0 } = {}) {
 		golden,
 	};
 	refresh(state, data);
-	say(state, data, data.PHASES[0].log);
+	say(state, data, lineFor(data.PHASES[0].log, data.RUNS.again.start, golden));
+	for (const twist of twistsFor(golden, data.RUNS)) say(state, data, `This time: ${twist.name}. ${twist.text}`);
 	return state;
 }
 
 // Recomputes everything derived from what is owned. Call after `owned` changes.
 export function refresh(state, data) {
 	const perks = perkEffects(state.friends, data.NEIGHBOURS, data.TUNING.friends);
+	state.rules = rulesFor(state.golden, data.RUNS);
 	const bred = seedEffects(state.seeds, data.SEEDS);
 	state.mods = computeMods(state.owned, data.PROJECTS, data.TUNING.base, [...perks, ...bred]);
-	state.mods.yield *= 1 + state.golden * data.TUNING.goldenBonus;
+	for (const [key, share] of Object.entries(data.TUNING.golden)) state.mods[key] *= 1 + state.golden * share;
 	resize(state.plots, state.mods.plots);
 	return state;
 }
@@ -62,7 +65,7 @@ function sayOnce(state, data, key, text) {
 function fair(state, data, events) {
 	const S = data.SEEDS;
 	const { year } = calendar(state.day, data.SEASONS, data.TUNING.calendar);
-	const result = judge(state, year, S);
+	const result = judge(state, year, S, state.rules.fairBar);
 	if (!result) return;
 	const trait = S.traits.find(t => t.id === result.trait);
 	const line = (result.won ? S.fair.win : S.fair.lose)
@@ -88,11 +91,12 @@ function tendNext(state) {
 // A new spell of weather begins.
 function newWeather(state, data, rng, events) {
 	const { mods } = state;
-	const w = mods.rainmaker ? data.WEATHER.find(x => x.summoned) : rollWeather(rng, data.WEATHER);
+	const w = mods.rainmaker ? data.WEATHER.find(x => x.summoned) : rollWeather(rng, data.WEATHER, state.rules.crows);
 	state.weather = null;
 	if (!w) return;
 	if (w.eats) {
-		if (mods.scarecrow) return;
+		// A brave crow (a New Game+ rule) is not put off by the scarecrow.
+		if (mods.scarecrow && !(state.rules.brave > 0 && rng.next() < state.rules.brave)) return;
 		const plot = eatOne(state.plots, rng);
 		if (plot < 0) return;
 		events.push({ type: 'crow', plot });
@@ -128,7 +132,7 @@ export function tick(state, dt, data, rng) {
 	}
 
 	const weather = data.WEATHER.find(w => w.id === state.weather) ?? null;
-	grow(state.plots, dt * mods.growth * growthMult(season, weather, mods) / T.growSeconds);
+	grow(state.plots, dt * mods.growth * growthMult(season, weather, mods, state.rules.cold) / T.growSeconds);
 
 	// Farmhands and drones. With nothing to do they wait, holding one action ready.
 	state.tendAcc += mods.tend * dt;
@@ -185,12 +189,12 @@ export function tick(state, dt, data, rng) {
 	if (unlockDue(state, data.SEEDS)) {
 		state.seeds.open = true;
 		events.push({ type: 'seeds' });
-		say(state, data, data.SEEDS.log);
+		say(state, data, lineFor(data.SEEDS.log, data.RUNS.again.seeds, state.golden));
 	}
 	for (const def of newlyMet(state, data.NEIGHBOURS)) {
 		meet(state, def);
 		events.push({ type: 'meet', id: def.id });
-		say(state, data, def.meet);
+		say(state, data, lineFor(def.meet, data.RUNS.again.neighbours[def.id], state.golden));
 	}
 	return events;
 }
@@ -212,7 +216,8 @@ export function giveGift(state, neighbourId, giftId, data) {
 	const def = data.NEIGHBOURS.find(n => n.id === neighbourId);
 	const gift = data.GIFTS.find(g => g.id === giftId);
 	if (!def || !gift || state.done) return null;
-	const result = give(state, def, gift, data.TUNING.friends);
+	const F = data.TUNING.friends;
+	const result = give(state, def, gift, { ...F, giftSeconds: F.giftSeconds * state.rules.giftWait });
 	if (!result) return null;
 	for (const perk of result.perks) say(state, data, `${def.name}, ${perk.hearts} hearts: ${perk.text}`);
 	if (result.perks.length) refresh(state, data);
@@ -254,7 +259,7 @@ export function simulateOffline(state, seconds, data, rng) {
 }
 
 export function serialize(state) {
-	const { mods, ...rest } = state;
+	const { mods, rules, ...rest } = state;
 	return rest;
 }
 

@@ -31,7 +31,7 @@ export const NEIGHBOURS = [
 		],
 	},
 	{
-		id: 'bram', name: 'Old Bram', role: 'retired farmer', unlock: { grown: 200 },
+		id: 'bram', name: 'Old Bram', role: 'retired farmer', unlock: { grown: 500 },
 		look: { hat: 'h', shirt: 'G', skin: 's' },
 		loves: ['seeds'], likes: ['pie', 'beans'], dislikes: ['blossoms'],
 		meet: 'Old Bram stops to look at your plot. He says nothing for a long time. "Hm."',
@@ -48,7 +48,7 @@ export const NEIGHBOURS = [
 		],
 	},
 	{
-		id: 'wren', name: 'Wren', role: 'the tinkerer', unlock: { grown: 800 },
+		id: 'wren', name: 'Wren', role: 'the tinkerer', unlock: { grown: 3000 },
 		look: { hat: 'N', shirt: 'y', skin: 's' },
 		loves: ['parts'], likes: ['seeds'], dislikes: ['pie'],
 		meet: 'Wren the tinkerer is already measuring your stalk. "Do you know how tall this could get?"',
@@ -65,7 +65,7 @@ export const NEIGHBOURS = [
 		],
 	},
 	{
-		id: 'pell', name: 'Mayor Pell', role: 'the mayor', unlock: { grown: 2500 },
+		id: 'pell', name: 'Mayor Pell', role: 'the mayor', unlock: { grown: 12000 },
 		look: { hat: 'k', shirt: 'p', skin: 's' },
 		loves: ['blossoms'], likes: ['pie', 'page'], dislikes: ['beans'],
 		meet: 'Mayor Pell arrives with a photographer. "The stalk is very good for the valley. Very good."',
@@ -82,7 +82,7 @@ export const NEIGHBOURS = [
 		],
 	},
 	{
-		id: 'quill', name: 'Dr. Quill', role: 'almanac scholar', unlock: { phase: 2, grown: 8000 },
+		id: 'quill', name: 'Dr. Quill', role: 'almanac scholar', unlock: { phase: 2, grown: 80000 },
 		look: { hat: 'n', shirt: 'b', skin: 's' },
 		loves: ['page'], likes: ['seeds'], dislikes: ['parts'],
 		meet: 'Dr. Quill has come from the university to study the stalk. She has brought eleven notebooks.',
@@ -99,7 +99,7 @@ export const NEIGHBOURS = [
 		],
 	},
 	{
-		id: 'visitor', name: 'The Visitor', role: 'from somewhere else', unlock: { phase: 3, grown: 1e6 },
+		id: 'visitor', name: 'The Visitor', role: 'from somewhere else', unlock: { phase: 3, grown: 5e6 },
 		look: { hat: 'p', shirt: 'c', skin: 'g' },
 		loves: ['beans'], likes: ['moondust'], dislikes: ['page'],
 		meet: 'Something climbed down the stalk last night. It is polite. It would like to know what a bean is.',
@@ -110,9 +110,9 @@ export const NEIGHBOURS = [
 			dislike: '"WE HAVE READ IT ALREADY."',
 		},
 		perks: [
-			{ hearts: 2, effect: { replicate: 0.01 }, text: 'It tells its friends. Probes spread faster.' },
+			{ hearts: 2, effect: { replicate: 0.0015 }, text: 'It tells its friends. Probes spread faster.' },
 			{ hearts: 5, effect: { probeYield: 10 }, text: 'It shows you a better orbit. Probe yield x10.' },
-			{ hearts: 8, effect: { replicate: 0.02 }, text: 'Its whole people are planting now. Probes spread much faster.' },
+			{ hearts: 8, effect: { replicate: 0.003 }, text: 'Its whole people are planting now. Probes spread much faster.' },
 		],
 	},
 ];

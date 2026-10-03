@@ -298,6 +298,9 @@ export const SPRITES = {
 	]] },
 };
 
+// The Golden Bean from an earlier run grows on the first plot: the same plant, in gold.
+SPRITES.bean_gold = { frames: SPRITES.bean.frames.map(f => recolor(f, { g: 'y', G: 'o' })) };
+
 // The farm view. Sizes are in screen pixels of the 240x320 canvas.
 export const VIEW = {
 	width: 240,

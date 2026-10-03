@@ -12,6 +12,7 @@ import { counts, findWork } from '../core/farm.js';
 import { demand } from '../core/market.js';
 import { calendar, growthMult, seasonNote } from '../core/seasons.js';
 import { periodAt } from '../core/sky.js';
+import { nextTwist, twistsFor, endingLine } from '../core/runs.js';
 import { available, affordable, costOf } from '../core/projects.js';
 import { crossCost, canCross, growingFor, fairTrait, fairBar, ribbonCount, luckOf } from '../core/seeds.js';
 import { heartsOf, heartProgress, giftsFor, giftCost, canGive, waitFor, nextPerk } from '../core/neighbours.js';
@@ -246,7 +247,7 @@ export function createView(doc, data, handlers) {
 
 		const fairYear = line.judged >= year ? year + 1 : year;
 		const judged = fairTrait(fairYear, S);
-		const bar = fairBar(line, judged.id, S);
+		const bar = fairBar(line, judged.id, S, state.rules.fairBar);
 		const have = line.traits[judged.id];
 		const ribbons = ribbonCount(line);
 		const last = line.result;
@@ -292,18 +293,19 @@ export function createView(doc, data, handlers) {
 			set('rate', `${perSecond(rate)} beans a second`);
 			const period = periodAt(state.dayT / T.calendar.daySeconds, data.SKY.periods);
 			set('calendar', `${cal.season.name}, day ${cal.dayOfSeason} · year ${cal.year} · ${period} · ${weather?.name ?? 'Fair'}`);
-			set('golden', state.golden > 0 ? `Golden Beans: ${state.golden}` : '');
+			set('golden', state.golden > 0 ? `Run ${state.golden + 1} · Golden Beans: ${state.golden}` : '');
+			$('golden').title = twistsFor(state.golden, data.RUNS).map(t => `${t.name}: ${t.text}`).join('\n');
 
 			const c = counts(state.plots);
 			const next = findWork(state.plots, state.tendAt);
 			set('plots', `${c.ripe} ripe · ${c.growing} growing · ${c.empty} empty`);
 			set('tend', next < 0 ? 'Growing...' : state.plots[next] === null ? 'Plant a bean' : 'Pick beans');
 			$('tend').disabled = next < 0;
-			const seconds = T.growSeconds / (mods.growth * growthMult(cal.season, weather, mods));
+			const seconds = T.growSeconds / (mods.growth * growthMult(cal.season, weather, mods, state.rules.cold));
 			// Breeding makes the yield fractional; show a decimal while it is small.
 			const each = mods.yield < 100 ? String(Math.round(mods.yield * 10) / 10) : formatNumber(mods.yield);
 			set('growing', `Each plant gives ${each} ${each === '1' ? 'bean' : 'beans'} and takes ${seconds.toFixed(1)}s`);
-			set('season', seasonNote(cal.season, mods));
+			set('season', seasonNote(cal.season, mods, state.rules.cold));
 			// Each plot wants one visit per crop; say so when the helpers can't keep up.
 			const wanted = state.plots.length / seconds;
 			set('helpers', !mods.tend ? 'No helpers yet: it is all you'
@@ -360,9 +362,14 @@ export function createView(doc, data, handlers) {
 				['Farm days', formatNumber(state.day)],
 				['Your time', formatDuration(state.time)],
 			].map(([label, value]) => el('div', {}, el('dt', {}, label), el('dd', {}, value))));
+			const twist = nextTwist(state.golden, data.RUNS);
+			$('ending-title').textContent = state.golden > 0 ? `Every atom is bean. Again. (Run ${state.golden + 1})` : 'Every atom is bean.';
 			$('ending-body').replaceChildren(stats,
 				el('p', {}, 'There is nothing left to plant, and nowhere left to plant it.'),
-				el('p', { className: 'gold' }, 'The first bean is still in your pocket. It has turned to gold.'));
+				el('p', { className: 'gold' }, endingLine(state.golden, data.RUNS)),
+				el('p', {}, 'Plant it again: the Golden Bean doubles your harvest and hurries everything along. ',
+					twist ? el('b', {}, `Next run: ${twist.name}. `) : 'The valley has no new tricks left. ',
+					twist ? twist.text : 'Every twist stays in play.'));
 			show('ending', true);
 			$('again').focus();
 		},

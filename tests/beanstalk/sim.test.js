@@ -206,9 +206,9 @@ test('buying a project applies it straight away', () => {
 
 test('the stalk grows with the harvest and crosses milestones and phases', () => {
 	const s = createState(DATA);
-	s.grown = 6000;
+	s.grown = T.height.points[1][0] * 1.2;
 	const events = run(s, 0.1);
-	assert.ok(s.height > 2000);
+	assert.ok(s.height > DATA.PHASES[1].height);
 	assert.equal(s.phase, 2);
 	assert.ok(events.some(e => e.type === 'phase' && e.id === 2));
 	assert.ok(events.some(e => e.type === 'milestone'));
@@ -281,11 +281,46 @@ test('a broken or missing save starts a new game', () => {
 	}
 });
 
+test('New Game+: the world remembers, and each run adds a twist', () => {
+	const R = DATA.RUNS;
+	const first = createState(DATA);
+	assert.deepEqual(first.rules, { cold: 1, crows: 1, brave: 0, fairBar: 0, giftWait: 1 });
+	assert.equal(first.log.at(-1), DATA.PHASES[0].log);
+
+	const second = newGamePlus(first, DATA);
+	assert.equal(second.log.at(-1), R.again.start);
+	assert.ok(second.log[0].includes(R.twists[0].name));
+	assert.equal(second.rules.cold, R.twists[0].rule.cold);
+
+	const who = DATA.NEIGHBOURS[0];
+	second.grown = who.unlock.grown;
+	run(second, 0.1);
+	assert.ok(second.log.includes(R.again.neighbours[who.id]));
+	assert.ok(!second.log.includes(who.meet));
+
+	const third = newGamePlus(second, DATA);
+	assert.equal(third.golden, 2);
+	assert.equal(third.rules.crows, R.twists[1].rule.crows);
+	assert.deepEqual(restore(JSON.parse(JSON.stringify(serialize(third))), DATA).rules, third.rules, 'rules come back after a reload');
+});
+
+test('New Game+: a brave crow gets past the scarecrow', () => {
+	const crowAt = DATA.WEATHER.findIndex(w => w.eats);
+	const before = DATA.WEATHER.slice(0, crowAt).reduce((a, w) => a + w.chance, 0);
+	const crows = { next: () => before + 0.001, pick: l => l[0] };
+	const s = createState(DATA, { golden: 2 });
+	own(s, 'scarecrow');
+	tend(s, DATA);
+	run(s, T.weather.everySeconds + 0.1, crows);
+	assert.equal(s.plots[0], null);
+});
+
 test('New Game+ starts over with a Golden Bean that boosts yield', () => {
 	const s = createState(DATA);
 	s.grown = 1e30;
 	const again = newGamePlus(s, DATA);
 	assert.equal(again.grown, 0);
 	assert.equal(again.golden, 1);
-	assert.equal(again.mods.yield, s.mods.yield * (1 + T.goldenBonus));
+	assert.equal(again.mods.yield, s.mods.yield * (1 + T.golden.yield));
+	assert.equal(again.mods.growth, s.mods.growth * (1 + T.golden.growth));
 });

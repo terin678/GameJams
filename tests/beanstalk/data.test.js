@@ -7,13 +7,14 @@ import { validateProject, EFFECTS } from '../../games/beanstalk/src/core/project
 import { validateNeighbour, validateGift } from '../../games/beanstalk/src/core/neighbours.js';
 import { validateSeeds } from '../../games/beanstalk/src/core/seeds.js';
 import { validateSky } from '../../games/beanstalk/src/core/sky.js';
+import { validateRuns } from '../../games/beanstalk/src/core/runs.js';
 import { heightFor } from '../../games/beanstalk/src/core/phases.js';
 import { plotOrder } from '../../games/beanstalk/src/core/layout.js';
 import { parsePixelMap } from '../../shared/pixelart.js';
 import { validateSfx } from '../../shared/sfx.js';
 import { validateSong } from '../../shared/music.js';
 
-const { TUNING: T, PROJECTS, SEASONS, WEATHER, PHASES, MILESTONES, LANDMARKS, NEIGHBOURS, GIFTS, SEEDS } = DATA;
+const { TUNING: T, PROJECTS, SEASONS, WEATHER, PHASES, MILESTONES, LANDMARKS, NEIGHBOURS, GIFTS, SEEDS, RUNS } = DATA;
 const ascending = list => list.every((v, i) => i === 0 || v > list[i - 1]);
 
 test('every project is well formed', () => {
@@ -41,6 +42,7 @@ test('projects are listed in phase order and every phase has some', () => {
 
 test('the tuning base only sets real modifiers', () => {
 	for (const k of Object.keys(T.base)) assert.ok(EFFECTS[k], k);
+	for (const [k, v] of Object.entries(T.golden)) assert.ok(EFFECTS[k] && EFFECTS[k] !== 'flag' && v > 0, `golden ${k}`);
 });
 
 test('there is exactly one way to end the game, at a full universe', () => {
@@ -102,6 +104,13 @@ test('the light through the day is well formed, and night is short', () => {
 	assert.ok(VIEW.windows.length > 0);
 });
 
+test('New Game+ content is well formed', () => {
+	assert.deepEqual(validateRuns(RUNS, NEIGHBOURS), []);
+	assert.ok(RUNS.twists.length >= 3);
+	assert.ok(SPRITES.bean_gold);
+	assert.equal(SPRITES.bean_gold.frames.length, SPRITES.bean.frames.length);
+});
+
 test('seasons and weather make sense', () => {
 	assert.equal(SEASONS.length, 4);
 	for (const s of SEASONS) {
@@ -124,6 +133,13 @@ test('phases, milestones and landmarks climb in order', () => {
 	assert.equal(LANDMARKS.at(-1).y, 1);
 	assert.equal(new Set(MILESTONES.map(m => m.id)).size, MILESTONES.length);
 	for (const x of [...PHASES, ...MILESTONES]) assert.ok(x.log, `log line for ${x.id}`);
+});
+
+test('the height curve climbs, and each phase starts on one of its points', () => {
+	const pts = T.height.points;
+	assert.ok(ascending(pts.map(p => p[0])) && ascending(pts.map(p => p[1])));
+	assert.equal(pts.at(-1)[0], T.universeBeans);
+	for (const ph of PHASES.slice(1)) assert.ok(pts.some(p => p[1] === ph.height), `phase ${ph.id} at ${ph.height} m`);
 });
 
 test('a full universe is taller than every milestone and reaches the top of the sky', () => {

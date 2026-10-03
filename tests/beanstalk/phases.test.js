@@ -2,11 +2,18 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { heightFor, phaseAt, crossed, stalkFrac } from '../../games/beanstalk/src/core/phases.js';
 
-const H = { scale: 2, power: 0.5 };
+const H = { points: [[10, 1], [1000, 100], [1e9, 1e5]] };
 
-test('heightFor is a power of the beans grown', () => {
+test('heightFor passes through its points, straight on a log-log chart between them', () => {
+	const near = (a, b) => assert.ok(Math.abs(a - b) < 1e-9 * Math.max(1, b), `${a} vs ${b}`);
 	assert.equal(heightFor(0, H), 0);
-	assert.equal(heightFor(100, H), 20);
+	near(heightFor(5, H), 0.5);
+	near(heightFor(10, H), 1);
+	near(heightFor(100, H), 10);
+	near(heightFor(1000, H), 100);
+	near(heightFor(1e6, H), Math.sqrt(100 * 1e5));
+	near(heightFor(1e9, H), 1e5);
+	assert.equal(heightFor(1e20, H), 1e5, 'flat past the last point');
 	assert.ok(heightFor(101, H) > heightFor(100, H));
 });
 

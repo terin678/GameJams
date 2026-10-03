@@ -23,24 +23,27 @@ export function advance(clock, dt, t) {
 }
 
 // Each kind of weather has its own chance per day; the rest of the time it's fair.
-export function rollWeather(rng, weather) {
+// `crows` multiplies the chance of weather that eats (a New Game+ rule).
+export function rollWeather(rng, weather, crows = 1) {
 	let r = rng.next();
 	for (const w of weather) {
-		if (r < w.chance) return w;
-		r -= w.chance;
+		const chance = w.eats ? w.chance * crows : w.chance;
+		if (r < chance) return w;
+		r -= chance;
 	}
 	return null;
 }
 
 // One line for the farm panel: what the season is doing to growth right now.
-export function seasonNote(season, mods) {
+export function seasonNote(season, mods, cold = 1) {
 	if (season.cold && mods.greenhouse) return `${season.name}: the greenhouse keeps the beans warm`;
-	const pct = Math.round((season.growth - 1) * 100);
+	const pct = Math.round((season.growth * (season.cold ? cold : 1) - 1) * 100);
 	if (pct === 0) return `${season.name}: beans grow at their usual pace`;
 	return `${season.name}: beans grow ${Math.abs(pct)}% ${pct > 0 ? 'faster' : 'slower'}`;
 }
 
-export function growthMult(season, weather, mods) {
-	const s = season.cold && mods.greenhouse ? 1 : season.growth;
+// `cold` multiplies growth in a cold season with no greenhouse (a New Game+ rule).
+export function growthMult(season, weather, mods, cold = 1) {
+	const s = !season.cold ? season.growth : mods.greenhouse ? 1 : season.growth * cold;
 	return s * (weather?.growth ?? 1);
 }

@@ -44,6 +44,19 @@ test('seasonNote says what the season does, and that a greenhouse cancels the co
 	assert.equal(seasonNote(named[1], { greenhouse: true }), 'Summer: beans grow 30% faster');
 });
 
+test('New Game+ rules: harder winters and more crows', () => {
+	const winter = { ...SEASONS[3], name: 'Winter' };
+	assert.equal(growthMult(winter, null, {}, 0.5), 0.1);
+	assert.equal(growthMult(winter, null, { greenhouse: true }, 0.5), 1, 'a greenhouse still fixes it');
+	assert.equal(growthMult(SEASONS[1], null, {}, 0.5), 1.3, 'only cold seasons');
+	assert.equal(seasonNote(winter, {}, 0.5), 'Winter: beans grow 90% slower');
+	const weather = [{ id: 'rain', chance: 0.2 }, { id: 'crow', chance: 0.1, eats: true }];
+	const at = (v, crows) => rollWeather({ next: () => v }, weather, crows);
+	assert.equal(at(0.35, 1), null);
+	assert.equal(at(0.35, 2).id, 'crow');
+	assert.equal(at(0.1, 2).id, 'rain', 'other weather is unchanged');
+});
+
 test('growthMult combines season and weather; a greenhouse ignores the cold', () => {
 	const winter = SEASONS[3];
 	assert.equal(growthMult(SEASONS[1], null, {}), 1.3);
