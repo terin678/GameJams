@@ -14,13 +14,5 @@
 		"date": "2026-10-02",
 		"tags": ["shmup", "arcade", "birds"],
 		"path": "games/midair/"
-	},
-	{
-		"slug": "teron2",
-		"title": "Teron2",
-		"blurb": "A remake of the Teron Gorefiend ghost-construct trainer from WoW's Black Temple, in 2D and 3D.",
-		"date": "2026-08-27",
-		"tags": ["wow", "trainer", "remake"],
-		"url": "https://terin678.github.io/Teron2/"
 	}
 ]

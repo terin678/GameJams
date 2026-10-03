@@ -7,8 +7,6 @@ No build step and no CI: plain ES modules, vendored Phaser 3, tests run locally.
 |---|---|
 | **Superposition**: Schrödinger's cat in a maze, with quantum powers | [`games/superposition/`](games/superposition/) |
 | **Fowl Play: The Battle of Midair** — 1943 with a pigeon | [`games/midair/`](games/midair/) |
-| **Teron2** — WoW Teron Gorefiend trainer remake | [external](https://terin678.github.io/Teron2/) |
-
 ## Run it
 
 ```bash
