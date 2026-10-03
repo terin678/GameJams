@@ -123,7 +123,19 @@ export function createFarmView(canvas, data, { SPRITES, PALETTE, VIEW, SKY }) {
 		}
 	}
 
-	function ground(state, t) {
+	// --- The ground, back to front -------------------------------------------
+	// Things further away are drawn first so nearer things cover them:
+	//   1. backdrop(): grass, farmhouse and its ribbons, scarecrow, bought props
+	//      (then the house lights, which belong to the house, not the foreground)
+	//   2. foreground(): visiting neighbours on the lane, the plots and crops,
+	//      sprinkler spray, farmhands (back rows first), drones above them
+	//   3. the greenhouse glass, over the plots and everyone working in them
+	//   4. overhead(): the crow, which flies over the glass
+	//   5. rain or snow, in front of everything
+	// Steps 1, 2 and 4 each go through lit(), which tints them with the light
+	// of the hour.
+
+	function backdrop(state) {
 		const grass = toHex(shade.grass);
 		ctx.fillStyle = grass;
 		ctx.fillRect(0, horizon, VIEW.width, VIEW.height - horizon);
@@ -138,8 +150,11 @@ export function createFarmView(canvas, data, { SPRITES, PALETTE, VIEW, SKY }) {
 		for (const [tag, x] of Object.entries(VIEW.props)) {
 			if (has(state, tag)) put(art[tag][0], x, horizon - art[tag][0].height + 12);
 		}
+	}
 
-		// Friends drop by: anyone with a heart strolls along the lane.
+	function foreground(state, t) {
+		// Friends drop by: anyone with a heart strolls along the lane, in front
+		// of the buildings and behind the plots.
 		data.NEIGHBOURS.forEach((n, i) => {
 			const friend = state.friends[n.id];
 			if (!friend || heartsOf(friend.points, T.friends) < 1) return;
@@ -168,32 +183,47 @@ export function createFarmView(canvas, data, { SPRITES, PALETTE, VIEW, SKY }) {
 				}
 			}
 		}
+		// Farmhands in the back rows first, so one in front is never hidden by one behind.
+		const hands = [];
 		for (let i = 0; i < helperCount(state, 'farmhand'); i++) {
 			const { x, y } = cell((Math.floor(t * 1.3 + i * 0.6) * 7 + i * 5) % n);
-			put(art.farmhand[0], x, y - 8 - (Math.floor(t * 4 + i) % 2));
+			hands.push({ x, y: y - 8 - (Math.floor(t * 4 + i) % 2), row: y });
 		}
+		hands.sort((a, b) => a.row - b.row);
+		for (const h of hands) put(art.farmhand[0], h.x, h.y);
 		const span = grid.cols * grid.size - art.drone[0].width;
 		for (let i = 0; i < helperCount(state, 'drone'); i++) {
 			const row = i % Math.ceil(n / grid.cols);
 			put(art.drone[0], grid.x + (t * 45 + i * 61) % span, grid.y + row * grid.size - 6 + Math.sin(t * 3 + i) * 2);
 		}
-
-		if (t < crowUntil) {
-			const f = 1 - (crowUntil - t) / CROW_SECONDS;
-			put(art.crow[Math.floor(t * 8) % 2], -16 + f * (VIEW.width + 32), grid.y - 14 + Math.sin(f * 9) * 5);
-		}
 	}
 
-	// Dawn, dusk and dark wash over the ground and everything on it; then the
-	// farmhouse lights come on.
-	function light() {
+	function overhead(t) {
+		if (t >= crowUntil) return;
+		const f = 1 - (crowUntil - t) / CROW_SECONDS;
+		put(art.crow[Math.floor(t * 8) % 2], -16 + f * (VIEW.width + 32), grid.y - 14 + Math.sin(f * 9) * 5);
+	}
+
+	// Draws something on its own layer, washes it with the light of the hour
+	// (dawn, dusk, dark), and puts it on screen. Only the pixels drawn are
+	// tinted, so the sky behind is left alone.
+	function lit(drawing) {
+		ctx = land;
+		land.clearRect(0, 0, VIEW.width, VIEW.height);
+		drawing();
 		land.globalCompositeOperation = 'source-atop';
 		land.globalAlpha = shade.light[3];
 		land.fillStyle = toHex(shade.light.slice(0, 3));
 		land.fillRect(0, 0, VIEW.width, VIEW.height);
 		land.globalAlpha = 1;
 		land.globalCompositeOperation = 'source-over';
+		ctx = screen;
 		screen.drawImage(layer, 0, 0);
+	}
+
+	// After dark the farmhouse windows glow. They are part of the house, so
+	// they are drawn before anything that can walk in front of it.
+	function houseLights() {
 		ctx.globalAlpha = shade.night[0];
 		ctx.fillStyle = SKY.window;
 		const house = { x: 8, y: horizon - art.farmhouse[0].height + 12 };
@@ -260,13 +290,12 @@ export function createFarmView(canvas, data, { SPRITES, PALETTE, VIEW, SKY }) {
 			sky(state, t);
 			const top = stalk(state, t);
 			probes(state, top, t);
-			ctx = land;
-			land.clearRect(0, 0, VIEW.width, VIEW.height);
-			ground(state, t);
-			ctx = screen;
-			light();
+			lit(() => backdrop(state));
+			houseLights();
+			lit(() => foreground(state, t));
 			const glass = state.mods.greenhouse ? farmBox(state.plots.length) : null;
 			if (glass) greenhouse(glass);
+			lit(() => overhead(t));
 			const fx = weather?.fx ?? season.fx;
 			if (fx) falling(fx, t, glass);
 		},

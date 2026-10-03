@@ -273,4 +273,8 @@ window.game = {
 		for (let t = 0; t < s; t += T.tickSeconds) tick(state, T.tickSeconds, DATA, rng);
 		view.update(state, measured.rate);
 	},
+	// Redraws the farm for animation time `t` (seconds), e.g. to check a frame.
+	draw(t = seconds()) {
+		farm.draw(state, t);
+	},
 };
