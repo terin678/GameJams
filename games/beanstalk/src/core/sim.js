@@ -11,6 +11,7 @@ import { createSeeds, unlockDue, cross, choose, judge, seedEffects } from './see
 import { rulesFor, twistsFor, lineFor } from './runs.js';
 import { createClimb, unlockDue as climbDue, startClimb, arrive, choose as chooseOption, nextEncounter, findEffects } from './climb.js';
 import { createGuard, unlockDue as guardDue, openGuard, step as guardStep, assign, buyPost, rankEffects, waveText } from './guard.js';
+import { createExchange, unlockDue as exchangeDue, openExchange, step as exchangeStep, kick, buy as buyShare, sell as sellShare } from './exchange.js';
 import { formatNumber } from './format.js';
 
 const VERSION = 1;
@@ -31,6 +32,7 @@ export function createState(data, { golden = 0 } = {}) {
 		seeds: createSeeds(data.SEEDS),
 		climb: createClimb(),
 		guard: createGuard(data.GUARD),
+		exchange: createExchange(),
 		height: 0, phase: 1,
 		log: [],
 		seen: {},          // journal lines that are only worth saying once
@@ -138,6 +140,7 @@ function newWeather(state, data, rng, events) {
 		return;
 	}
 	state.weather = w.id;
+	kick(state, w.id, data.EXCHANGE);
 	events.push({ type: 'weather', id: w.id });
 	sayOnce(state, data, w.id, w.log);
 }
@@ -252,6 +255,12 @@ export function tick(state, dt, data, rng) {
 		raid(state, data, e, rng);
 		events.push(e);
 	}
+	if (exchangeDue(state, data.EXCHANGE)) {
+		openExchange(state, data.EXCHANGE, data.SEASONS, T.calendar);
+		events.push({ type: 'exchange' });
+		say(state, data, data.EXCHANGE.log);
+	}
+	exchangeStep(state, dt, data.EXCHANGE, data.SEASONS, T.calendar, rng);
 	for (const def of newlyMet(state, data.NEIGHBOURS)) {
 		meet(state, def);
 		events.push({ type: 'meet', id: def.id });
@@ -306,6 +315,10 @@ export const postAnimal = (state, id, delta, data) => !state.done && assign(stat
 
 // Builds another guard post.
 export const buildPost = (state, data) => !state.done && buyPost(state, data.GUARD);
+
+// Buys crates at the exchange with a share of your coins, or sells a share of your crates.
+export const buyCrates = (state, share, data) => !state.done && buyShare(state, share, data.EXCHANGE);
+export const sellCrates = (state, share, data) => !state.done && sellShare(state, share, data.EXCHANGE);
 
 // Starts a cross: pays for it and sets the seedlings growing.
 export const crossSeeds = (state, data, rng) => !state.done && cross(state, data.SEEDS, rng);

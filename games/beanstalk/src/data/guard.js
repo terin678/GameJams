@@ -5,7 +5,7 @@
 // bigger waves, then rabbits and the dog; once that is second nature the
 // animals learn to post themselves (the `drill` rank).
 export const GUARD = {
-	unlock: { grown: 2500 },
+	unlock: { grown: 6000 },
 	log: 'Something has been at the beans in the night. Time to post a guard.',
 	posts: { start: 2, max: 8, cost: { coins: 1500 }, costGrowth: 3 },
 	raid: {

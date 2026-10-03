@@ -249,6 +249,14 @@ export const SPRITES = {
 		'.bb.',
 		'b..b',
 	]] },
+	// Crates bought at the exchange, stacked by the stalk for as long as you hold any.
+	crates: { frames: [[
+		'.hhhh.',
+		'.hHHh.',
+		'hhhhhh',
+		'hHhhHh',
+		'hhhhhh',
+	]] },
 	// The guard (data/guard.js): pests, and the animals posted against them.
 	slug: { frames: [[
 		'.....k',
@@ -383,6 +391,7 @@ export const VIEW = {
 	effects: ['sprinkle', 'glow'],
 	// Farmhouse window panes, in sprite pixels [x, y, w, h]; lit at night.
 	windows: [[3, 10, 2, 2], [10, 10, 2, 2]],
+	cratesX: 126,         // where crates held at the exchange are stacked
 	castleFrom: 'gate',   // the castle shows once this ledge of the climb has been reached
 	maxRibbons: 5,        // drawn on the farmhouse
 	maxHelpers: 8,

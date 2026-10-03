@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { createState, refresh, tick, tend, buyProject, giveGift, crossSeeds, chooseSeedling, climb, chooseAtLedge, postAnimal, buildPost, nudgePrice, simulateOffline, serialize, restore, newGamePlus } from '../../games/beanstalk/src/core/sim.js';
+import { createState, refresh, tick, tend, buyProject, giveGift, crossSeeds, chooseSeedling, climb, chooseAtLedge, postAnimal, buildPost, buyCrates, sellCrates, nudgePrice, simulateOffline, serialize, restore, newGamePlus } from '../../games/beanstalk/src/core/sim.js';
 import { DATA } from '../../games/beanstalk/src/data/index.js';
 import { createRng } from '../../shared/rng.js';
 
@@ -451,4 +451,28 @@ test('an old save without a guard gets one', () => {
 	const back = restore(saved, DATA);
 	assert.equal(back.guard.open, false);
 	assert.equal(back.guard.posts, DATA.GUARD.posts.start);
+});
+
+test('the exchange: opens in phase 2, and weather moves the board', () => {
+	const X = DATA.EXCHANGE;
+	const s = createState(DATA);
+	assert.equal(buyCrates(s, 1, DATA), false, 'no exchange yet');
+	s.grown = X.unlock.grown;
+	const rng = createRng(5);
+	assert.ok(tick(s, 0.1, DATA, rng).some(e => e.type === 'exchange'));
+	assert.ok(s.log.includes(X.log));
+	s.coins = 1000;
+	assert.equal(buyCrates(s, 0.5, DATA), true);
+	assert.equal(s.coins, 500);
+	assert.ok(s.exchange.crates > 0);
+	// Order rain every spell: a glut, so the board falls below the season's level.
+	s.mods.rainmaker = true;
+	s.weatherT = DATA.TUNING.weather.everySeconds;
+	tick(s, 0.1, DATA, rng);
+	assert.ok(s.exchange.shock < 0, 'rain pushes the price down');
+	assert.equal(sellCrates(s, 1, DATA), true);
+	assert.equal(s.exchange.crates, 0);
+	const saved = JSON.parse(JSON.stringify(serialize(s)));
+	delete saved.exchange;
+	assert.equal(restore(saved, DATA).exchange.open, false, 'an old save gets a closed exchange');
 });

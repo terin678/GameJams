@@ -15,6 +15,7 @@ import { periodAt } from '../core/sky.js';
 import { nextTwist, twistsFor, endingLine } from '../core/runs.js';
 import { nextEncounter, climbBlocked, climbingFor, optionBlocked, findsOf, temper } from '../core/climb.js';
 import { raidIn, postsUsed, postCost, defendersFor, ranksEarned, nextRank, hasDrill, needsAttention, waveText } from '../core/guard.js';
+import { valueOf, averageCost } from '../core/exchange.js';
 import { available, affordable, costOf } from '../core/projects.js';
 import { crossCost, canCross, growingFor, fairTrait, fairBar, ribbonCount, luckOf } from '../core/seeds.js';
 import { heartsOf, heartProgress, giftsFor, giftCost, canGive, waitFor, nextPerk } from '../core/neighbours.js';
@@ -28,8 +29,9 @@ const TABS = [
 	{ id: 'projects', label: 'Projects', unlocked: () => true },
 	{ id: 'neighbours', label: 'Neighbours', unlocked: state => Object.keys(state.friends).length > 0 },
 	{ id: 'seeds', label: 'Seeds', unlocked: state => state.seeds.open, wants: state => growingFor(state) === 0 },
-	{ id: 'climb', label: 'Climb', unlocked: state => state.climb.open, wants: state => state.climb.waiting },
 	{ id: 'guard', label: 'Guard', unlocked: state => state.guard.open, wants: (state, data) => needsAttention(state, data.GUARD) },
+	{ id: 'climb', label: 'Climb', unlocked: state => state.climb.open, wants: state => state.climb.waiting },
+	{ id: 'exchange', label: 'Exchange', unlocked: state => state.exchange.open },
 ];
 const REACTION_MARK = { love: '♥', like: '+', neutral: '·', dislike: '×' };
 
@@ -116,6 +118,11 @@ export function createView(doc, data, handlers) {
 		if (!b) return;
 		if (b.dataset.climb) handlers.climb();
 		if (b.dataset.option) handlers.ledge(Number(b.dataset.option));
+	});
+	$('exchange').addEventListener('click', e => {
+		const b = e.target.closest('button');
+		if (b?.dataset.buy) handlers.trade('buy', Number(b.dataset.buy));
+		if (b?.dataset.sell) handlers.trade('sell', Number(b.dataset.sell));
 	});
 	$('guard').addEventListener('click', e => {
 		const b = e.target.closest('button');
@@ -369,6 +376,73 @@ export function createView(doc, data, handlers) {
 		if (again) $('climb').querySelector(again)?.focus();
 	}
 
+	// The price of a crate over the last few minutes, with a line at what yours cost.
+	function chart(history, cost) {
+		const c = el('canvas', { className: 'chart', width: 300, height: 72 });
+		c.setAttribute('role', 'img');
+		c.setAttribute('aria-label', 'The price of a crate over the last few minutes');
+		const g = c.getContext('2d');
+		if (!g || history.length < 2) return c;
+		const all = cost ? [...history, cost] : history;
+		const lo = Math.min(...all);
+		const hi = Math.max(...all);
+		const y = v => 66 - (v - lo) / Math.max(1e-9, hi - lo) * 60;
+		if (cost) {
+			g.strokeStyle = '#f2d544';
+			g.setLineDash([4, 4]);
+			g.beginPath();
+			g.moveTo(0, y(cost));
+			g.lineTo(300, y(cost));
+			g.stroke();
+			g.setLineDash([]);
+		}
+		g.strokeStyle = '#6fdc55';
+		g.lineWidth = 2;
+		g.beginPath();
+		history.forEach((v, i) => g[i ? 'lineTo' : 'moveTo'](i / (data.EXCHANGE.history - 1) * 300, y(v)));
+		g.stroke();
+		return c;
+	}
+
+	// The Exchange: the board, your crates, and the buttons to trade.
+	function exchange(state) {
+		const X = data.EXCHANGE;
+		const ex = state.exchange;
+		const canBuy = state.coins > 0;
+		const sig = [ex.price, ex.crates, ex.history.length, canBuy].join('|');
+		if (shown.get('exchange') === sig) return;
+		shown.set('exchange', sig);
+		const d = doc.activeElement?.dataset ?? {};
+		const focused = d.buy ? `[data-buy="${d.buy}"]` : d.sell ? `[data-sell="${d.sell}"]` : null;
+
+		const cost = averageCost(ex);
+		const worth = valueOf(ex);
+		const change = ex.paid > 0 ? (worth / ex.paid - 1) * 100 : 0;
+		const row = (label, key, can) => el('div', { className: 'trade' }, el('span', {}, label),
+			...X.shares.map(share => {
+				const b = el('button', { type: 'button', disabled: !can }, share === 1 ? 'all' : `${Math.round(share * 100)}%`);
+				b.dataset[key] = String(share);
+				b.setAttribute('aria-label', `${label} ${share === 1 ? 'all' : `${Math.round(share * 100)}%`} of your ${key === 'buy' ? 'coins' : 'crates'}`);
+				return b;
+			}));
+		const crates = ex.crates < 100 ? String(Math.round(ex.crates * 10) / 10) : formatNumber(ex.crates);
+		$('exchange').replaceChildren(
+			el('div', { className: 'box' }, el('h3', {}, `Bean crates · ${ex.price.toFixed(2)} coins each`),
+				chart(ex.history, cost),
+				el('p', { className: 'muted' }, X.hint)),
+			el('div', { className: 'box' }, el('h3', {}, 'Your crates'),
+				ex.crates > 0
+					? el('p', {}, `${crates} crates, bought at ${cost.toFixed(2)} each. Worth ${formatMoney(worth)} coins now `,
+						el('span', { className: change >= 0 ? 'up' : 'down' }, `(${change >= 0 ? '+' : ''}${change.toFixed(0)}%)`), '.')
+					: el('p', { className: 'muted' }, 'You hold no crates.'),
+				row('Buy', 'buy', canBuy), row('Sell', 'sell', ex.crates > 0),
+				el('p', { className: 'muted' }, `Buying spends that share of your coins. Selling pays the price on the board, less a ${Math.round(X.fee * 100)}% fee.`)),
+			el('div', { className: 'box' }, el('h3', {}, 'Account'),
+				el('p', {}, 'Made at the exchange so far: ',
+					el('span', { className: ex.profit >= 0 ? 'up' : 'down' }, `${ex.profit < 0 ? '−' : ''}${formatMoney(Math.abs(ex.profit))} coins`))));
+		if (focused) $('exchange').querySelector(focused)?.focus();
+	}
+
 	// The Guard: the raid that is coming (or going on), who is posted, and the record so far.
 	function guard(state) {
 		const G = data.GUARD;
@@ -489,6 +563,7 @@ export function createView(doc, data, handlers) {
 			if (tab === 'seeds') seeds(state, cal.year);
 			if (tab === 'climb') climb(state);
 			if (tab === 'guard') guard(state);
+			if (tab === 'exchange') exchange(state);
 			journal(state);
 			shown.set('ready', true);   // from now on, anything that appears is news
 		},

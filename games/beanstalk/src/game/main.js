@@ -1,7 +1,7 @@
 // Boot: load the save, catch up on time away, then run the loop.
 
 import { DATA, SPRITES, PALETTE, VIEW, SOUNDS, EVENT_SOUNDS, MUSIC, SKY } from '../data/index.js';
-import { createState, tick, tend, buyProject, giveGift, crossSeeds, chooseSeedling, climb, chooseAtLedge, postAnimal, buildPost, nudgePrice, simulateOffline, serialize, restore, isSave, newGamePlus } from '../core/sim.js';
+import { createState, tick, tend, buyProject, giveGift, crossSeeds, chooseSeedling, climb, chooseAtLedge, postAnimal, buildPost, buyCrates, sellCrates, nudgePrice, simulateOffline, serialize, restore, isSave, newGamePlus } from '../core/sim.js';
 import { encodeSave, decodeSave } from '../core/save.js';
 import { createStore } from '../../../../shared/storage.js';
 import { createRng } from '../../../../shared/rng.js';
@@ -71,6 +71,9 @@ const view = createView(document, { ...DATA, SKY }, {
 	},
 	post(id, delta) {
 		sfx.play(postAnimal(state, id, delta, DATA) ? 'price' : 'deny');
+	},
+	trade(side, share) {
+		sfx.play((side === 'buy' ? buyCrates : sellCrates)(state, share, DATA) ? 'buy' : 'deny');
 	},
 	build() {
 		sfx.play(buildPost(state, DATA) ? 'buy' : 'deny');

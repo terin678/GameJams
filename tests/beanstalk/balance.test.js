@@ -2,7 +2,7 @@
 // game can be finished. Set BEANSTALK_TIMELINE=1 to print what the bot bought when.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { createState, tick, tend, buyProject, giveGift, crossSeeds, chooseSeedling, climb, chooseAtLedge, buildPost, nudgePrice } from '../../games/beanstalk/src/core/sim.js';
+import { createState, tick, tend, buyProject, giveGift, crossSeeds, chooseSeedling, climb, chooseAtLedge, buildPost, buyCrates, sellCrates, nudgePrice } from '../../games/beanstalk/src/core/sim.js';
 import { available, affordable } from '../../games/beanstalk/src/core/projects.js';
 import { nextEncounter, optionBlocked } from '../../games/beanstalk/src/core/climb.js';
 import { createGuard, makeWave, bestRoster, defendersFor, setRoster, postCost, step as guardStep } from '../../games/beanstalk/src/core/guard.js';
@@ -66,6 +66,12 @@ function playBot({ seed = 1, limit = 8 * 60 * MINUTE, clicksPerSecond = 3, verbo
 			const cost = postCost(guard, DATA.GUARD);
 			if (cost && state.coins > 3 * cost.coins) buildPost(state, DATA);
 			setRoster(state, bestRoster(guard.wave, guard.posts, defendersFor(guard, DATA.GUARD)), DATA.GUARD);
+		}
+		// Buys crates at harvest and sells them in spring.
+		if (state.exchange.open) {
+			const { season } = calendar(state.day, DATA.SEASONS, T.calendar);
+			if (season.id === 'autumn' && state.exchange.crates === 0) buyCrates(state, 0.5, DATA);
+			if (season.id === 'spring' && state.exchange.crates > 0) sellCrates(state, 1, DATA);
 		}
 		for (const def of available(state, DATA.PROJECTS)) {
 			if (!affordable(state, def) || !buyProject(state, def.id, DATA)) continue;
@@ -184,6 +190,25 @@ test('in every wave tier, matching the animals to the pests is what wins', () =>
 		if (right < 0.65 || wrong > 0.35 || safe < 0.9) bad.push(note);
 	}
 	assert.deepEqual(bad, []);
+});
+
+test('trading with the seasons makes money; trading against them loses it', () => {
+	if (verbose) console.log(`exchange profit: ${formatNumber(state.exchange.profit)} coins`);
+	assert.ok(state.exchange.open);
+	assert.ok(state.exchange.profit > 0, `profit ${state.exchange.profit}`);
+	// The same years on the board, bought in spring and sold in autumn.
+	const s = createState(DATA);
+	const rng = createRng(11);
+	s.phase = 2;
+	s.grown = DATA.EXCHANGE.unlock.grown;
+	for (let t = 0; t < 4 * 12 * T.calendar.daySeconds; t += 1) {
+		tick(s, 1, DATA, rng);
+		const { season } = calendar(s.day, DATA.SEASONS, T.calendar);
+		s.coins = Math.max(s.coins, 1000);
+		if (season.id === 'spring' && s.exchange.crates === 0) buyCrates(s, 0.5, DATA);
+		if (season.id === 'autumn' && s.exchange.crates > 0) sellCrates(s, 1, DATA);
+	}
+	assert.ok(s.exchange.profit < 0, `profit ${s.exchange.profit}`);
 });
 
 test('the first purchase comes quickly', () => {

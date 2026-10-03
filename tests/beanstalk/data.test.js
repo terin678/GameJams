@@ -10,13 +10,14 @@ import { validateSky } from '../../games/beanstalk/src/core/sky.js';
 import { validateRuns } from '../../games/beanstalk/src/core/runs.js';
 import { validateClimb } from '../../games/beanstalk/src/core/climb.js';
 import { validateGuard } from '../../games/beanstalk/src/core/guard.js';
+import { validateExchange } from '../../games/beanstalk/src/core/exchange.js';
 import { heightFor } from '../../games/beanstalk/src/core/phases.js';
 import { plotOrder } from '../../games/beanstalk/src/core/layout.js';
 import { parsePixelMap } from '../../shared/pixelart.js';
 import { validateSfx } from '../../shared/sfx.js';
 import { validateSong } from '../../shared/music.js';
 
-const { TUNING: T, PROJECTS, SEASONS, WEATHER, PHASES, MILESTONES, LANDMARKS, NEIGHBOURS, GIFTS, SEEDS, RUNS, CLIMB, GUARD } = DATA;
+const { TUNING: T, PROJECTS, SEASONS, WEATHER, PHASES, MILESTONES, LANDMARKS, NEIGHBOURS, GIFTS, SEEDS, RUNS, CLIMB, GUARD, EXCHANGE } = DATA;
 const ascending = list => list.every((v, i) => i === 0 || v > list[i - 1]);
 
 test('every project is well formed', () => {
@@ -152,6 +153,25 @@ test('the guard is well formed, opens in phase 1, and has art for everything', (
 		assert.ok(w.foes.filter(f => !before.includes(f)).length <= 1, `wave at ${w.wins} wins`);
 	});
 	assert.ok(GUARD.waves.at(-1).size <= GUARD.posts.max * 2 + 1, 'the biggest wave can be beaten with every post built');
+});
+
+test('the exchange is well formed, and a year on the board is worth trading', () => {
+	assert.deepEqual(validateExchange(EXCHANGE, {
+		seasons: SEASONS.map(s => s.id), weather: WEATHER.map(w => w.id), phases: PHASES.map(p => p.id),
+	}), []);
+	const levels = Object.values(EXCHANGE.seasons);
+	const swing = Math.max(...levels) / Math.min(...levels) * (1 - EXCHANGE.fee);
+	assert.ok(swing > 1.2 && swing < 2, `buying at the bottom and selling at the top makes x${swing.toFixed(2)}`);
+	assert.ok(EXCHANGE.noise * 3 < Math.max(...levels) - Math.min(...levels), 'the seasons matter more than the noise');
+	assert.ok(SPRITES.crates && VIEW.cratesX > 0);
+});
+
+test('one new tab at a time: the systems open in order, well apart', () => {
+	const order = [SEEDS.unlock.grown, GUARD.unlock.grown, T.height.points[1][0], EXCHANGE.unlock.grown];
+	assert.ok(ascending(order), order.join(' < '));
+	for (let i = 1; i < order.length; i++) assert.ok(order[i] >= order[i - 1] * 3, `${order[i - 1]} then ${order[i]}`);
+	assert.equal(CLIMB.unlock.phase, 2);
+	assert.equal(EXCHANGE.unlock.phase, 2);
 });
 
 test('seasons and weather make sense', () => {

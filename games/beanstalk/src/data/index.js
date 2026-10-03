@@ -8,8 +8,9 @@ import { SEEDS } from './seeds.js';
 import { RUNS } from './runs.js';
 import { CLIMB } from './climb.js';
 import { GUARD } from './guard.js';
+import { EXCHANGE } from './exchange.js';
 
-export const DATA = { TUNING, SEASONS, WEATHER, PHASES, MILESTONES, LANDMARKS, PROJECTS, NEIGHBOURS, GIFTS, SEEDS, RUNS, CLIMB, GUARD };
+export const DATA = { TUNING, SEASONS, WEATHER, PHASES, MILESTONES, LANDMARKS, PROJECTS, NEIGHBOURS, GIFTS, SEEDS, RUNS, CLIMB, GUARD, EXCHANGE };
 export { SPRITES, PALETTE, VIEW } from './sprites.js';
 export { SOUNDS, EVENT_SOUNDS } from './sounds.js';
 export { MUSIC } from './music.js';

@@ -34,6 +34,7 @@ export const EVENT_SOUNDS = {
 	climb: 'meet',
 	ledge: 'milestone',
 	guard: 'meet',
+	exchange: 'meet',
 	raid: 'raid',
 	raidEnd: { won: 'milestone', lost: 'dislike' },
 	fair: { won: 'heart', lost: 'dislike' },
