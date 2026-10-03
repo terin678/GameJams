@@ -1,5 +1,13 @@
 [
 	{
+		"slug": "beanstalk",
+		"title": "Beanstalk",
+		"blurb": "An idle farming game. Plant one bean, hire a farmhand, build some drones, and keep going until the stalk runs out of universe.",
+		"date": "2026-10-02",
+		"tags": ["idle", "farming", "incremental"],
+		"path": "games/beanstalk/"
+	},
+	{
 		"slug": "superposition",
 		"title": "Superposition",
 		"blurb": "Schrödinger's cat in a maze, dodging Observers. Tunnel through walls, split into a mirror twin, and if one of you is seen, collapse into the other.",

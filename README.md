@@ -43,6 +43,8 @@ Art and sound are generated in code: sprites are strings of palette characters
 ## Add a game
 
 1. Make `games/<slug>/index.html` (copy `games/midair/index.html` for a Phaser game).
+   A game doesn't have to use Phaser: Beanstalk is plain HTML and a small canvas;
+   copy `games/beanstalk/index.html` for that kind.
 2. Add an entry to `games.json`:
    ```json
    { "slug": "x", "title": "X", "blurb": "One line.", "date": "2026-10-02", "tags": ["jam"], "path": "games/x/" }
@@ -112,3 +114,28 @@ The maze (`src/data/maze.js`) is authored as a left half and mirrored, and
 `tests/superposition/data.test.js` checks it stays symmetric, so the twin's
 mirrored moves are always legal. Observer behaviours, timings and speeds are
 all in `src/data/`.
+
+## Beanstalk
+
+An idle farming game. Plant one bean, sell beans, buy projects, and watch the
+stalk grow from the garden to the edge of the universe. About half an hour,
+in three phases: The Plot, Agribusiness, Beyond. Finishing gives a Golden Bean
+(double yield) for New Game+.
+
+Click **Tend** (or press Space / Enter) to plant and pick. Everything else is
+buttons. It saves itself every few seconds.
+
+- **Time away:** the farm keeps working while the tab is closed, at a quarter
+  speed, for up to 8 hours of absence. You get a summary when you come back.
+- **Add a project:** add a line to `src/data/projects.js` (cost, what it
+  requires, what it does). `data.test.js` checks it, and `balance.test.js`
+  plays the whole game with a bot to make sure it can still be finished in
+  25 to 45 minutes. See the bot's timeline with:
+
+  ```bash
+  BEANSTALK_TIMELINE=1 node --test tests/beanstalk/balance.test.js
+  ```
+- Seasons, weather, prices, milestones and the height of everything in the sky
+  are in `src/data/` too.
+- From the browser console, `game.state` is the live game and `game.skip(60)`
+  fast-forwards a minute.

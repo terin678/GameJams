@@ -1,0 +1,175 @@
+<!doctype html>
+<html lang="en">
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<title>Beanstalk</title>
+	<meta name="description" content="Plant one bean. Keep going.">
+	<style>
+		:root {
+			--bg: #10131c; --panel: #1a1f2e; --panel-hi: #232a3d; --ink: #e9ecf4;
+			--muted: #8a93b8; --bean: #8fe06a; --gold: #f2d544; --line: #2c3550;
+			color-scheme: dark;
+		}
+		* { box-sizing: border-box; }
+		body {
+			margin: 0; background: var(--bg); color: var(--ink);
+			font: 14px/1.5 ui-monospace, 'Cascadia Mono', Menlo, Consolas, monospace;
+		}
+		#links { padding: 8px 12px; font-size: 12px; color: var(--muted); }
+		#links a { color: var(--muted); text-decoration: none; }
+		#links a:hover { color: var(--bean); }
+
+		#app {
+			display: grid; grid-template-columns: minmax(240px, 400px) minmax(300px, 500px);
+			gap: 28px; justify-content: center; align-items: start; padding: 8px 16px 40px;
+		}
+		#scene { position: sticky; top: 12px; }
+		#farm {
+			display: block; width: 100%; height: auto; image-rendering: pixelated;
+			border: 1px solid var(--line); border-radius: 8px; background: #000;
+		}
+		#calendar { margin: 8px 0 0; color: var(--muted); text-align: center; }
+
+		h1 { margin: 0; font-size: 26px; letter-spacing: 0.06em; }
+		h1 small { font-size: 13px; color: var(--gold); letter-spacing: 0; font-weight: 400; }
+		h2 {
+			margin: 20px 0 6px; padding-bottom: 3px; font-size: 12px; font-weight: 600;
+			letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted);
+			border-bottom: 1px solid var(--line);
+		}
+		p { margin: 2px 0; }
+		.big { font-size: 20px; }
+		.big b { color: var(--bean); font-size: 30px; }
+		.muted { color: var(--muted); }
+		b { font-weight: 700; }
+
+		button {
+			font: inherit; color: var(--ink); background: var(--panel);
+			border: 1px solid var(--line); border-radius: 6px; padding: 5px 10px; cursor: pointer;
+		}
+		button:hover:not(:disabled), button:focus-visible { border-color: var(--bean); background: var(--panel-hi); outline: none; }
+		button:active:not(:disabled) { transform: translateY(1px); }
+		button:disabled { opacity: 0.6; cursor: default; }
+		#tend { font-size: 16px; padding: 10px 20px; min-width: 170px; border-color: var(--bean); }
+		.row { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; }
+		.price button { padding: 2px 9px; }
+
+		#projects { display: grid; gap: 6px; }
+		#projects button { text-align: left; padding: 7px 10px; }
+		#projects .cost { color: var(--gold); }
+		#projects small { display: block; color: var(--muted); font-size: 12px; }
+		#projects:empty::after { content: 'Nothing to buy yet. Grow some beans.'; color: var(--muted); }
+
+		#log { list-style: none; margin: 0; padding: 0; color: var(--muted); }
+		#log li:first-child { color: var(--ink); }
+		#log li::before { content: '> '; color: var(--bean); }
+
+		footer { margin-top: 24px; font-size: 12px; }
+		footer button { font-size: 12px; padding: 3px 8px; }
+
+		.overlay {
+			position: fixed; inset: 0; z-index: 5; display: grid; place-items: center;
+			background: rgba(8, 10, 16, 0.78); padding: 16px;
+		}
+		.overlay[hidden] { display: none; }
+		.card {
+			max-width: 420px; background: var(--panel); border: 1px solid var(--bean);
+			border-radius: 10px; padding: 20px 24px;
+		}
+		.card h3 { margin: 0 0 8px; font-size: 18px; color: var(--bean); }
+		.card button { margin-top: 14px; padding: 8px 16px; }
+
+		@media (max-width: 720px) {
+			#app { grid-template-columns: 1fr; gap: 12px; }
+			#scene { position: static; }
+			#farm { width: auto; height: 36vh; margin: 0 auto; }
+		}
+	</style>
+</head>
+<body>
+	<nav id="links">
+		<a href="../../">&larr; all games</a> &middot;
+		<a data-feedback="bug" href="https://github.com/terin678/GameJams/issues/new/choose">bug</a> &middot;
+		<a data-feedback="idea" href="https://github.com/terin678/GameJams/issues/new/choose">idea</a>
+	</nav>
+
+	<main id="app">
+		<section id="scene">
+			<canvas id="farm" width="240" height="320" aria-label="Your farm and the beanstalk"></canvas>
+			<p id="calendar"></p>
+		</section>
+
+		<section id="panel">
+			<h1>BEANSTALK <small id="golden" hidden></small></h1>
+			<p class="big"><b id="grown">0</b> beans grown</p>
+			<p>Stalk: <b id="height">0.0 m</b> <span class="muted">&middot; <span id="phase"></span></span></p>
+			<p class="muted" id="rate"></p>
+
+			<h2>Farm</h2>
+			<div class="row">
+				<button id="tend" type="button">Plant a bean</button>
+				<span id="plots"></span>
+			</div>
+			<p class="muted" id="growing"></p>
+			<p class="muted" id="helpers" hidden></p>
+
+			<h2>Market</h2>
+			<p>Coins: <b id="coins">0.00</b></p>
+			<p>Beans in the barn: <b id="beans">0</b></p>
+			<p class="row price">
+				<span>Price per bean: <b id="price">1.00</b></span>
+				<button id="price-down" type="button" aria-label="Lower the price">&minus;</button>
+				<button id="price-up" type="button" aria-label="Raise the price">+</button>
+				<span class="muted" id="pricing"></span>
+			</p>
+			<p class="muted" id="demand"></p>
+
+			<div id="research" hidden>
+				<h2>Almanac</h2>
+				<p>Pages: <b id="pages">0</b> <span class="muted" id="pages-rate"></span></p>
+			</div>
+
+			<div id="space" hidden>
+				<h2>Beyond</h2>
+				<p>Seed probes: <b id="probes">0</b></p>
+				<p>Matter: <b id="matter">0</b></p>
+			</div>
+
+			<h2>Projects</h2>
+			<div id="projects"></div>
+
+			<h2>Journal</h2>
+			<ul id="log"></ul>
+
+			<footer class="row muted">
+				<span>Space or Enter tends. Saves itself.</span>
+				<button id="mute" type="button">Sound: on</button>
+				<button id="reset" type="button">Start over</button>
+			</footer>
+		</section>
+	</main>
+
+	<div id="away" class="overlay" hidden>
+		<div class="card" role="dialog" aria-labelledby="away-title">
+			<h3 id="away-title">While you were away</h3>
+			<div id="away-body"></div>
+			<button id="away-ok" type="button">Back to work</button>
+		</div>
+	</div>
+
+	<div id="ending" class="overlay" hidden>
+		<div class="card" role="dialog" aria-labelledby="ending-title">
+			<h3 id="ending-title">Every atom is bean.</h3>
+			<div id="ending-body"></div>
+			<button id="again" type="button">Plant it again (New Game+)</button>
+		</div>
+	</div>
+
+	<script type="module" src="src/game/main.js"></script>
+	<script type="module">
+		import { installPage } from '../../shared/site.js';
+		installPage({ game: 'Beanstalk' });
+	</script>
+</body>
+</html>
