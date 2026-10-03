@@ -2,8 +2,9 @@
 // game can be finished. Set BEANSTALK_TIMELINE=1 to print what the bot bought when.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { createState, tick, tend, buyProject, giveGift, crossSeeds, chooseSeedling, nudgePrice } from '../../games/beanstalk/src/core/sim.js';
+import { createState, tick, tend, buyProject, giveGift, crossSeeds, chooseSeedling, climb, chooseAtLedge, nudgePrice } from '../../games/beanstalk/src/core/sim.js';
 import { available, affordable } from '../../games/beanstalk/src/core/projects.js';
+import { nextEncounter, optionBlocked } from '../../games/beanstalk/src/core/climb.js';
 import { canCross, crossCost, growingFor, fairTrait } from '../../games/beanstalk/src/core/seeds.js';
 import { calendar } from '../../games/beanstalk/src/core/seasons.js';
 import { demand, autoPriceDir } from '../../games/beanstalk/src/core/market.js';
@@ -49,6 +50,14 @@ function playBot({ seed = 1, limit = 8 * 60 * MINUTE, clicksPerSecond = 3, verbo
 			chooseSeedling(state, DATA.SEEDS.traits.indexOf(next), DATA);
 		}
 		if (canCross(state, DATA.SEEDS) && state.coins > 4 * crossCost(state.seeds, DATA.SEEDS).coins) crossSeeds(state, DATA, rng);
+		// Climbs when it can, and takes the first option open to it that leaves a find.
+		if (state.climb.waiting) {
+			const options = nextEncounter(state, DATA.CLIMB).options;
+			const open = options.map((o, i) => i).filter(i => !optionBlocked(state, options[i], T.friends));
+			chooseAtLedge(state, open.find(i => options[i].find) ?? open[0], DATA, rng);
+		} else {
+			climb(state, DATA);
+		}
 		for (const def of available(state, DATA.PROJECTS)) {
 			if (!affordable(state, def) || !buyProject(state, def.id, DATA)) continue;
 			at.bought[def.id] ??= state.time;
@@ -115,6 +124,11 @@ test('a second run is quicker, but still a proper game', () => {
 	const ratio = again.state.time / state.time;
 	if (verbose) console.log(`run 2 takes ${(ratio * 100).toFixed(0)}% as long as run 1`);
 	assert.ok(ratio > 0.6 && ratio < 0.9, `run 2 took ${(ratio * 100).toFixed(0)}% of run 1`);
+});
+
+test('the bot climbs all the way up', () => {
+	assert.equal(state.climb.ledge, DATA.CLIMB.encounters.length);
+	assert.ok(state.climb.finds.length >= 5, `${state.climb.finds.length} finds`);
 });
 
 test('the first purchase comes quickly', () => {

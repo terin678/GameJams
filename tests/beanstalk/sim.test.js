@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { createState, refresh, tick, tend, buyProject, giveGift, crossSeeds, chooseSeedling, nudgePrice, simulateOffline, serialize, restore, newGamePlus } from '../../games/beanstalk/src/core/sim.js';
+import { createState, refresh, tick, tend, buyProject, giveGift, crossSeeds, chooseSeedling, climb, chooseAtLedge, nudgePrice, simulateOffline, serialize, restore, newGamePlus } from '../../games/beanstalk/src/core/sim.js';
 import { DATA } from '../../games/beanstalk/src/data/index.js';
 import { createRng } from '../../shared/rng.js';
 
@@ -212,6 +212,56 @@ test('seed breeding opens, a chosen seedling changes the farm, and the fair give
 	assert.equal(s.seeds.ribbons[first.id], 1);
 	assert.ok(s.mods.marketing > marketing, 'a ribbon lifts demand');
 	assert.ok(s.log.some(l => l.includes(first.fair)));
+});
+
+test('the climb: reach a ledge, make a choice, bring something home', () => {
+	const C = DATA.CLIMB;
+	const s = createState(DATA);
+	assert.equal(climb(s, DATA), false, 'not before the stalk is in the clouds');
+	s.grown = T.height.points[1][0] * 2;
+	assert.ok(run(s, 0.1).some(e => e.type === 'climb'));
+	s.coins = 1e9;
+	s.grown = T.height.points[2][0];          // tall enough for every ledge of this phase
+	run(s, 0.1);
+
+	// Climb until an option with a find has been taken.
+	const always = { next: () => 0 };
+	let found = null;
+	for (let i = 0; i < 4 && !found; i++) {
+		assert.equal(climb(s, DATA), true);
+		const events = run(s, C.seconds + 0.2);
+		assert.ok(events.some(e => e.type === 'ledge'));
+		const enc = C.encounters[s.climb.ledge];
+		const pick = enc.options.findIndex(o => o.find && !o.needs && !o.cost);
+		const result = chooseAtLedge(s, Math.max(0, pick), DATA, always);
+		assert.equal(result.won, true);
+		found = result.find;
+	}
+	assert.ok(found, 'a find within the first few ledges');
+	assert.ok(s.log.some(l => l.includes(found.name)));
+	const [key, value] = Object.entries(found.effect)[0];
+	const without = { ...s, climb: { ...s.climb, finds: [] } };
+	refresh(without, DATA);
+	assert.ok(typeof value === 'number' && s.mods[key] !== without.mods[key], 'the find changes the farm');
+});
+
+test('the Giant stamping empties the farm', () => {
+	const C = DATA.CLIMB;
+	const s = createState(DATA);
+	s.grown = T.height.points[2][0];
+	s.coins = 1e12;
+	run(s, 0.1);
+	tend(s, DATA);
+	s.climb.ledge = C.encounters.findIndex(e => e.options.some(o => o.chance < 1));
+	s.climb.anger = C.giant.stompAt - 1;
+	climb(s, DATA);
+	run(s, C.seconds + 0.2);
+	tend(s, DATA);
+	const risky = C.encounters[s.climb.ledge].options.findIndex(o => o.chance < 1);
+	const result = chooseAtLedge(s, risky, DATA, { next: () => 0.999 });
+	assert.equal(result.stomp, true);
+	assert.ok(s.plots.every(p => p === null));
+	assert.ok(s.log[0].includes(C.giant.stomp));
 });
 
 test('buying a project applies it straight away', () => {

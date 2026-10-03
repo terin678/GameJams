@@ -13,6 +13,7 @@ import { demand } from '../core/market.js';
 import { calendar, growthMult, seasonNote } from '../core/seasons.js';
 import { periodAt } from '../core/sky.js';
 import { nextTwist, twistsFor, endingLine } from '../core/runs.js';
+import { nextEncounter, climbBlocked, climbingFor, optionBlocked, findsOf, temper } from '../core/climb.js';
 import { available, affordable, costOf } from '../core/projects.js';
 import { crossCost, canCross, growingFor, fairTrait, fairBar, ribbonCount, luckOf } from '../core/seeds.js';
 import { heartsOf, heartProgress, giftsFor, giftCost, canGive, waitFor, nextPerk } from '../core/neighbours.js';
@@ -25,7 +26,8 @@ const GUARD_MS = 350;
 const TABS = [
 	{ id: 'projects', label: 'Projects', unlocked: () => true },
 	{ id: 'neighbours', label: 'Neighbours', unlocked: state => Object.keys(state.friends).length > 0 },
-	{ id: 'seeds', label: 'Seeds', unlocked: state => state.seeds.open },
+	{ id: 'seeds', label: 'Seeds', unlocked: state => state.seeds.open, wants: state => growingFor(state) === 0 },
+	{ id: 'climb', label: 'Climb', unlocked: state => state.climb.open, wants: state => state.climb.waiting },
 ];
 const REACTION_MARK = { love: '♥', like: '+', neutral: '·', dislike: '×' };
 
@@ -107,6 +109,12 @@ export function createView(doc, data, handlers) {
 		if (b.dataset.cross) handlers.cross();
 		if (b.dataset.seedling) handlers.seedling(Number(b.dataset.seedling));
 	});
+	$('climb').addEventListener('click', e => {
+		const b = e.target.closest('button');
+		if (!b) return;
+		if (b.dataset.climb) handlers.climb();
+		if (b.dataset.option) handlers.ledge(Number(b.dataset.option));
+	});
 	$('tabs').addEventListener('click', e => {
 		const b = e.target.closest('[data-tab]');
 		if (!b) return;
@@ -116,13 +124,13 @@ export function createView(doc, data, handlers) {
 
 	function tabs(state) {
 		const open = TABS.filter(t => t.unlocked(state));
-		const sig = open.map(t => `${t.id}:${!!state.seen[`tab:${t.id}`]}`).join('|') + tab;
+		const sig = open.map(t => `${t.id}:${!!state.seen[`tab:${t.id}`]}:${!!t.wants?.(state)}`).join('|') + tab;
 		if (shown.get('tabs') === sig) return;
 		const known = shown.get('tabIds') ?? '';
 		shown.set('tabs', sig);
 		shown.set('tabIds', open.map(t => t.id).join('|'));
 		$('tabs').replaceChildren(...open.map(t => {
-			const fresh = t.id !== 'projects' && t.id !== tab && !state.seen[`tab:${t.id}`];
+			const fresh = t.id !== tab && (t.wants?.(state) || (t.id !== 'projects' && !state.seen[`tab:${t.id}`]));
 			const b = el('button', { type: 'button', className: `${t.id === tab ? 'on' : ''} ${fresh ? 'fresh' : ''}` }, t.label);
 			b.dataset.tab = t.id;
 			b.setAttribute('aria-pressed', String(t.id === tab));
@@ -297,6 +305,62 @@ export function createView(doc, data, handlers) {
 		if (again) $('seeds').querySelector(again)?.focus();
 	}
 
+	// The Climb: where the climber is, the choice in front of them, and what they have brought home.
+	function climb(state) {
+		const C = data.CLIMB;
+		const { climb: trip } = state;
+		const enc = nextEncounter(state, C);
+		const left = climbingFor(state);
+		const blocked = climbBlocked(state, C);
+		const options = trip.waiting ? enc.options.map(o => optionBlocked(state, o, T.friends)) : [];
+		const sig = [trip.ledge, trip.waiting, left === null ? '' : Math.ceil(left), blocked, options.join(','), trip.finds.length,
+			trip.anger, trip.said, blocked === 'short' ? formatHeight(state.height) : ''].join('|');
+		if (shown.get('climb') === sig) return;
+		shown.set('climb', sig);
+		const focused = doc.activeElement?.dataset?.option ?? (doc.activeElement?.dataset?.climb ? 'climb' : null);
+
+		let now;
+		if (!enc) {
+			now = [el('p', { className: 'story' }, 'There is nothing above you now but stars. You have seen all of it.')];
+		} else if (trip.waiting) {
+			now = [el('h3', {}, enc.name), el('p', { className: 'story' }, enc.text),
+				el('div', { className: 'seedlings' }, ...enc.options.map((o, i) => {
+					const why = options[i];
+					const risk = o.chance !== undefined && o.chance < 1 ? ` · risky (${Math.round(o.chance * 100)}%)` : '';
+					const b = el('button', { type: 'button', disabled: !!why },
+						el('b', {}, o.label),
+						o.cost ? el('span', { className: 'gold' }, ` (${costText(o.cost)})`) : '',
+						risk,
+						why === 'needs' ? el('small', { className: 'muted' }, o.needsText) : '');
+					b.dataset.option = String(i);
+					return b;
+				}))];
+		} else if (left !== null) {
+			now = [el('h3', {}, enc.name), el('p', {}, `Your climber is on the way up... ${Math.ceil(left)}s`)];
+		} else {
+			const b = el('button', { type: 'button', disabled: !!blocked }, `Climb to ${enc.name.replace(/^The /, 'the ')} `,
+				el('span', { className: 'gold' }, `(provisions: ${costText(enc.provisions)})`));
+			b.dataset.climb = '1';
+			now = [el('h3', {}, `Next: ${enc.name}, at ${formatHeight(enc.height)}`), b,
+				el('p', { className: 'muted' }, blocked === 'short'
+					? `The stalk is ${formatHeight(state.height)} tall. It has to reach the ledge first.`
+					: `About ${C.seconds} seconds up. There will be a choice to make at the top.`)];
+		}
+
+		const finds = findsOf(trip, C);
+		$('climb').replaceChildren(
+			el('div', { className: 'box' }, ...now, trip.said ? el('p', { className: 'said' }, trip.said) : ''),
+			el('div', { className: 'box' }, el('h3', {}, `Brought home · ledge ${trip.ledge} of ${C.encounters.length}`),
+				finds.length
+					? el('ul', { className: 'finds' }, ...finds.map(f => el('li', {}, el('b', {}, f.name), ` ${f.text}`)))
+					: el('p', { className: 'muted' }, 'Nothing yet.'),
+				el('p', { className: trip.anger ? 'down' : 'muted' }, trip.ledge >= C.encounters.findIndex(e => e.id === 'gate')
+					? `The Giant is ${temper(trip, C)}.${trip.anger ? ' A failed risk makes him angrier.' : ''}`
+					: 'Some options are risky. A failure sends your climber sliding back down.')));
+		const again = focused === 'climb' ? '[data-climb]' : focused ? `[data-option="${focused}"]` : null;
+		if (again) $('climb').querySelector(again)?.focus();
+	}
+
 	function journal(state) {
 		const sig = `${state.log.length}:${state.log[0]}`;
 		if (shown.get('log') === sig) return;
@@ -359,6 +423,7 @@ export function createView(doc, data, handlers) {
 			if (tab === 'projects') projects(state);
 			if (tab === 'neighbours') neighbours(state);
 			if (tab === 'seeds') seeds(state, cal.year);
+			if (tab === 'climb') climb(state);
 			journal(state);
 			shown.set('ready', true);   // from now on, anything that appears is news
 		},

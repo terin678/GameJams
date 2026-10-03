@@ -226,6 +226,22 @@ export const SPRITES = {
 	...Object.fromEntries(NEIGHBOURS.map(n => [`friend_${n.id}`, {
 		frames: [recolor(VISITOR, { A: n.look.hat, B: n.look.shirt, S: n.look.skin })],
 	}])),
+	// The Giant's castle, on its cloud, once the climber has found it.
+	castle: { frames: [[
+		'n.n..n.n',
+		'nnn..nnn',
+		'nNn..nNn',
+		'nnnnnnnn',
+		'nnNkkNnn',
+		'nnnkknnn',
+	]] },
+	// Someone on their way up the stalk.
+	climber: { frames: [[
+		'.ss.',
+		'.rr.',
+		'srrs',
+		'.kk.',
+	]] },
 	// A prize ribbon, pinned to the farmhouse for each one won at the fair.
 	ribbon: { frames: [[
 		'.bb.',
@@ -324,6 +340,7 @@ export const VIEW = {
 	effects: ['sprinkle', 'glow'],
 	// Farmhouse window panes, in sprite pixels [x, y, w, h]; lit at night.
 	windows: [[3, 10, 2, 2], [10, 10, 2, 2]],
+	castleFrom: 'gate',   // the castle shows once this ledge of the climb has been reached
 	maxRibbons: 5,        // drawn on the farmhouse
 	maxHelpers: 8,
 	maxProbes: 24,

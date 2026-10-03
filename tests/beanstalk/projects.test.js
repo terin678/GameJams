@@ -14,7 +14,7 @@ const state = over => ({ coins: 0, pages: 0, matter: 0, grown: 0, height: 0, pha
 test('computeMods starts from the base and applies every owned project', () => {
 	const base = { plots: 1, growth: 1 };
 	assert.deepEqual(computeMods({}, DEFS, base), {
-		plots: 1, tend: 0, pagesRate: 0, replicate: 0, pricing: 0,
+		plots: 1, tend: 0, pagesRate: 0, replicate: 0, pricing: 0, coinsRate: 0,
 		growth: 1, yield: 1, marketing: 1, probeYield: 1, matterRate: 1,
 		scarecrow: false, greenhouse: false, autoprice: false, rainmaker: false,
 	});

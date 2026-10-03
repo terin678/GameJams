@@ -113,7 +113,7 @@ export const PROJECTS = [
 	{ id: 'pulsar_sprinklers', phase: 3, title: 'Pulsar sprinklers', flavor: 'Regular as clockwork. Probes spread faster.',
 		cost: { matter: 2e19 }, requires: { has: ['dark_mulch'] }, effect: { replicate: 0.002 } },
 	{ id: 'vacuum_beans', phase: 3, title: 'Vacuum-rooted beans', flavor: 'They grow in nothing at all. Probe yield x100.',
-		cost: { matter: 1e21 }, requires: { has: ['co_op'] }, effect: { probeYield: 100 } },
+		cost: { matter: 2e20 }, requires: { has: ['co_op'] }, effect: { probeYield: 100 } },
 	{ id: 'last_bean', phase: 3, title: 'Plant the last bean', flavor: 'There is one plot left. It is where your first one was.',
 		cost: { coins: 1 }, requires: { grown: 1e30 }, grant: { done: true } },
 ];

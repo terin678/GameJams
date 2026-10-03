@@ -10,6 +10,7 @@ import { plotOrder, mixColor } from '../core/layout.js';
 import { heartsOf } from '../core/neighbours.js';
 import { ribbonCount } from '../core/seeds.js';
 import { skyTarget, ease, toHex } from '../core/sky.js';
+import { climbingFor } from '../core/climb.js';
 
 const CROW_SECONDS = 1.6;
 
@@ -80,7 +81,14 @@ export function createFarmView(canvas, data, { SPRITES, PALETTE, VIEW, SKY }) {
 			const drift = m.sprite === 'cloud' ? Math.sin(t / 6) * 8 : 0;
 			const x = i % 2 ? stalkX + 30 : stalkX - 30 - img.width;
 			put(img, x + drift, skyY(m.y) - img.height / 2);
-			if (m.sprite === 'cloud') put(img, stalkX + 46 - drift, skyY(m.y) + 6);
+			if (m.sprite === 'cloud') {
+				// The Giant's castle rides the second cloud once the climber has found the gate.
+				const gate = data.CLIMB.encounters.findIndex(e => e.id === VIEW.castleFrom);
+				if (gate >= 0 && state.climb.ledge >= gate) {
+					put(art.castle[0], stalkX + 46 - drift + (img.width - art.castle[0].width) / 2, skyY(m.y) + 6 - art.castle[0].height + 2);
+				}
+				put(img, stalkX + 46 - drift, skyY(m.y) + 6);
+			}
 		});
 	}
 
@@ -110,6 +118,12 @@ export function createFarmView(canvas, data, { SPRITES, PALETTE, VIEW, SKY }) {
 				ctx.fillRect(i % 2 ? x + leaf.width - 4 : x + 2, y, 2, 2);
 				ctx.globalAlpha = 1;
 			}
+		}
+		// The climber on their way to the next ledge, part-way up whatever stalk there is.
+		const left = climbingFor(state);
+		if (left !== null) {
+			const f = 1 - left / data.CLIMB.seconds;
+			put(art.climber[0], stalkX - 4, horizon - 10 - f * Math.max(0, horizon - 20 - top));
 		}
 		return top;
 	}

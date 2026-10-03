@@ -153,6 +153,13 @@ buttons. It saves itself every few seconds.
   seedlings, each better in one trait (size, vigour, flavour) and maybe worse
   in another. Every autumn the county fair judges one trait; clearing the bar
   wins a ribbon, which lifts demand and makes crosses luckier.
+- **The Climb** (`src/data/climb.js`): from phase 2 you can send a climber up
+  the stalk, one ledge at a time, as far as the stalk has grown. Each ledge
+  is a short scene with choices: some cost something, some need a friend or
+  a good seed line, some are risky. Successes bring home finds that change
+  the farm for good (a golden goose, a singing harp, the Giant's help).
+  Failures annoy the Giant; annoy him three times and he stamps every bean
+  out of the ground. Add a ledge by adding an entry to the data.
 - New systems appear as tabs beside Projects, and sections such as the Almanac
   stay hidden until the game reaches them.
 - **Light** (`src/data/sky.js`): a farm day is a minute, with dawn, sunset and

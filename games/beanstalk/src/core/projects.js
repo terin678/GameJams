@@ -5,7 +5,7 @@
 // `grant` is handed over once, at the moment of purchase.
 
 export const EFFECTS = {
-	plots: 'add', tend: 'add', pagesRate: 'add', replicate: 'add', pricing: 'add',
+	plots: 'add', tend: 'add', pagesRate: 'add', replicate: 'add', pricing: 'add', coinsRate: 'add',
 	growth: 'mul', yield: 'mul', marketing: 'mul', probeYield: 'mul', matterRate: 'mul',
 	scarecrow: 'flag', greenhouse: 'flag', autoprice: 'flag', rainmaker: 'flag',
 };

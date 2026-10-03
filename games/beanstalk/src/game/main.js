@@ -1,7 +1,7 @@
 // Boot: load the save, catch up on time away, then run the loop.
 
 import { DATA, SPRITES, PALETTE, VIEW, SOUNDS, EVENT_SOUNDS, MUSIC, SKY } from '../data/index.js';
-import { createState, tick, tend, buyProject, giveGift, crossSeeds, chooseSeedling, nudgePrice, simulateOffline, serialize, restore, isSave, newGamePlus } from '../core/sim.js';
+import { createState, tick, tend, buyProject, giveGift, crossSeeds, chooseSeedling, climb, chooseAtLedge, nudgePrice, simulateOffline, serialize, restore, isSave, newGamePlus } from '../core/sim.js';
 import { encodeSave, decodeSave } from '../core/save.js';
 import { createStore } from '../../../../shared/storage.js';
 import { createRng } from '../../../../shared/rng.js';
@@ -60,6 +60,14 @@ const view = createView(document, { ...DATA, SKY }, {
 	},
 	seedling(index) {
 		sfx.play(chooseSeedling(state, index, DATA) ? 'buy' : 'deny');
+	},
+	climb() {
+		sfx.play(climb(state, DATA) ? 'buy' : 'deny');
+	},
+	ledge(index) {
+		const result = chooseAtLedge(state, index, DATA, rng);
+		sfx.play(!result ? 'deny' : result.stomp ? 'stomp' : result.won ? (result.find ? 'heart' : 'like') : 'dislike');
+		if (result?.stomp) buzz([80, 40, 120]);
 	},
 	// The player has looked at something new (a tab), so stop flagging it.
 	seen(key) {

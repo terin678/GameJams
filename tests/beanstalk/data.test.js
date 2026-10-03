@@ -8,13 +8,14 @@ import { validateNeighbour, validateGift } from '../../games/beanstalk/src/core/
 import { validateSeeds } from '../../games/beanstalk/src/core/seeds.js';
 import { validateSky } from '../../games/beanstalk/src/core/sky.js';
 import { validateRuns } from '../../games/beanstalk/src/core/runs.js';
+import { validateClimb } from '../../games/beanstalk/src/core/climb.js';
 import { heightFor } from '../../games/beanstalk/src/core/phases.js';
 import { plotOrder } from '../../games/beanstalk/src/core/layout.js';
 import { parsePixelMap } from '../../shared/pixelart.js';
 import { validateSfx } from '../../shared/sfx.js';
 import { validateSong } from '../../shared/music.js';
 
-const { TUNING: T, PROJECTS, SEASONS, WEATHER, PHASES, MILESTONES, LANDMARKS, NEIGHBOURS, GIFTS, SEEDS, RUNS } = DATA;
+const { TUNING: T, PROJECTS, SEASONS, WEATHER, PHASES, MILESTONES, LANDMARKS, NEIGHBOURS, GIFTS, SEEDS, RUNS, CLIMB } = DATA;
 const ascending = list => list.every((v, i) => i === 0 || v > list[i - 1]);
 
 test('every project is well formed', () => {
@@ -121,6 +122,23 @@ test('New Game+ content is well formed', () => {
 	assert.equal(SPRITES.bean_gold.frames.length, SPRITES.bean.frames.length);
 });
 
+test('the climb is well formed and can be reached', () => {
+	assert.deepEqual(validateClimb(CLIMB, {
+		neighbours: NEIGHBOURS.map(n => n.id), traits: SEEDS.traits.map(t => t.id), phases: PHASES.map(p => p.id),
+	}), []);
+	const opens = PHASES.find(p => p.id === CLIMB.unlock.phase).height;
+	assert.ok(CLIMB.encounters[0].height >= opens, 'the first ledge is above where the climb opens');
+	assert.ok(CLIMB.encounters.at(-1).height < heightFor(T.universeBeans, T.height));
+	for (const e of CLIMB.encounters) {
+		for (const o of e.options) {
+			const who = o.needs?.hearts;
+			if (who) assert.ok(who.n <= T.friends.maxHearts, `${e.id}: ${who.n} hearts`);
+			if (o.needs?.trait) assert.ok(o.needs.trait.level <= SEEDS.maxLevel, e.id);
+		}
+	}
+	for (const name of ['castle', 'climber']) assert.ok(SPRITES[name], name);
+});
+
 test('seasons and weather make sense', () => {
 	assert.equal(SEASONS.length, 4);
 	for (const s of SEASONS) {
@@ -204,5 +222,5 @@ test('every sound is valid, and every event sound exists', () => {
 	const names = Object.values(EVENT_SOUNDS).flatMap(v => (typeof v === 'string' ? [v] : Object.values(v)));
 	for (const n of names) assert.ok(SOUNDS[n], n);
 	for (const id of Object.keys(EVENT_SOUNDS.weather)) assert.ok(WEATHER.some(w => w.id === id), id);
-	for (const n of ['plant', 'harvest', 'buy', 'deny', 'price', 'ending', 'cross', 'heart', 'love', 'like', 'neutral', 'dislike']) assert.ok(SOUNDS[n], n);
+	for (const n of ['plant', 'harvest', 'buy', 'deny', 'price', 'ending', 'cross', 'stomp', 'heart', 'love', 'like', 'neutral', 'dislike']) assert.ok(SOUNDS[n], n);
 });

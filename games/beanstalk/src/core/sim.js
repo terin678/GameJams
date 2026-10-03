@@ -9,6 +9,7 @@ import { computeMods, buy } from './projects.js';
 import { newlyMet, meet, give, perkEffects } from './neighbours.js';
 import { createSeeds, unlockDue, cross, choose, judge, seedEffects } from './seeds.js';
 import { rulesFor, twistsFor, lineFor } from './runs.js';
+import { createClimb, unlockDue as climbDue, startClimb, arrive, choose as chooseOption, nextEncounter, findEffects } from './climb.js';
 
 const VERSION = 1;
 
@@ -26,6 +27,7 @@ export function createState(data, { golden = 0 } = {}) {
 		owned: {},
 		friends: {},
 		seeds: createSeeds(data.SEEDS),
+		climb: createClimb(),
 		height: 0, phase: 1,
 		log: [],
 		seen: {},          // journal lines that are only worth saying once
@@ -43,7 +45,8 @@ export function refresh(state, data) {
 	const perks = perkEffects(state.friends, data.NEIGHBOURS, data.TUNING.friends);
 	state.rules = rulesFor(state.golden, data.RUNS);
 	const bred = seedEffects(state.seeds, data.SEEDS);
-	state.mods = computeMods(state.owned, data.PROJECTS, data.TUNING.base, [...perks, ...bred]);
+	const found = findEffects(state.climb, data.CLIMB);
+	state.mods = computeMods(state.owned, data.PROJECTS, data.TUNING.base, [...perks, ...bred, ...found]);
 	for (const [key, share] of Object.entries(data.TUNING.golden)) state.mods[key] *= 1 + state.golden * share;
 	resize(state.plots, state.mods.plots);
 	return state;
@@ -178,6 +181,7 @@ export function tick(state, dt, data, rng) {
 	}
 
 	state.pages += mods.pagesRate * dt;
+	state.coins += mods.coinsRate * dt;
 
 	if (state.grown >= T.universeBeans) {
 		state.grown = T.universeBeans;
@@ -199,6 +203,15 @@ export function tick(state, dt, data, rng) {
 		state.seeds.open = true;
 		events.push({ type: 'seeds' });
 		say(state, data, lineFor(data.SEEDS.log, data.RUNS.again.seeds, state.golden));
+	}
+	if (climbDue(state, data.CLIMB)) {
+		state.climb.open = true;
+		events.push({ type: 'climb' });
+		say(state, data, data.CLIMB.log);
+	}
+	if (arrive(state)) {
+		events.push({ type: 'ledge', id: nextEncounter(state, data.CLIMB).id });
+		say(state, data, `Your climber has reached ${nextEncounter(state, data.CLIMB).name.replace(/^The /, 'the ')}.`);
 	}
 	for (const def of newlyMet(state, data.NEIGHBOURS)) {
 		meet(state, def);
@@ -230,6 +243,22 @@ export function giveGift(state, neighbourId, giftId, data) {
 	if (!result) return null;
 	for (const perk of result.perks) say(state, data, `${def.name}, ${perk.hearts} hearts: ${perk.text}`);
 	if (result.perks.length) refresh(state, data);
+	return result;
+}
+
+// Sends the climber up to the next ledge.
+export const climb = (state, data) => !state.done && startClimb(state, data.CLIMB);
+
+// Chooses an option at the ledge. Returns null, or { won, text, find, stomp }.
+// When the Giant stamps, every plot on the farm is emptied.
+export function chooseAtLedge(state, index, data, rng) {
+	if (state.done) return null;
+	const result = chooseOption(state, index, data.CLIMB, rng, data.TUNING.friends);
+	if (!result) return null;
+	say(state, data, result.text);
+	if (result.find) say(state, data, `Found: ${result.find.name}. ${result.find.text}`);
+	if (result.stomp) state.plots.fill(null);
+	refresh(state, data);
 	return result;
 }
 
