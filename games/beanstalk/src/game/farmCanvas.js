@@ -126,7 +126,35 @@ export function createFarmView(canvas, data, { SPRITES, PALETTE, VIEW }) {
 		}
 	}
 
-	function falling(fx, t) {
+	// The box around the plots in use, in screen pixels.
+	function farmBox(n) {
+		let x0 = Infinity, y0 = Infinity, x1 = 0, y1 = 0;
+		for (let i = 0; i < n; i++) {
+			const { x, y } = cell(i);
+			x0 = Math.min(x0, x);
+			y0 = Math.min(y0, y);
+			x1 = Math.max(x1, x + grid.size);
+			y1 = Math.max(y1, y + grid.size);
+		}
+		return { x: x0 - 2, y: y0 - 6, w: x1 - x0 + 4, h: y1 - y0 + 8 };
+	}
+
+	// Glass over the plots: a pale tint, a frame, and a pane line every two plots.
+	function greenhouse(box) {
+		ctx.fillStyle = VIEW.glass.tint;
+		ctx.fillRect(box.x, box.y, box.w, box.h);
+		ctx.fillStyle = VIEW.glass.frame;
+		ctx.fillRect(box.x, box.y, box.w, 2);
+		ctx.fillRect(box.x, box.y + box.h - 1, box.w, 1);
+		ctx.fillRect(box.x, box.y, 1, box.h);
+		ctx.fillRect(box.x + box.w - 1, box.y, 1, box.h);
+		ctx.globalAlpha = 0.45;
+		for (let x = box.x + 2 + grid.size * 2; x < box.x + box.w - 2; x += grid.size * 2) ctx.fillRect(x, box.y, 1, box.h);
+		ctx.globalAlpha = 1;
+	}
+
+	// `shelter` is a box nothing falls into (the greenhouse).
+	function falling(fx, t, shelter) {
 		const snow = fx === 'snow';
 		const from = skyY(data.LANDMARKS.find(m => m.sprite === 'cloud')?.y ?? 0.3);
 		const drop = VIEW.height - from;
@@ -134,6 +162,7 @@ export function createFarmView(canvas, data, { SPRITES, PALETTE, VIEW }) {
 		for (let i = 0; i < 36; i++) {
 			const x = (i * 53 + t * (snow ? 8 : 30)) % VIEW.width;
 			const y = from + (i * 97 + t * (snow ? 30 : 230)) % drop;
+			if (shelter && x > shelter.x && x < shelter.x + shelter.w && y > shelter.y - 4 && y < shelter.y + shelter.h) continue;
 			ctx.fillRect(Math.floor(x), Math.floor(y), snow ? 2 : 1, snow ? 2 : 5);
 		}
 	}
@@ -147,8 +176,10 @@ export function createFarmView(canvas, data, { SPRITES, PALETTE, VIEW }) {
 			const top = stalk(state, t);
 			probes(state, top, t);
 			ground(state, season, t);
+			const glass = state.mods.greenhouse ? farmBox(state.plots.length) : null;
+			if (glass) greenhouse(glass);
 			const fx = weather?.fx ?? season.fx;
-			if (fx) falling(fx, t);
+			if (fx) falling(fx, t, glass);
 		},
 		crow(t) {
 			crowUntil = t + CROW_SECONDS;

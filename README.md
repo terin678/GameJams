@@ -137,5 +137,9 @@ buttons. It saves itself every few seconds.
   ```
 - Seasons, weather, prices, milestones and the height of everything in the sky
   are in `src/data/` too.
+- **Music:** the tune is data as well (`src/data/music.js`): chords, bass, a
+  lead line and a drum pattern, eight bars that loop. `shared/music.js` plays
+  it with WebAudio (no audio files) and any game can use it. It has its own
+  on/off button and pauses while the tab is hidden.
 - From the browser console, `game.state` is the live game and `game.skip(60)`
   fast-forwards a minute.

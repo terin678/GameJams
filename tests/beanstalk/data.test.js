@@ -2,12 +2,13 @@
 // cross-references before they reach the browser.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { DATA, SPRITES, PALETTE, VIEW, SOUNDS, EVENT_SOUNDS } from '../../games/beanstalk/src/data/index.js';
+import { DATA, SPRITES, PALETTE, VIEW, SOUNDS, EVENT_SOUNDS, MUSIC } from '../../games/beanstalk/src/data/index.js';
 import { validateProject, EFFECTS } from '../../games/beanstalk/src/core/projects.js';
 import { heightFor } from '../../games/beanstalk/src/core/phases.js';
 import { plotOrder } from '../../games/beanstalk/src/core/layout.js';
 import { parsePixelMap } from '../../shared/pixelart.js';
 import { validateSfx } from '../../shared/sfx.js';
+import { validateSong } from '../../shared/music.js';
 
 const { TUNING: T, PROJECTS, SEASONS, WEATHER, PHASES, MILESTONES, LANDMARKS } = DATA;
 const ascending = list => list.every((v, i) => i === 0 || v > list[i - 1]);
@@ -101,6 +102,16 @@ test('the view only uses sprites that exist', () => {
 	assert.equal(SPRITES.soil.frames[0].length * VIEW.scale, VIEW.plots.size, 'a soil tile fills a plot');
 	assert.equal(VIEW.skyStops[0].at, 0);
 	assert.equal(VIEW.skyStops.at(-1).at, 1);
+});
+
+test('the tune is a valid song, and quiet enough to sit under the sound effects', () => {
+	assert.deepEqual(validateSong(MUSIC), []);
+	assert.ok(MUSIC.volume <= 0.7);
+	for (const [name, v] of Object.entries(MUSIC.voices)) assert.ok(v.vol <= 0.3, name);
+});
+
+test('cold seasons have a line for when there is a greenhouse', () => {
+	for (const s of SEASONS) if (s.cold) assert.ok(s.logWarm, s.id);
 });
 
 test('every sound is valid, and every event sound exists', () => {

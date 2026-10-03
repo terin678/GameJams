@@ -201,6 +201,7 @@ export const VIEW = {
 		{ at: 1, color: '#000000' },
 	],
 	stars: { count: 60, above: 0.4 },
+	glass: { tint: 'rgba(200, 244, 255, 0.2)', frame: '#e8fbff' },   // the greenhouse
 	maxHelpers: 8,
 	maxProbes: 24,
 };

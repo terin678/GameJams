@@ -32,6 +32,14 @@ export function rollWeather(rng, weather) {
 	return null;
 }
 
+// One line for the farm panel: what the season is doing to growth right now.
+export function seasonNote(season, mods) {
+	if (season.cold && mods.greenhouse) return `${season.name}: the greenhouse keeps the beans warm`;
+	const pct = Math.round((season.growth - 1) * 100);
+	if (pct === 0) return `${season.name}: beans grow at their usual pace`;
+	return `${season.name}: beans grow ${Math.abs(pct)}% ${pct > 0 ? 'faster' : 'slower'}`;
+}
+
 export function growthMult(season, weather, mods) {
 	const s = season.cold && mods.greenhouse ? 1 : season.growth;
 	return s * (weather?.growth ?? 1);

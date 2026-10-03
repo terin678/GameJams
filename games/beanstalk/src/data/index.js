@@ -7,3 +7,4 @@ import { PROJECTS } from './projects.js';
 export const DATA = { TUNING, SEASONS, WEATHER, PHASES, MILESTONES, LANDMARKS, PROJECTS };
 export { SPRITES, PALETTE, VIEW } from './sprites.js';
 export { SOUNDS, EVENT_SOUNDS } from './sounds.js';
+export { MUSIC } from './music.js';

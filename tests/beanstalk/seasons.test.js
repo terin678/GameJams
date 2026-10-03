@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { calendar, advance, rollWeather, growthMult } from '../../games/beanstalk/src/core/seasons.js';
+import { calendar, advance, rollWeather, growthMult, seasonNote } from '../../games/beanstalk/src/core/seasons.js';
 
 const T = { daySeconds: 5, daysPerSeason: 7 };
 const SEASONS = [
@@ -33,6 +33,15 @@ test('rollWeather picks by chance, and mostly picks nothing', () => {
 	assert.equal(at(0.1).id, 'rain');
 	assert.equal(at(0.25).id, 'crow');
 	assert.equal(at(0.5), null);
+});
+
+test('seasonNote says what the season does, and that a greenhouse cancels the cold', () => {
+	const named = SEASONS.map(s => ({ ...s, name: s.id[0].toUpperCase() + s.id.slice(1) }));
+	assert.equal(seasonNote(named[0], {}), 'Spring: beans grow at their usual pace');
+	assert.equal(seasonNote(named[1], {}), 'Summer: beans grow 30% faster');
+	assert.equal(seasonNote(named[3], {}), 'Winter: beans grow 80% slower');
+	assert.equal(seasonNote(named[3], { greenhouse: true }), 'Winter: the greenhouse keeps the beans warm');
+	assert.equal(seasonNote(named[1], { greenhouse: true }), 'Summer: beans grow 30% faster');
 });
 
 test('growthMult combines season and weather; a greenhouse ignores the cold', () => {

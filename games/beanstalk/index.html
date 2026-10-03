@@ -20,16 +20,24 @@
 		#links a { color: var(--muted); text-decoration: none; }
 		#links a:hover { color: var(--bean); }
 
+		/* Three fixed columns: the farm, your numbers, the shop. Every line in the
+		   middle column is always there, so buttons never move under the pointer. */
 		#app {
-			display: grid; grid-template-columns: minmax(240px, 400px) minmax(300px, 500px);
-			gap: 28px; justify-content: center; align-items: start; padding: 8px 16px 40px;
+			display: grid; gap: 8px 28px; justify-content: center; align-items: start; padding: 8px 16px 40px;
+			grid-template-columns: minmax(240px, 360px) minmax(300px, 380px) minmax(300px, 440px);
+			grid-template-areas: 'scene status shop';
 		}
-		#scene { position: sticky; top: 12px; }
+		#scene { grid-area: scene; position: sticky; top: 12px; }
+		#status { grid-area: status; }
+		#shop { grid-area: shop; }
 		#farm {
 			display: block; width: 100%; height: auto; image-rendering: pixelated;
 			border: 1px solid var(--line); border-radius: 8px; background: #000;
 		}
 		#calendar { margin: 8px 0 0; color: var(--muted); text-align: center; }
+		#status p { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+		#status h2:first-of-type { margin-top: 14px; }
+		#shop h2:first-child { margin-top: 6px; }
 
 		h1 { margin: 0; font-size: 26px; letter-spacing: 0.06em; }
 		h1 small { font-size: 13px; color: var(--gold); letter-spacing: 0; font-weight: 400; }
@@ -51,21 +59,33 @@
 		button:hover:not(:disabled), button:focus-visible { border-color: var(--bean); background: var(--panel-hi); outline: none; }
 		button:active:not(:disabled) { transform: translateY(1px); }
 		button:disabled { opacity: 0.6; cursor: default; }
-		#tend { font-size: 16px; padding: 10px 20px; min-width: 170px; border-color: var(--bean); }
+		#tend { font-size: 16px; padding: 10px 20px; width: 190px; border-color: var(--bean); }
 		.row { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; }
 		.price button { padding: 2px 9px; }
 
-		#projects { display: grid; gap: 6px; }
+		/* Fixed-height boxes that scroll, so a long list never pushes the page about. */
+		#projects {
+			display: grid; gap: 6px; align-content: start; height: 26rem; overflow-y: auto;
+			padding-right: 4px; scrollbar-width: thin;
+		}
+		#projects h3 {
+			margin: 6px 0 0; font-size: 11px; font-weight: 400; color: var(--muted);
+			letter-spacing: 0.08em; text-transform: uppercase;
+		}
+		#projects h3:first-child { margin-top: 0; }
 		#projects button { text-align: left; padding: 7px 10px; }
 		#projects .cost { color: var(--gold); }
 		#projects small { display: block; color: var(--muted); font-size: 12px; }
-		#projects:empty::after { content: 'Nothing to buy yet. Grow some beans.'; color: var(--muted); }
 
-		#log { list-style: none; margin: 0; padding: 0; color: var(--muted); }
+		#log {
+			list-style: none; margin: 0; padding: 0; color: var(--muted);
+			height: 11rem; overflow-y: auto; scrollbar-width: thin;
+		}
+		.locked { opacity: 0.45; }
 		#log li:first-child { color: var(--ink); }
 		#log li::before { content: '> '; color: var(--bean); }
 
-		footer { margin-top: 24px; font-size: 12px; }
+		footer { margin: 24px 0 6px; font-size: 12px; }
 		footer button { font-size: 12px; padding: 3px 8px; }
 
 		.overlay {
@@ -80,10 +100,18 @@
 		.card h3 { margin: 0 0 8px; font-size: 18px; color: var(--bean); }
 		.card button { margin-top: 14px; padding: 8px 16px; }
 
-		@media (max-width: 720px) {
-			#app { grid-template-columns: 1fr; gap: 12px; }
+		@media (max-width: 1100px) {
+			#app {
+				grid-template-columns: minmax(240px, 340px) minmax(300px, 440px);
+				grid-template-areas: 'scene status' 'shop shop';
+			}
 			#scene { position: static; }
+		}
+		@media (max-width: 720px) {
+			#app { grid-template-columns: minmax(0, 1fr); grid-template-areas: 'scene' 'status' 'shop'; }
 			#farm { width: auto; height: 36vh; margin: 0 auto; }
+			#status p { white-space: normal; }
+			#projects { height: 22rem; }
 		}
 	</style>
 </head>
@@ -100,53 +128,56 @@
 			<p id="calendar"></p>
 		</section>
 
-		<section id="panel">
-			<h1>BEANSTALK <small id="golden" hidden></small></h1>
+		<section id="status">
+			<h1>BEANSTALK <small id="golden"></small></h1>
 			<p class="big"><b id="grown">0</b> beans grown</p>
 			<p>Stalk: <b id="height">0.0 m</b> <span class="muted">&middot; <span id="phase"></span></span></p>
-			<p class="muted" id="rate"></p>
+			<p class="muted" id="rate">&nbsp;</p>
 
 			<h2>Farm</h2>
 			<div class="row">
 				<button id="tend" type="button">Plant a bean</button>
-				<span id="plots"></span>
 			</div>
-			<p class="muted" id="growing"></p>
-			<p class="muted" id="helpers" hidden></p>
+			<p id="plots">&nbsp;</p>
+			<p class="muted" id="growing">&nbsp;</p>
+			<p class="muted" id="season">&nbsp;</p>
+			<p class="muted" id="helpers">&nbsp;</p>
 
 			<h2>Market</h2>
 			<p>Coins: <b id="coins">0.00</b></p>
 			<p>Beans in the barn: <b id="beans">0</b></p>
-			<p class="row price">
+			<div class="row price">
 				<span>Price per bean: <b id="price">1.00</b></span>
 				<button id="price-down" type="button" aria-label="Lower the price">&minus;</button>
 				<button id="price-up" type="button" aria-label="Raise the price">+</button>
-				<span class="muted" id="pricing"></span>
-			</p>
-			<p class="muted" id="demand"></p>
+			</div>
+			<p class="muted" id="demand">&nbsp;</p>
 
-			<div id="research" hidden>
+			<div id="research" class="locked">
 				<h2>Almanac</h2>
 				<p>Pages: <b id="pages">0</b> <span class="muted" id="pages-rate"></span></p>
 			</div>
 
-			<div id="space" hidden>
+			<div id="space" class="locked">
 				<h2>Beyond</h2>
 				<p>Seed probes: <b id="probes">0</b></p>
 				<p>Matter: <b id="matter">0</b></p>
 			</div>
 
+			<footer class="row muted">
+				<button id="mute" type="button">Sound: on</button>
+				<button id="music" type="button">Music: on</button>
+				<button id="reset" type="button">Start over</button>
+			</footer>
+			<p class="muted">Space or Enter tends. Saves itself.</p>
+		</section>
+
+		<section id="shop">
 			<h2>Projects</h2>
 			<div id="projects"></div>
 
 			<h2>Journal</h2>
 			<ul id="log"></ul>
-
-			<footer class="row muted">
-				<span>Space or Enter tends. Saves itself.</span>
-				<button id="mute" type="button">Sound: on</button>
-				<button id="reset" type="button">Start over</button>
-			</footer>
 		</section>
 	</main>
 

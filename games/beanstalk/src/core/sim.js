@@ -1,7 +1,7 @@
 // The whole game as a state object and the functions that move it forward.
 // `data` is DATA from src/data/index.js. Nothing here touches the page.
 
-import { resize, grow, tendOnce, eatOne } from './farm.js';
+import { resize, grow, findWork, tendPlot, eatOne } from './farm.js';
 import { demand, sell, adjustPrice, autoPriceDir } from './market.js';
 import { calendar, advance, rollWeather, growthMult } from './seasons.js';
 import { heightFor, phaseAt, crossed } from './phases.js';
@@ -14,7 +14,7 @@ export function createState(data, { golden = 0 } = {}) {
 		v: VERSION,
 		time: 0,
 		day: 0, dayT: 0, weather: null,
-		plots: [], tendAcc: 0, priceAcc: 0,
+		plots: [], tendAcc: 0, tendAt: 0, priceAcc: 0,
 		beans: 0,          // in the barn, unsold
 		grown: 0,          // ever grown; this is what the stalk is made of
 		coins: 0, pages: 0, matter: 0, probes: 0,
@@ -52,9 +52,17 @@ function sayOnce(state, data, key, text) {
 	say(state, data, text);
 }
 
-function harvest(state) {
-	state.beans += state.mods.yield;
-	state.grown += state.mods.yield;
+// One job on the farm, by you or a helper, taking the plots in rotation.
+function tendNext(state) {
+	const i = findWork(state.plots, state.tendAt);
+	if (i < 0) return null;
+	state.tendAt = (i + 1) % state.plots.length;
+	const did = tendPlot(state.plots, i);
+	if (did === 'harvest') {
+		state.beans += state.mods.yield;
+		state.grown += state.mods.yield;
+	}
+	return did;
 }
 
 function newDay(state, data, rng, events) {
@@ -89,7 +97,8 @@ export function tick(state, dt, data, rng) {
 	const { season } = calendar(state.day, data.SEASONS, T.calendar);
 	if (season !== was) {
 		events.push({ type: 'season', id: season.id });
-		sayOnce(state, data, season.id, season.log);
+		const warm = season.cold && mods.greenhouse && season.logWarm;
+		sayOnce(state, data, warm ? `${season.id}:warm` : season.id, warm ? season.logWarm : season.log);
 	}
 
 	const weather = data.WEATHER.find(w => w.id === state.weather) ?? null;
@@ -99,16 +108,13 @@ export function tick(state, dt, data, rng) {
 	state.tendAcc += mods.tend * dt;
 	let harvested = 0;
 	while (state.tendAcc >= 1) {
-		const did = tendOnce(state.plots);
+		const did = tendNext(state);
 		if (!did) {
 			state.tendAcc = 1;
 			break;
 		}
 		state.tendAcc--;
-		if (did === 'harvest') {
-			harvest(state);
-			harvested++;
-		}
+		if (did === 'harvest') harvested++;
 	}
 	if (harvested) events.push({ type: 'harvest', n: harvested });
 
@@ -154,10 +160,7 @@ export function tick(state, dt, data, rng) {
 
 // The Tend button. Returns 'plant', 'harvest' or null.
 export function tend(state, data) {
-	if (state.done) return null;
-	const did = tendOnce(state.plots);
-	if (did === 'harvest') harvest(state);
-	return did;
+	return state.done ? null : tendNext(state);
 }
 
 export function buyProject(state, id, data) {

@@ -16,19 +16,30 @@ export function grow(plots, amount) {
 
 const isRipe = g => g !== null && g >= 1;
 
-// One action by a hand, a farmhand or a drone. Harvesting replants the plot.
-export function tendOnce(plots) {
-	const ripe = plots.findIndex(isRipe);
-	if (ripe >= 0) {
-		plots[ripe] = 0;
-		return 'harvest';
+// The next plot that needs a hand (ripe or empty), looking from `start` and
+// wrapping round; -1 if everything is growing. Starting where the last job
+// ended keeps every plot in the rotation: always starting at 0, or always
+// picking before planting, leaves the far plots untouched on a busy farm.
+export function findWork(plots, start = 0) {
+	const n = plots.length;
+	for (let k = 0; k < n; k++) {
+		const i = (start + k) % n;
+		if (plots[i] === null || isRipe(plots[i])) return i;
 	}
-	const empty = plots.indexOf(null);
-	if (empty >= 0) {
-		plots[empty] = 0;
-		return 'plant';
-	}
-	return null;
+	return -1;
+}
+
+// Works one plot: plants it if empty, otherwise harvests and replants it.
+export function tendPlot(plots, i) {
+	const did = plots[i] === null ? 'plant' : 'harvest';
+	plots[i] = 0;
+	return did;
+}
+
+// One action by a hand, a farmhand or a drone, starting the search at `start`.
+export function tendOnce(plots, start = 0) {
+	const i = findWork(plots, start);
+	return i < 0 ? null : tendPlot(plots, i);
 }
 
 // Returns the plot that was eaten, or -1.

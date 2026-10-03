@@ -1,10 +1,11 @@
 // Boot: load the save, catch up on time away, then run the loop.
 
-import { DATA, SPRITES, PALETTE, VIEW, SOUNDS, EVENT_SOUNDS } from '../data/index.js';
+import { DATA, SPRITES, PALETTE, VIEW, SOUNDS, EVENT_SOUNDS, MUSIC } from '../data/index.js';
 import { createState, tick, tend, buyProject, nudgePrice, simulateOffline, serialize, restore, newGamePlus } from '../core/sim.js';
 import { createStore } from '../../../../shared/storage.js';
 import { createRng } from '../../../../shared/rng.js';
 import { Sfx } from '../../../../shared/sfx.js';
+import { Music } from '../../../../shared/music.js';
 import { createFarmView } from './farmCanvas.js';
 import { createView } from './view.js';
 
@@ -12,7 +13,20 @@ const T = DATA.TUNING;
 const store = createStore('beanstalk');
 const rng = createRng();
 const sfx = new Sfx(SOUNDS, { muted: store.get('muted', false) });
+const music = new Music(MUSIC);
+let musicOn = store.get('music', true);
 const seconds = () => performance.now() / 1000;
+
+// Browsers only allow audio after a click or key press, so this runs on each one.
+// The tune pauses while the tab is hidden: a sleeping tab can't keep time.
+function audio() {
+	sfx.unlock();
+	const { ctx } = sfx;
+	if (!ctx) return;
+	if (!musicOn || document.hidden) music.stop();
+	else if (ctx.state === 'running') music.start(ctx);
+	else ctx.resume().then(() => { if (musicOn && !document.hidden) music.start(ctx); }, () => {});
+}
 
 let state = restore(store.get('save'), DATA);
 
@@ -38,6 +52,13 @@ const view = createView(document, DATA, {
 		sfx.muted = !sfx.muted;
 		store.set('muted', sfx.muted);
 		view.muted(sfx.muted);
+view.music(musicOn);
+	},
+	music() {
+		musicOn = !musicOn;
+		store.set('music', musicOn);
+		view.music(musicOn);
+		audio();
 	},
 	reset() {
 		if (!confirm('Start over from one bean? This erases your farm.')) return;
@@ -123,26 +144,29 @@ setInterval(step, 1000);
 
 document.addEventListener('visibilitychange', () => {
 	if (document.hidden) save();
+	if (sfx.ctx) audio();
 });
 addEventListener('pagehide', save);
 
 document.addEventListener('keydown', e => {
-	sfx.unlock();
+	audio();
 	if (e.code !== 'Space' && e.code !== 'Enter') return;
 	if (e.target instanceof HTMLButtonElement) return;   // the button handles its own keys
 	e.preventDefault();
 	if (!e.repeat) document.getElementById('tend').click();
 });
-document.addEventListener('pointerdown', () => sfx.unlock());
+document.addEventListener('pointerup', audio);
 
 const savedAt = store.get('savedAt');
 if (savedAt) catchUp((Date.now() - savedAt) / 1000);
 view.muted(sfx.muted);
+view.music(musicOn);
 if (state.done) view.ending(state);
 requestAnimationFrame(frame);
 
 // For poking at the game from the console: game.state, game.skip(60).
 window.game = {
+	music,
 	get state() { return state; },
 	skip(s) {
 		for (let t = 0; t < s; t += T.tickSeconds) tick(state, T.tickSeconds, DATA, rng);

@@ -63,6 +63,19 @@ test('beans barely grow in winter, unless there is a greenhouse', () => {
 	assert.ok(grownBy('greenhouse') > grownBy() * 3);
 });
 
+test('with a greenhouse, the journal says winter is not a problem', () => {
+	const winter = DATA.SEASONS.find(s => s.cold);
+	const untilWinter = T.calendar.daySeconds * T.calendar.daysPerSeason * DATA.SEASONS.indexOf(winter) + 1;
+	const cold = createState(DATA);
+	run(cold, untilWinter, fair, 0.5);
+	assert.ok(cold.log.includes(winter.log));
+	const warm = createState(DATA);
+	own(warm, 'greenhouse');
+	run(warm, untilWinter, fair, 0.5);
+	assert.ok(warm.log.includes(winter.logWarm));
+	assert.ok(!warm.log.includes(winter.log));
+});
+
 test('a crow eats a bean, but not past a scarecrow', () => {
 	const crowAt = DATA.WEATHER.findIndex(w => w.eats);
 	const before = DATA.WEATHER.slice(0, crowAt).reduce((a, w) => a + w.chance, 0);
@@ -96,6 +109,20 @@ test('farmhands plant and pick on their own', () => {
 	const events = run(s, 30);
 	assert.ok(s.grown >= 2);
 	assert.ok(events.some(e => e.type === 'harvest'));
+});
+
+test('helpers who cannot keep up still get round to every plot', () => {
+	const s = createState(DATA);
+	s.coins = 1e6;
+	for (let i = 0; i < 11; i++) buyProject(s, 'plot', DATA);
+	own(s, 'farmhand');                       // far too few hands for twelve plots
+	const visits = s.plots.map(() => 0);
+	for (let t = 0; t < 600; t++) {
+		const before = [...s.plots];
+		tick(s, 0.1, DATA, fair);
+		s.plots.forEach((g, i) => { if (before[i] !== null && before[i] >= 1 && g < 1) visits[i]++; });
+	}
+	assert.ok(visits.every(v => v > 0), `harvests per plot: ${visits}`);
 });
 
 test('buying a project applies it straight away', () => {

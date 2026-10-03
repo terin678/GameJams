@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { createFarm, resize, grow, tendOnce, eatOne, counts, stageOf } from '../../games/beanstalk/src/core/farm.js';
+import { createFarm, resize, grow, tendOnce, findWork, eatOne, counts, stageOf } from '../../games/beanstalk/src/core/farm.js';
 import { createRng } from '../../shared/rng.js';
 
 test('a new farm is empty plots', () => {
@@ -23,10 +23,20 @@ test('growth only touches planted plots and stops at ripe', () => {
 	assert.deepEqual(counts(plots), { empty: 1, growing: 1, ripe: 1 });
 });
 
-test('tending prefers a ripe plot: harvests it and replants in one go', () => {
-	const plots = [null, 1, 0.3];
+test('harvesting replants the plot in one go', () => {
+	const plots = [0.2, 1, 0.3];
 	assert.equal(tendOnce(plots), 'harvest');
-	assert.deepEqual(plots, [null, 0, 0.3]);
+	assert.deepEqual(plots, [0.2, 0, 0.3]);
+});
+
+test('findWork looks onward from where the last job ended, and wraps round', () => {
+	const ripe = [1, 1, 1, 1];
+	assert.equal(findWork(ripe, 0), 0);
+	assert.equal(findWork(ripe, 2), 2);
+	assert.equal(findWork(ripe, 4), 0);
+	assert.equal(findWork([1, 0.5, null, 0.5], 1), 2, 'empty plots take their turn too');
+	assert.equal(findWork([1, 0.5, 0.5, 0.5], 1), 0);
+	assert.equal(findWork([0.5, 0.5], 0), -1);
 });
 
 test('resize adds plots and never removes them', () => {
