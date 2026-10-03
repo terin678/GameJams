@@ -77,6 +77,7 @@ export function createView(doc, data, handlers) {
 	$('menu').addEventListener('click', e => { if (e.target === $('menu')) show('menu', false); });
 	$('install').addEventListener('click', handlers.install);
 	$('awake').addEventListener('click', handlers.awake);
+	$('backdrop').addEventListener('click', handlers.backdrop);
 	$('save-copy').addEventListener('click', async () => {
 		$('save-code').value = handlers.saveCode();
 		$('save-code').select();
@@ -379,6 +380,10 @@ export function createView(doc, data, handlers) {
 		awake(on) {
 			show('awake-box', on !== null);
 			set('awake', `Keep screen awake: ${on ? 'on' : 'off'}`);
+		},
+
+		backdrop(on) {
+			set('backdrop', `Farm behind the page: ${on ? 'on' : 'off'}`);
 		},
 
 		closeMenu() {

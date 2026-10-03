@@ -171,6 +171,9 @@ buttons. It saves itself every few seconds.
 - **Move a farm between devices:** Menu, "Copy my code", then paste it into
   the Menu on the other device and "Load the code above".
 - On a phone the Tend button stays fixed at the bottom of the screen.
+  The farm sits behind the page, between the top bar and the Tend button,
+  and everything else scrolls over it on see-through panels (Menu, "Farm
+  behind the page", to turn that off).
 - **Music:** the tune is data as well (`src/data/music.js`): chords, bass, a
   lead line and a drum pattern, eight bars that loop. `shared/music.js` plays
   it with WebAudio (no audio files) and any game can use it. It has its own

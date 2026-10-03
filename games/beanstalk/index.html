@@ -216,7 +216,39 @@
 			#tend { width: 100%; padding: 14px 20px; }
 			#tendbar kbd { display: none; }
 			#top { padding-top: calc(8px + env(safe-area-inset-top)); }
+
+			/* Farm-behind mode: the farm fills the space between the top bar and the
+			   Tend button and stays put, while everything else scrolls over it on
+			   see-through panels. --top-h and --tend-h are measured by main.js. */
+			body.backdrop #top {
+				position: fixed; top: 0; left: 0; right: 0; z-index: 4; background: var(--bg);
+				border-bottom: 1px solid var(--line);
+			}
+			body.backdrop #scene {
+				position: fixed; top: var(--top-h, 70px); bottom: var(--tend-h, 76px); left: 0; right: 0;
+				z-index: 0; overflow: hidden; background: var(--bg);
+				--farm-h: min(133.33vw, 100dvh - var(--top-h, 70px) - var(--tend-h, 76px));
+			}
+			/* The whole farm, from the top of the sky to the last row of plots, at the top of that space. */
+			body.backdrop #farm {
+				position: absolute; top: 0; left: 50%; transform: translateX(-50%);
+				height: var(--farm-h); width: auto; max-width: none; margin: 0; border: 0; border-radius: 0;
+			}
+			body.backdrop #calendar {
+				position: absolute; top: 6px; left: 0; right: 0; margin: 0; font-size: 12px;
+				color: var(--ink); text-shadow: 0 1px 3px #000, 0 0 6px #000;
+			}
+			/* The page starts just below the farm, so the first thing you see is all of it. */
+			body.backdrop #app {
+				padding-top: calc(var(--top-h, 70px) + min(133.33vw, 100dvh - var(--top-h, 70px) - var(--tend-h, 76px)) - 24px);
+			}
+			body.backdrop #status, body.backdrop #shop, body.backdrop #journal {
+				position: relative; z-index: 1; margin-bottom: 12px; padding: 12px 14px;
+				background: rgba(16, 19, 28, 0.76); border: 1px solid var(--line); border-radius: 12px;
+			}
+			body.backdrop #status h2:first-of-type { margin-top: 10px; }
 		}
+		@media (min-width: 721px) { #backdrop-box { display: none; } }
 	</style>
 </head>
 <body>
@@ -307,6 +339,12 @@
 				<h4>Install</h4>
 				<p>Put Beanstalk on your home screen. It opens in its own window and works with no signal.</p>
 				<button id="install" type="button">Install Beanstalk</button>
+			</div>
+
+			<div id="backdrop-box">
+				<h4>Farm view</h4>
+				<p>Keep the farm in view behind the page while you scroll.</p>
+				<button id="backdrop" type="button">Farm behind the page: on</button>
 			</div>
 
 			<div id="awake-box" hidden>

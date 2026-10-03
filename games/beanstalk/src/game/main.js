@@ -98,6 +98,11 @@ const view = createView(document, { ...DATA, SKY }, {
 		installPrompt = null;
 		view.installable(false);
 	},
+	backdrop() {
+		farmBehind = !farmBehind;
+		store.set('backdrop', farmBehind);
+		backdrop();
+	},
 	awake() {
 		keepAwake = !keepAwake;
 		store.set('awake', keepAwake);
@@ -107,6 +112,22 @@ const view = createView(document, { ...DATA, SKY }, {
 		begin(newGamePlus(state, DATA));
 	},
 });
+
+// On a phone the farm can sit behind the page, between the top bar and the
+// Tend button (the CSS only acts on narrow screens). It needs to know how
+// tall those two bars are, which depends on the phone.
+let farmBehind = store.get('backdrop', true);
+function backdrop() {
+	document.body.classList.toggle('backdrop', farmBehind);
+	view.backdrop(farmBehind);
+	measureBars();
+}
+function measureBars() {
+	const px = id => `${document.getElementById(id).offsetHeight}px`;
+	document.documentElement.style.setProperty('--top-h', px('top'));
+	document.documentElement.style.setProperty('--tend-h', px('tendbar'));
+}
+addEventListener('resize', measureBars);
 
 // A short buzz on phones that can (Android; iPhones ignore it).
 function buzz(pattern) {
@@ -235,6 +256,7 @@ const savedAt = store.get('savedAt');
 if (savedAt) catchUp((Date.now() - savedAt) / 1000);
 view.muted(sfx.muted);
 view.music(musicOn);
+backdrop();
 wake();
 if (state.done) view.ending(state);
 requestAnimationFrame(frame);
