@@ -101,7 +101,7 @@ start a fresh farm.
 - [ ] Sound with the ringer off is confirmed on a phone (GitHub issue 2), then the issue is closed.
 - [x] Price decided: paid, about $1, with optional tips. No ads.
 - [x] Web saves decided: nothing carries over.
-- [ ] Choose the app id and put it in `app/capacitor.config.json` (it says `com.example.beanstalk` now). It can never change after release.
+- [x] App id: `com.veracity.beanstalk`, set in `app/capacitor.config.json`. It can never change after release.
 - [ ] Choose the name for the copyright line (app About text and store listing).
 
 **A build step, for the app only**

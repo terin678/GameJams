@@ -8,11 +8,11 @@ What is here so far: the settings (`capacitor.config.json`), the packages
 needed (`package.json`), and a build that makes the app's copy of the game.
 The Android project itself is not made yet; that needs Android Studio.
 
-## Before the first build: choose the app id
+## The app id
 
-`capacitor.config.json` says `com.example.beanstalk`. Change it to an id you
-own (for example `com.yourname.beanstalk`) before making the Android project.
-Once an app is released under an id, the id can never change.
+`capacitor.config.json` sets it to `com.veracity.beanstalk` (owner's choice,
+2026-10-03). It can still be changed up to the first release; once an app is
+released under an id, the id can never change.
 
 ## Build the app's copy of the game
 
