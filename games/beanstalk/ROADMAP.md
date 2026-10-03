@@ -92,14 +92,14 @@ works is in (ticked below). The rest waits for launch. Tick these off in
 order; each group depends on the one before.
 
 Decided (owner, 2026-10-03): testers play free on the website for now. At
-launch the app is a paid app at about $1, with optional tips, and the swap
+launch the app is a paid app at $4.99 (owner's current thinking; first said about $1), with optional tips, and the swap
 away from the free site starts then. Nothing carries over: app players
 start a fresh farm.
 
 **Before any of it**
 - [ ] The phone web version is play-tested to the end at least once, on a real phone.
 - [ ] Sound with the ringer off is confirmed on a phone (GitHub issue 2), then the issue is closed.
-- [x] Price decided: paid, about $1, with optional tips. No ads.
+- [x] Price decided: paid, $4.99 for now (set when the Play account is ready), with optional tips. No ads.
 - [x] Web saves decided: nothing carries over.
 - [x] App id: `com.veracity.beanstalk`, set in `app/capacitor.config.json`. It can never change after release.
 - [x] Copyright line: "© 2026 Veracity", in the Menu's About section and on the privacy page. Use the same name as the developer name on the store listing.
@@ -126,6 +126,7 @@ start a fresh farm.
 - [ ] Check the layout with a notch and with gesture navigation, on a real phone.
 
 **Play Console**
+- [ ] An Android phone. Google asks new personal developer accounts to confirm a real Android device through the Play Console phone app, and it is also the only way to hear and feel the game on real hardware. A cheap second-hand one will do.
 - [ ] Play Console developer account at play.google.com/console (one-off fee, identity check; allow a few days). This is separate from an account on developer.android.com.
 - [ ] Create the app; choose app signing by Google Play; make the upload key (steps in `app/README.md`; the build is already set up to use it) and keep it and its password somewhere safe and backed up.
 - [ ] Store listing: draft text and form answers are in `app/store-listing.md`. The feature graphic and six phone screenshots are in `app/store/` (made by `tools/store-shots.mjs`); retake them at launch, once the testing links are out of the app.
@@ -140,7 +141,7 @@ start a fresh farm.
 - [ ] Fix what they find; apply for production access; staged rollout.
 
 **Money**
-- [ ] Set the app up as paid (about $1) in the Play Console. A paid app can never be made free and then paid again, and needs a payments profile (tax and bank details).
+- [ ] Set the app up as paid ($4.99) in the Play Console. A paid app can never be made free and then paid again, and needs a payments profile (tax and bank details).
 - [ ] Tips inside the app go through Google Play's billing, as small one-off purchases ("a coffee", "a sack of beans"). Google takes its cut (15% for small developers at the time of writing). This needs the Play Billing plugin and a few lines of code.
 - [ ] A Buy Me a Coffee link can go on the website and the store listing's website field. A button inside the Android app that takes payment outside Play has been against Play's payments policy; the rules have been changing (and differ by country), so check them at launch before adding one.
 - [ ] After launch: decide when the free web version comes down (see Protecting the code).

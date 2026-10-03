@@ -26,6 +26,7 @@ Drafts for the Play Console. Edit freely; nothing reads this file.
 
 - **Category:** Games, Simulation (or Casual)
 - **Developer name:** Veracity
+- **Price:** $4.99, paid up front (the price can be changed later; a paid app cannot be made free and then paid again)
 - **Privacy policy:** https://terin678.github.io/GameJams/games/beanstalk/privacy.html
   (move it when the game leaves the free site)
 
