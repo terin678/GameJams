@@ -140,6 +140,8 @@ function measureBars() {
 	document.documentElement.style.setProperty('--tend-h', px('tendbar'));
 }
 addEventListener('resize', measureBars);
+// The date over the farm fades out once the page is scrolled across it (see the CSS).
+addEventListener('scroll', () => document.body.classList.toggle('scrolled', scrollY > 40), { passive: true });
 
 // A short buzz on phones that can (Android; iPhones ignore it).
 function buzz(pattern) {

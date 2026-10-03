@@ -128,7 +128,7 @@ start a fresh farm.
 **Play Console**
 - [ ] Play Console developer account at play.google.com/console (one-off fee, identity check; allow a few days). This is separate from an account on developer.android.com.
 - [ ] Create the app; choose app signing by Google Play; make the upload key (steps in `app/README.md`; the build is already set up to use it) and keep it and its password somewhere safe and backed up.
-- [ ] Store listing: draft text and form answers are in `app/store-listing.md`. Still to make: the 1024x500 feature graphic and the phone screenshots.
+- [ ] Store listing: draft text and form answers are in `app/store-listing.md`. The feature graphic and six phone screenshots are in `app/store/` (made by `tools/store-shots.mjs`); retake them at launch, once the testing links are out of the app.
 - [x] Privacy policy page (`games/beanstalk/privacy.html`, linked from the Menu). Update it when tips are added: it says there are no purchases in the game.
 - [ ] Link the privacy page from the store listing.
 - [ ] Forms: data safety, content rating questionnaire, target audience, ads declaration.

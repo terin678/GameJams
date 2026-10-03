@@ -32,10 +32,14 @@ Drafts for the Play Console. Edit freely; nothing reads this file.
 ## Pictures needed
 
 - Icon, 512 x 512: `games/beanstalk/icons/icon-512.png`
-- Feature graphic, 1024 x 500: not made yet
-- Phone screenshots, at least 2 (4 to 8 is better): not taken yet. Good moments:
-  the first plot, a busy farm with the greenhouse, a raid, the stalk in the
-  clouds, the probes in space.
+- Feature graphic, 1024 x 500: `app/store/feature-graphic.png`
+- Phone screenshots, 1080 x 1920, in `app/store/`: the first farm, a raid on
+  the farm, the Guard tab, the stalk in the clouds at dusk, a choice on the
+  Climb, and a winter night with probes in space.
+- To retake them all after the game changes: start the emulator with the
+  debug app installed, then `npx --yes node@22 tools/store-shots.mjs`.
+- They show the testing build: the "bug · idea" links are in the corner.
+  Retake them once those are taken out for launch.
 
 ## Form answers (as the game stands today)
 
