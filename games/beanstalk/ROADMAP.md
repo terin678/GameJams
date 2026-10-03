@@ -85,6 +85,70 @@ target; the bounds in `balance.test.js` hold the bot between 2 and 2.8 hours.
 What is not measured yet is a real person's run. When one is, compare it with
 the bot's time and move the bounds if the ratio is not about 2 to 3.
 
+## Step 5 checklist: Capacitor and the Play Store
+
+Not started. Tick these off in order; each group depends on the one before.
+
+**Before any of it**
+- [ ] The phone web version is play-tested to the end at least once, on a real phone.
+- [ ] Sound with the ringer off is confirmed on a phone (GitHub issue 2), then the issue is closed.
+- [ ] Decide the price: free, paid, or free with a tip. It changes the store forms below. No ads or purchases are planned.
+- [ ] Decide what happens to web saves. A farm on the website cannot be read by the app (different storage), and the save codes that could have moved one were cut. Either accept that app players start fresh, or bring back a one-way "send my farm to the app" import.
+
+**A build step, for the app only**
+- [ ] Add a bundler script (esbuild is enough) that takes `games/beanstalk` plus the `shared` files it imports and writes one minified file, with no source maps, into a `dist` folder. The website keeps running unbundled.
+- [ ] Run the test suite against the source as now, and add one test that the bundle loads and a game can be ticked.
+- [ ] Leave out of the bundle: the portal, the other games, the tests, the service worker (the app is already offline).
+
+**The Capacitor project**
+- [ ] `npm init @capacitor/app` in a new `app/` folder; app id (for example `com.<yourname>.beanstalk`) and name. The id can never be changed after release.
+- [ ] Point `webDir` at the bundle's `dist`; add the Android platform; open in Android Studio and run on a phone.
+- [ ] Replace the analytics call (GoatCounter, in `shared/site.js`) with nothing, or declare it in the privacy policy and data form.
+- [ ] Saves: move from `localStorage` to Capacitor Preferences, so Android clearing the web cache cannot lose a farm.
+- [ ] Android back button: close an open overlay, otherwise ask before leaving.
+- [ ] Keep-awake and vibration through Capacitor plugins (the web versions are patchy inside an app).
+- [ ] Pause the music and the game clock when the app goes to the background; catch up on return (the time-away code already does this for the website).
+- [ ] Local notifications, opt-in: "the fair is tomorrow", "your farm has done all it can without you" (after the 8-hour cap).
+- [ ] App icon and splash screen from `tools/make-icons.mjs` (adaptive icon: foreground and background layers).
+- [ ] Lock to portrait; check the layout with a notch and with gesture navigation.
+
+**Play Console**
+- [ ] Developer account (one-off fee, identity check; allow a few days).
+- [ ] Create the app; choose app signing by Google Play; keep the upload key and its password somewhere safe and backed up.
+- [ ] Store listing: short and full description, 512 px icon, 1024x500 feature graphic, at least four phone screenshots.
+- [ ] Privacy policy on a public web page, linked from the listing.
+- [ ] Forms: data safety, content rating questionnaire, target audience, ads declaration.
+- [ ] Build a release bundle (.aab) targeting the API level Play currently requires.
+
+**Testing and release**
+- [ ] Internal test track first, with your own phone.
+- [ ] Closed test: 12 testers opted in for 14 days running (required for new personal accounts before production).
+- [ ] Fix what they find; apply for production access; staged rollout.
+
+## Protecting the code
+
+A Capacitor app does not hide the code. The `.aab`/`.apk` is a zip, and the
+game's JavaScript sits inside it as files anyone can pull out and read. So,
+the same as on the website, it is a concern, and the answers are these:
+
+- **Minify and bundle** (the build step above). Names are shortened, comments
+  and layout go, and the data files are folded in. This stops casual reading
+  and copying; it does not stop someone determined.
+- **Obfuscation** on top of that buys little, costs speed and makes crashes
+  hard to read. Not planned.
+- **No source maps** in anything shipped.
+- **Copyright is the real protection.** The repository has no licence file,
+  which means all rights are reserved already. Add a short copyright line to
+  the app's about text and the store listing.
+- **When the game leaves the free portal:** make the repository private (or
+  move Beanstalk to its own private one) and take the page down. Everything
+  published before then stays out there: the full readable source and its
+  history have been public, and anyone may have a copy. Private repositories
+  cannot serve GitHub Pages on the free plan, so the website version would
+  need another host or would simply end.
+- **Not worth doing:** moving the rules to a server. It would protect them
+  properly, and it would also end offline play and add running costs.
+
 ## Done so far
 
 - Core loop: tend, sell, projects, three phases, ending, New Game+.
