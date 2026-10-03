@@ -6,7 +6,7 @@ Where the game is going, in order. Update the status as things land.
 |---|---|---|
 | 1 | **Long game**: retune so a run is 2–5 hours for a real player (the pacing bot, which plays perfectly, takes about 2.3 h: 36 / 55 / 44 minutes across the phases; see Target playtime below). Time away at 15% speed, capped at 8 hours. | done, awaiting play-testing |
 | 2 | **New Game+ flavour**: the world remembers earlier runs (new lines, a golden bean, a run count), and each run adds a twist. A second run takes the bot about 77% as long. | done |
-| 3 | **Installable web app (PWA)**: manifest, icons, offline cache with a version stamp, phone layout with Tend in thumb reach, vibration, wake lock, save export/import. Built; **still to be tested on a real phone** (install, offline launch, sound with the ringer off, time-away summary). | built, needs phone testing |
+| 3 | **Installable web app (PWA)**: manifest, icons, offline cache with a version stamp, phone layout with Tend in thumb reach, vibration, wake lock. Built; **still to be tested on a real phone** (install, offline launch, sound with the ringer off, time-away summary). | built, needs phone testing |
 | 4 | **More systems**: The Climb is in (ten ledges, the Giant, finds), two stages of the Guard (pests, then the realm; see below) and the Exchange (bean futures). Still to come: the Guard's last stage, Blight. Each is a tab with its own data, rules and tests, followed by a retune. | in progress |
 | 5 | **Capacitor and the Play Store**: wrap the same files, local notifications, store listing, privacy policy, closed test (12 testers, 14 days), release. Only once the PWA is well tested and solid. | planned |
 
@@ -82,7 +82,7 @@ the bot's time and move the bounds if the ratio is not about 2 to 3.
 - The Climb: ten ledges up the stalk, the Giant, finds that change the farm.
 - The Guard, stages one and two: pests, posts, animals, ranks; tough pests and training.
 - The Exchange: crates of beans, priced by the season and the weather.
-- Installable phone version, farm-behind-the-page mode, save codes.
+- Installable phone version, farm-behind-the-page mode. (Save codes for moving a farm between devices were built and then cut: a lot of surface for little value.)
 - A minute-long day with dawn, dusk and night; blended season and weather colours.
 - Music, sound, tabbed layout, purchases that change the farm view.
 

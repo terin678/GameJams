@@ -200,11 +200,6 @@
 		#menu h4 { margin: 16px 0 4px; font-size: 12px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); }
 		#menu p { font-size: 12px; color: var(--muted); }
 		#menu button { margin-top: 6px; }
-		#menu textarea {
-			width: 100%; height: 5.5rem; margin-top: 6px; padding: 6px 8px; resize: vertical;
-			font: 12px/1.4 ui-monospace, Menlo, Consolas, monospace; color: var(--ink);
-			background: var(--bg); border: 1px solid var(--line); border-radius: 6px; word-break: break-all;
-		}
 		#menu .danger { border-color: #ff8a80; }
 
 		@media (max-width: 1100px) {
@@ -368,15 +363,6 @@
 				<p>Stop the screen dimming and locking while the game is open.</p>
 				<button id="awake" type="button">Keep screen awake: off</button>
 			</div>
-
-			<h4>Move your farm</h4>
-			<p>A save code is your whole farm as text. Copy it here, paste it on another device.</p>
-			<textarea id="save-code" spellcheck="false" autocomplete="off" autocapitalize="off" aria-label="Save code"></textarea>
-			<div class="row">
-				<button id="save-copy" type="button">Copy my code</button>
-				<button id="save-load" type="button">Load the code above</button>
-			</div>
-			<p id="save-note" aria-live="polite">&nbsp;</p>
 
 			<h4>Start over</h4>
 			<p>Erase this farm and begin again from one bean.</p>

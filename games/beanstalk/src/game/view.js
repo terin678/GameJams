@@ -74,8 +74,6 @@ export function createView(doc, data, handlers) {
 	$('again').addEventListener('click', handlers.again);
 	$('away-ok').addEventListener('click', () => show('away', false));
 	$('open-menu').addEventListener('click', () => {
-		$('save-code').value = handlers.saveCode();
-		set('save-note', ' ');
 		show('menu', true);
 		$('menu-close').focus();
 	});
@@ -84,21 +82,6 @@ export function createView(doc, data, handlers) {
 	$('install').addEventListener('click', handlers.install);
 	$('awake').addEventListener('click', handlers.awake);
 	$('backdrop').addEventListener('click', handlers.backdrop);
-	$('save-copy').addEventListener('click', async () => {
-		$('save-code').value = handlers.saveCode();
-		$('save-code').select();
-		try {
-			await navigator.clipboard.writeText($('save-code').value);
-			set('save-note', 'Copied. Paste it into the Menu on your other device.');
-		} catch (e) {
-			set('save-note', 'Select the text above and copy it.');
-		}
-	});
-	$('save-load').addEventListener('click', () => {
-		const loaded = handlers.loadCode($('save-code').value);
-		set('save-note', loaded ? 'Loaded. Welcome back.' : 'That is not a Beanstalk save code.');
-		if (loaded) show('menu', false);
-	});
 	$('projects').addEventListener('click', e => {
 		const b = e.target.closest('[data-id]');
 		if (b && Date.now() >= guardUntil) handlers.buy(b.dataset.id);

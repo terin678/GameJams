@@ -1,8 +1,7 @@
 // Boot: load the save, catch up on time away, then run the loop.
 
 import { DATA, SPRITES, PALETTE, VIEW, SOUNDS, EVENT_SOUNDS, MUSIC, SKY } from '../data/index.js';
-import { createState, tick, tend, buyProject, giveGift, crossSeeds, chooseSeedling, climb, chooseAtLedge, postAnimal, buildPost, trainAnimal, buyCrates, sellCrates, nudgePrice, simulateOffline, serialize, restore, isSave, newGamePlus } from '../core/sim.js';
-import { encodeSave, decodeSave } from '../core/save.js';
+import { createState, tick, tend, buyProject, giveGift, crossSeeds, chooseSeedling, climb, chooseAtLedge, postAnimal, buildPost, trainAnimal, buyCrates, sellCrates, nudgePrice, simulateOffline, serialize, restore, newGamePlus } from '../core/sim.js';
 import { createStore } from '../../../../shared/storage.js';
 import { createRng } from '../../../../shared/rng.js';
 import { Sfx } from '../../../../shared/sfx.js';
@@ -100,16 +99,6 @@ const view = createView(document, { ...DATA, SKY }, {
 		if (!confirm('Start over from one bean? This erases your farm.')) return;
 		begin(createState(DATA));
 		view.closeMenu();
-	},
-	saveCode() {
-		return encodeSave(serialize(state));
-	},
-	loadCode(code) {
-		const saved = decodeSave(code);
-		if (!isSave(saved)) return false;
-		begin(restore(saved, DATA));
-		if (state.done) view.ending(state);
-		return true;
 	},
 	async install() {
 		if (!installPrompt) return;

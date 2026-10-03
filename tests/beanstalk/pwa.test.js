@@ -1,10 +1,7 @@
-// The installable-app pieces: the manifest, the icons, the service worker and save codes.
+// The installable-app pieces: the manifest, the icons, and the service worker.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { encodeSave, decodeSave } from '../../games/beanstalk/src/core/save.js';
-import { createState, tend, serialize, restore, isSave } from '../../games/beanstalk/src/core/sim.js';
-import { DATA } from '../../games/beanstalk/src/data/index.js';
 import { ICONS, encodePng, drawIcon } from '../../tools/make-icons.mjs';
 
 const game = name => new URL(`../../games/beanstalk/${name}`, import.meta.url);
@@ -104,23 +101,4 @@ test('it leaves other sites and non-GET requests alone', () => {
 test('the page registers the service worker from the game folder', () => {
 	const main = readFileSync(game('src/game/main.js'), 'utf8');
 	assert.match(main, /serviceWorker[\s\S]*register\('sw\.js'\)/);
-});
-
-test('a save code round-trips a farm, accents and all', () => {
-	const s = createState(DATA);
-	tend(s, DATA);
-	s.coins = 1234.5;
-	s.log.unshift('Café, naïve, 🌱');
-	const code = encodeSave(serialize(s));
-	assert.match(code, /^BEAN1\.[A-Za-z0-9+/=]+$/);
-	const back = decodeSave(`  ${code.slice(0, 40)}\n${code.slice(40)}  `);
-	assert.ok(isSave(back));
-	assert.deepEqual(restore(back, DATA), s);
-});
-
-test('junk is not a save code', () => {
-	for (const junk of ['', null, 'hello', 'BEAN1.!!!', 'BEAN1.' + btoa('not json'), 'BEAN1.' + btoa('7')]) {
-		assert.equal(decodeSave(junk), null, String(junk));
-	}
-	assert.equal(isSave(decodeSave('BEAN1.' + btoa('{"v":99}'))), false);
 });
