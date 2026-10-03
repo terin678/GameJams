@@ -67,6 +67,31 @@ export function createView(doc, data, handlers) {
 	$('reset').addEventListener('click', handlers.reset);
 	$('again').addEventListener('click', handlers.again);
 	$('away-ok').addEventListener('click', () => show('away', false));
+	$('open-menu').addEventListener('click', () => {
+		$('save-code').value = handlers.saveCode();
+		set('save-note', ' ');
+		show('menu', true);
+		$('menu-close').focus();
+	});
+	$('menu-close').addEventListener('click', () => show('menu', false));
+	$('menu').addEventListener('click', e => { if (e.target === $('menu')) show('menu', false); });
+	$('install').addEventListener('click', handlers.install);
+	$('awake').addEventListener('click', handlers.awake);
+	$('save-copy').addEventListener('click', async () => {
+		$('save-code').value = handlers.saveCode();
+		$('save-code').select();
+		try {
+			await navigator.clipboard.writeText($('save-code').value);
+			set('save-note', 'Copied. Paste it into the Menu on your other device.');
+		} catch (e) {
+			set('save-note', 'Select the text above and copy it.');
+		}
+	});
+	$('save-load').addEventListener('click', () => {
+		const loaded = handlers.loadCode($('save-code').value);
+		set('save-note', loaded ? 'Loaded. Welcome back.' : 'That is not a Beanstalk save code.');
+		if (loaded) show('menu', false);
+	});
 	$('projects').addEventListener('click', e => {
 		const b = e.target.closest('[data-id]');
 		if (b && Date.now() >= guardUntil) handlers.buy(b.dataset.id);
@@ -343,6 +368,21 @@ export function createView(doc, data, handlers) {
 
 		music(on) {
 			set('music', `Music: ${on ? 'on' : 'off'}`);
+		},
+
+		// `can`: the browser has offered to install the game.
+		installable(can) {
+			show('install-box', can);
+		},
+
+		// `on` is null when this device can't keep the screen awake.
+		awake(on) {
+			show('awake-box', on !== null);
+			set('awake', `Keep screen awake: ${on ? 'on' : 'off'}`);
+		},
+
+		closeMenu() {
+			show('menu', false);
 		},
 
 		away(summary) {

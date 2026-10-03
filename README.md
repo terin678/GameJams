@@ -161,6 +161,16 @@ buttons. It saves itself every few seconds.
   seasons, weather and time of day all blend. The calendar only drives what
   you see; weather runs on its own clock (`TUNING.weather`), so changing the
   length of a day does not change what you earn.
+- **Install it:** Beanstalk is an installable web app. In Chrome on Android
+  use the Menu's Install button (or "Add to Home screen"); on an iPhone use
+  Share, then "Add to Home Screen". It then opens in its own window and works
+  with no signal. `sw.js` fetches fresh files whenever it is online and keeps
+  a copy for when it is not, so there are no version numbers to bump and no
+  hard refresh needed. Icons are drawn from the bean sprite by
+  `node tools/make-icons.mjs` (a test fails if they are stale).
+- **Move a farm between devices:** Menu, "Copy my code", then paste it into
+  the Menu on the other device and "Load the code above".
+- On a phone the Tend button stays fixed at the bottom of the screen.
 - **Music:** the tune is data as well (`src/data/music.js`): chords, bass, a
   lead line and a drum pattern, eight bars that loop. `shared/music.js` plays
   it with WebAudio (no audio files) and any game can use it. It has its own

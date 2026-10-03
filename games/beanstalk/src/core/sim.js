@@ -272,9 +272,13 @@ export function serialize(state) {
 	return rest;
 }
 
+// Whether an object looks like a save this version can load.
+export const isSave = saved => !!saved && saved.v === VERSION && Array.isArray(saved.plots)
+	&& !!saved.owned && typeof saved.owned === 'object';
+
 export function restore(saved, data) {
 	const fresh = createState(data);
-	if (!saved || saved.v !== VERSION || !Array.isArray(saved.plots) || typeof saved.owned !== 'object') return fresh;
+	if (!isSave(saved)) return fresh;
 	// Fields added since the save was made keep their fresh values.
 	return refresh({ ...fresh, ...saved }, data);
 }

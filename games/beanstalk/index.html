@@ -2,9 +2,16 @@
 <html lang="en">
 <head>
 	<meta charset="utf-8">
-	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 	<title>Beanstalk</title>
 	<meta name="description" content="Plant one bean. Keep going.">
+	<!-- Installable: "Add to Home screen" gives it an icon and its own window. -->
+	<link rel="manifest" href="manifest.webmanifest">
+	<meta name="theme-color" content="#10131c">
+	<link rel="icon" href="icons/icon-192.png">
+	<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+	<meta name="mobile-web-app-capable" content="yes">
+	<meta name="apple-mobile-web-app-title" content="Beanstalk">
 	<style>
 		:root {
 			--bg: #10131c; --panel: #1a1f2e; --panel-hi: #232a3d; --ink: #e9ecf4;
@@ -163,6 +170,7 @@
 		.card {
 			max-width: 420px; background: var(--panel); border: 1px solid var(--bean);
 			border-radius: 10px; padding: 20px 24px;
+			max-height: calc(100dvh - 32px); overflow-y: auto;
 		}
 		.card h3 { margin: 0 0 8px; font-size: 18px; color: var(--bean); }
 		#ending .card { text-align: center; padding: 28px 32px; max-width: 440px; }
@@ -175,6 +183,16 @@
 		#ending p.gold { color: var(--gold); }
 		#ending button { margin-top: 18px; border-color: var(--bean); }
 		.card button { margin-top: 14px; padding: 8px 16px; }
+		#menu .card { width: min(440px, 100%); }
+		#menu h4 { margin: 16px 0 4px; font-size: 12px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); }
+		#menu p { font-size: 12px; color: var(--muted); }
+		#menu button { margin-top: 6px; }
+		#menu textarea {
+			width: 100%; height: 5.5rem; margin-top: 6px; padding: 6px 8px; resize: vertical;
+			font: 12px/1.4 ui-monospace, Menlo, Consolas, monospace; color: var(--ink);
+			background: var(--bg); border: 1px solid var(--line); border-radius: 6px; word-break: break-all;
+		}
+		#menu .danger { border-color: #ff8a80; }
 
 		@media (max-width: 1100px) {
 			#app {
@@ -185,9 +203,19 @@
 		}
 		@media (max-width: 720px) {
 			#app { grid-template-columns: minmax(0, 1fr); grid-template-areas: 'scene' 'status' 'shop' 'journal'; }
-			#farm { width: auto; height: 36vh; margin: 0 auto; }
+			#farm { width: auto; height: 32vh; margin: 0 auto; }
 			#status p { white-space: normal; }
 			.panel { height: 24rem; }
+			/* On a phone the Tend button stays under your thumb, whatever you scroll to. */
+			body { padding-bottom: calc(76px + env(safe-area-inset-bottom)); }
+			#tendbar {
+				position: fixed; left: 0; right: 0; bottom: 0; z-index: 4; margin: 0;
+				padding: 10px 16px calc(10px + env(safe-area-inset-bottom));
+				background: var(--bg); border-top: 1px solid var(--line);
+			}
+			#tend { width: 100%; padding: 14px 20px; }
+			#tendbar kbd { display: none; }
+			#top { padding-top: calc(8px + env(safe-area-inset-top)); }
 		}
 	</style>
 </head>
@@ -201,7 +229,7 @@
 		<div id="settings">
 			<button id="mute" type="button">Sound: on</button>
 			<button id="music" type="button">Music: on</button>
-			<button id="reset" type="button">Start over</button>
+			<button id="open-menu" type="button">Menu</button>
 		</div>
 	</header>
 
@@ -223,9 +251,9 @@
 			<p class="muted" id="rate">&nbsp;</p>
 
 			<h2>Farm</h2>
-			<div class="row">
+			<div class="row" id="tendbar">
 				<button id="tend" type="button">Plant a bean</button>
-				<span class="muted"><kbd>Space</kbd></span>
+				<kbd>Space</kbd>
 			</div>
 			<p id="plots">&nbsp;</p>
 			<p class="muted" id="growing">&nbsp;</p>
@@ -268,6 +296,39 @@
 			<h3 id="away-title">While you were away</h3>
 			<div id="away-body"></div>
 			<button id="away-ok" type="button">Back to work</button>
+		</div>
+	</div>
+
+	<div id="menu" class="overlay" hidden>
+		<div class="card" role="dialog" aria-labelledby="menu-title">
+			<h3 id="menu-title">Menu</h3>
+
+			<div id="install-box" hidden>
+				<h4>Install</h4>
+				<p>Put Beanstalk on your home screen. It opens in its own window and works with no signal.</p>
+				<button id="install" type="button">Install Beanstalk</button>
+			</div>
+
+			<div id="awake-box" hidden>
+				<h4>Screen</h4>
+				<p>Stop the screen dimming and locking while the game is open.</p>
+				<button id="awake" type="button">Keep screen awake: off</button>
+			</div>
+
+			<h4>Move your farm</h4>
+			<p>A save code is your whole farm as text. Copy it here, paste it on another device.</p>
+			<textarea id="save-code" spellcheck="false" autocomplete="off" autocapitalize="off" aria-label="Save code"></textarea>
+			<div class="row">
+				<button id="save-copy" type="button">Copy my code</button>
+				<button id="save-load" type="button">Load the code above</button>
+			</div>
+			<p id="save-note" aria-live="polite">&nbsp;</p>
+
+			<h4>Start over</h4>
+			<p>Erase this farm and begin again from one bean.</p>
+			<button id="reset" type="button" class="danger">Start over</button>
+
+			<div class="row"><button id="menu-close" type="button">Back to the farm</button></div>
 		</div>
 	</div>
 

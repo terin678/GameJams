@@ -1,7 +1,8 @@
 // Boot: load the save, catch up on time away, then run the loop.
 
 import { DATA, SPRITES, PALETTE, VIEW, SOUNDS, EVENT_SOUNDS, MUSIC, SKY } from '../data/index.js';
-import { createState, tick, tend, buyProject, giveGift, crossSeeds, chooseSeedling, nudgePrice, simulateOffline, serialize, restore, newGamePlus } from '../core/sim.js';
+import { createState, tick, tend, buyProject, giveGift, crossSeeds, chooseSeedling, nudgePrice, simulateOffline, serialize, restore, isSave, newGamePlus } from '../core/sim.js';
+import { encodeSave, decodeSave } from '../core/save.js';
 import { createStore } from '../../../../shared/storage.js';
 import { createRng } from '../../../../shared/rng.js';
 import { Sfx } from '../../../../shared/sfx.js';
@@ -35,6 +36,7 @@ const view = createView(document, { ...DATA, SKY }, {
 	tend() {
 		const did = tend(state, DATA);
 		sfx.play(did ?? 'deny');
+		if (did) buzz(8);
 	},
 	buy(id) {
 		const bought = buyProject(state, id, DATA);
@@ -51,6 +53,7 @@ const view = createView(document, { ...DATA, SKY }, {
 	gift(neighbourId, giftId) {
 		const result = giveGift(state, neighbourId, giftId, DATA);
 		sfx.play(!result ? 'deny' : result.perks.length ? 'heart' : result.reaction);
+		if (result?.perks.length) buzz([20, 40, 20]);
 	},
 	cross() {
 		sfx.play(crossSeeds(state, DATA, rng) ? 'cross' : 'deny');
@@ -76,11 +79,66 @@ const view = createView(document, { ...DATA, SKY }, {
 	reset() {
 		if (!confirm('Start over from one bean? This erases your farm.')) return;
 		begin(createState(DATA));
+		view.closeMenu();
+	},
+	saveCode() {
+		return encodeSave(serialize(state));
+	},
+	loadCode(code) {
+		const saved = decodeSave(code);
+		if (!isSave(saved)) return false;
+		begin(restore(saved, DATA));
+		if (state.done) view.ending(state);
+		return true;
+	},
+	async install() {
+		if (!installPrompt) return;
+		installPrompt.prompt();
+		await installPrompt.userChoice;
+		installPrompt = null;
+		view.installable(false);
+	},
+	awake() {
+		keepAwake = !keepAwake;
+		store.set('awake', keepAwake);
+		wake();
 	},
 	again() {
 		begin(newGamePlus(state, DATA));
 	},
 });
+
+// A short buzz on phones that can (Android; iPhones ignore it).
+function buzz(pattern) {
+	try { navigator.vibrate?.(pattern); } catch (e) { /* not allowed here */ }
+}
+
+// The browser offers to install the game once it has seen the manifest and
+// the service worker; keep the offer for the Menu's Install button.
+let installPrompt = null;
+addEventListener('beforeinstallprompt', e => {
+	e.preventDefault();
+	installPrompt = e;
+	view.installable(true);
+});
+addEventListener('appinstalled', () => view.installable(false));
+
+// Keeping the screen awake is opt-in (it costs battery) and has to be asked
+// for again each time the page comes back into view.
+let keepAwake = store.get('awake', false);
+let wakeLock = null;
+async function wake() {
+	const can = 'wakeLock' in navigator;
+	view.awake(can ? keepAwake : null);
+	if (!can) return;
+	try {
+		if (keepAwake && !document.hidden) wakeLock = await navigator.wakeLock.request('screen');
+		else if (!keepAwake) {
+			await wakeLock?.release();
+			wakeLock = null;
+		}
+	} catch (e) { /* the system said no (low battery, say): nothing to do */ }
+}
 
 function begin(next) {
 	state = next;
@@ -99,6 +157,7 @@ function react(events) {
 		const sound = EVENT_SOUNDS[e.type];
 		sfx.play(typeof sound === 'string' ? sound : sound?.[e.id]);
 		if (e.type === 'crow') farm.crow(seconds());
+		if (e.type === 'fair' && e.id === 'won') buzz([20, 40, 20]);
 	}
 }
 
@@ -157,6 +216,7 @@ setInterval(step, 1000);
 
 document.addEventListener('visibilitychange', () => {
 	if (document.hidden) save();
+	else wake();
 	if (sfx.ctx) audio();
 });
 addEventListener('pagehide', save);
@@ -175,8 +235,13 @@ const savedAt = store.get('savedAt');
 if (savedAt) catchUp((Date.now() - savedAt) / 1000);
 view.muted(sfx.muted);
 view.music(musicOn);
+wake();
 if (state.done) view.ending(state);
 requestAnimationFrame(frame);
+
+// The service worker makes the game open offline and always fetch the newest
+// files when online (see sw.js). Browsers only allow it on https or localhost.
+if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => {});
 
 // For poking at the game from the console: game.state, game.skip(60).
 window.game = {
