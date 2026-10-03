@@ -1,39 +1,46 @@
 # Beanstalk, the phone app
 
-This folder wraps the game for Android with Capacitor. Nothing here is used by
-the website. The checklist for getting to the Play Store is in
+This folder wraps the game for Android with Capacitor 8. Nothing here is used
+by the website. The checklist for getting to the Play Store is in
 `games/beanstalk/ROADMAP.md` (step 5).
 
-What is here so far: the settings (`capacitor.config.json`), the packages
-needed (`package.json`), and a build that makes the app's copy of the game.
-The Android project itself is not made yet; that needs Android Studio.
+- `capacitor.config.json`: the app id (`com.veracity.beanstalk`; it can never
+  change after the first release) and name.
+- `android/`: the Android project, made by Capacitor and then edited (locked
+  to portrait; a newer Gradle, see below). Open this folder in Android Studio.
+- `www/`: the app's copy of the game. Built, not committed.
 
-## The app id
-
-`capacitor.config.json` sets it to `com.veracity.beanstalk` (owner's choice,
-2026-10-03). It can still be changed up to the first release; once an app is
-released under an id, the id can never change.
-
-## Build the app's copy of the game
-
-From the repository root:
-
-```bash
-npm install
-npm run build:app
-```
-
-That writes `app/www`: the page, one minified script with no source map, the
-icons and the privacy page. It is not committed.
-
-## Make and run the Android project (needs Android Studio)
+## After any change to the game
 
 ```bash
 cd app
 npm install
-npx cap add android
 npm run sync
-npm run open
 ```
 
-Run `npm run sync` again after any change to the game.
+`sync` rebuilds `www` (one minified script, no source map, plus the page, icons
+and privacy page) and copies it into the Android project.
+
+## Run it
+
+Open `app/android` in Android Studio and press Run, with a phone plugged in or
+an emulator chosen. Or, from a terminal:
+
+```bash
+cd app/android
+./gradlew assembleDebug
+```
+
+The app file is then `app/android/app/build/outputs/apk/debug/app-debug.apk`.
+From a terminal Gradle needs to be told where Java is: set `JAVA_HOME` to
+Android Studio's own copy (`C:\Program Files\Android\Android Studio\jbr`).
+
+## Two things that are not Capacitor's defaults
+
+- **Node 22 for the Capacitor tool.** Capacitor 8's command line needs Node 22
+  or newer; this machine has Node 20. The `cap` script in `package.json` runs
+  it under Node 22 through `npx`, without changing the installed Node.
+- **Gradle 9.1.** Android Studio now ships Java 25, which the Gradle version
+  Capacitor picks (8.14) cannot run on.
+  `android/gradle/wrapper/gradle-wrapper.properties` is set to 9.1.0. If the
+  Android project is ever made again from scratch, make that change again.

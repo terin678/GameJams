@@ -111,7 +111,8 @@ start a fresh farm.
 
 **The Capacitor project**
 - [x] `app/` folder with the Capacitor settings, the packages to install and a README with the commands.
-- [ ] Install Android Studio; `npx cap add android`; run on a phone (steps in `app/README.md`).
+- [x] Android Studio installed; the Android project is made (`app/android`, Capacitor 8) and builds; the app was installed and played on the emulator (2026-10-03).
+- [ ] Run it on a real phone (steps in `app/README.md`): sound, vibration, the back button, the layout round a notch.
 - [x] No analytics in the app copy (the script that loads it is not bundled).
 - [ ] Saves: check that a farm survives an app update and a phone restart as it is (an app's own storage is not cleared like a browser's); move to Capacitor Preferences only if it does not.
 - [ ] Take the bug and idea links (they open GitHub) and the "in testing" line out of the app copy at launch.
@@ -120,7 +121,8 @@ start a fresh farm.
 - [ ] Pause the music and the game clock when the app goes to the background; catch up on return (the time-away code already does this for the website).
 - [ ] Local notifications, opt-in: "the fair is tomorrow", "your farm has done all it can without you" (after the 8-hour cap).
 - [ ] App icon and splash screen from `tools/make-icons.mjs` (adaptive icon: foreground and background layers).
-- [ ] Lock to portrait; check the layout with a notch and with gesture navigation.
+- [x] Locked to portrait.
+- [ ] Check the layout with a notch and with gesture navigation, on a real phone.
 
 **Play Console**
 - [ ] Developer account (one-off fee, identity check; allow a few days).
