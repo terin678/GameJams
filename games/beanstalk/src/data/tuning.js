@@ -17,6 +17,14 @@ export const TUNING = {
 	// Stalk height in metres = scale * (beans ever grown) ^ power.
 	height: { scale: 0.935, power: 0.9 },
 	universeBeans: 1e30,      // every atom is bean
+	// Neighbours: a gift every giftSeconds each; hearts from points.
+	friends: {
+		pointsPerHeart: 100,
+		maxHearts: 8,
+		giftSeconds: 30,
+		costGrowth: 1.3,      // gifts cost this much more per heart
+		points: { love: 60, like: 35, neutral: 15, dislike: -20 },
+	},
 	goldenBonus: 1,           // each Golden Bean (New Game+) adds this much yield
 	// Away for longer than minSeconds, the farm works at `rate` of normal speed,
 	// for at most capSeconds of your absence.

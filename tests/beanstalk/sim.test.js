@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { createState, refresh, tick, tend, buyProject, nudgePrice, simulateOffline, serialize, restore, newGamePlus } from '../../games/beanstalk/src/core/sim.js';
+import { createState, refresh, tick, tend, buyProject, giveGift, nudgePrice, simulateOffline, serialize, restore, newGamePlus } from '../../games/beanstalk/src/core/sim.js';
 import { DATA } from '../../games/beanstalk/src/data/index.js';
 import { createRng } from '../../shared/rng.js';
 
@@ -132,6 +132,30 @@ test('helpers who cannot keep up still get round to every plot', () => {
 		s.plots.forEach((g, i) => { if (before[i] !== null && before[i] >= 1 && g < 1) visits[i]++; });
 	}
 	assert.ok(visits.every(v => v > 0), `harvests per plot: ${visits}`);
+});
+
+test('neighbours turn up as the farm grows, and gifts earn perks', () => {
+	const who = DATA.NEIGHBOURS[0];
+	const loved = who.loves[0];
+	const s = createState(DATA);
+	s.grown = who.unlock.grown;
+	const events = run(s, 0.1);
+	assert.ok(events.some(e => e.type === 'meet' && e.id === who.id));
+	assert.equal(s.log[0], who.meet);
+	assert.deepEqual(run(s, 0.1).filter(e => e.type === 'meet'), [], 'met once');
+
+	s.coins = 1e6;
+	const marketing = s.mods.marketing;
+	let result;
+	for (let i = 0; i < 20 && !(result?.perks.length); i++) {
+		result = giveGift(s, who.id, loved, DATA);
+		assert.ok(result, 'gift accepted');
+		s.time += T.friends.giftSeconds;
+	}
+	assert.equal(result.hearts, who.perks[0].hearts);
+	assert.ok(s.mods.marketing > marketing, 'the perk is applied');
+	assert.ok(s.log[0].includes(who.perks[0].text));
+	assert.equal(giveGift(s, 'nobody', loved, DATA), null);
 });
 
 test('buying a project applies it straight away', () => {

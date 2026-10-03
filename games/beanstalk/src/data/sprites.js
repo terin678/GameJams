@@ -1,6 +1,8 @@
 // Pixel art as data. Each sprite: { frames: [rows...] } where rows use PALETTE
 // characters and '.' is transparent. Drawn at VIEW.scale screen pixels per pixel.
 
+import { NEIGHBOURS } from './neighbours.js';
+
 export const PALETTE = {
 	k: '#1b1b2a', // outline
 	w: '#f4f4f4',
@@ -47,6 +49,18 @@ const GALAXY = [
 	'.p...pp...pp..',
 	'.pp....ppp....',
 	'..pp..........',
+];
+
+// A neighbour on a visit: A is the hat, B the shirt, S the skin (see `look` in neighbours.js).
+const VISITOR = [
+	'.AAAA.',
+	'AAAAAA',
+	'.SSSS.',
+	'.SkSk.',
+	'.BBBB.',
+	'SBBBBS',
+	'.BBBB.',
+	'.k..k.',
 ];
 
 export const SPRITES = {
@@ -209,6 +223,9 @@ export const SPRITES = {
 		'gyg',
 		'.g.',
 	]] },
+	...Object.fromEntries(NEIGHBOURS.map(n => [`friend_${n.id}`, {
+		frames: [recolor(VISITOR, { A: n.look.hat, B: n.look.shirt, S: n.look.skin })],
+	}])),
 	// Things that appear on the farm when a project is bought (see VIEW.props).
 	can: { frames: [[
 		'.nn..n',

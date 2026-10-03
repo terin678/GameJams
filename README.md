@@ -137,6 +137,12 @@ buttons. It saves itself every few seconds.
   ```
 - Seasons, weather, prices, milestones and the height of everything in the sky
   are in `src/data/` too.
+- **Neighbours** (`src/data/neighbours.js`): people who turn up as the farm
+  grows. Give each a gift every 30 seconds; you find out what they love by
+  trying. Hearts unlock perks (more demand, faster growth, extra helpers).
+  Add a neighbour or a gift by adding an entry; `data.test.js` checks it.
+- New systems appear as tabs beside Projects, and sections such as the Almanac
+  stay hidden until the game reaches them.
 - **Music:** the tune is data as well (`src/data/music.js`): chords, bass, a
   lead line and a drum pattern, eight bars that loop. `shared/music.js` plays
   it with WebAudio (no audio files) and any game can use it. It has its own

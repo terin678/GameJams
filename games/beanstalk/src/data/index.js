@@ -3,8 +3,9 @@ import { TUNING } from './tuning.js';
 import { SEASONS, WEATHER } from './seasons.js';
 import { PHASES, MILESTONES, LANDMARKS } from './journey.js';
 import { PROJECTS } from './projects.js';
+import { NEIGHBOURS, GIFTS } from './neighbours.js';
 
-export const DATA = { TUNING, SEASONS, WEATHER, PHASES, MILESTONES, LANDMARKS, PROJECTS };
+export const DATA = { TUNING, SEASONS, WEATHER, PHASES, MILESTONES, LANDMARKS, PROJECTS, NEIGHBOURS, GIFTS };
 export { SPRITES, PALETTE, VIEW } from './sprites.js';
 export { SOUNDS, EVENT_SOUNDS } from './sounds.js';
 export { MUSIC } from './music.js';

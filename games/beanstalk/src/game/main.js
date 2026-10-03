@@ -1,7 +1,7 @@
 // Boot: load the save, catch up on time away, then run the loop.
 
 import { DATA, SPRITES, PALETTE, VIEW, SOUNDS, EVENT_SOUNDS, MUSIC } from '../data/index.js';
-import { createState, tick, tend, buyProject, nudgePrice, simulateOffline, serialize, restore, newGamePlus } from '../core/sim.js';
+import { createState, tick, tend, buyProject, giveGift, nudgePrice, simulateOffline, serialize, restore, newGamePlus } from '../core/sim.js';
 import { createStore } from '../../../../shared/storage.js';
 import { createRng } from '../../../../shared/rng.js';
 import { Sfx } from '../../../../shared/sfx.js';
@@ -48,11 +48,18 @@ const view = createView(document, DATA, {
 		nudgePrice(state, dir, DATA);
 		sfx.play('price');
 	},
+	gift(neighbourId, giftId) {
+		const result = giveGift(state, neighbourId, giftId, DATA);
+		sfx.play(!result ? 'deny' : result.perks.length ? 'heart' : result.reaction);
+	},
+	// The player has looked at something new (a tab), so stop flagging it.
+	seen(key) {
+		state.seen[key] = true;
+	},
 	mute() {
 		sfx.muted = !sfx.muted;
 		store.set('muted', sfx.muted);
 		view.muted(sfx.muted);
-view.music(musicOn);
 	},
 	music() {
 		musicOn = !musicOn;

@@ -24,6 +24,12 @@ test('computeMods starts from the base and applies every owned project', () => {
 	assert.equal(mods.greenhouse, true);
 });
 
+test('computeMods also applies effects from elsewhere, such as neighbours', () => {
+	const mods = computeMods({ can: 1 }, DEFS, {}, [{ growth: 2, tend: 3 }, { tend: 1 }]);
+	assert.equal(mods.growth, 3);
+	assert.equal(mods.tend, 4);
+});
+
 test('costOf grows with each copy owned', () => {
 	assert.deepEqual(costOf(byId('plot'), 0), { coins: 10 });
 	assert.deepEqual(costOf(byId('plot'), 2), { coins: 40 });

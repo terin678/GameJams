@@ -6,6 +6,7 @@ import { demand, sell, adjustPrice, autoPriceDir } from './market.js';
 import { calendar, advance, rollWeather, growthMult } from './seasons.js';
 import { heightFor, phaseAt, crossed } from './phases.js';
 import { computeMods, buy } from './projects.js';
+import { newlyMet, meet, give, perkEffects } from './neighbours.js';
 
 const VERSION = 1;
 
@@ -20,6 +21,7 @@ export function createState(data, { golden = 0 } = {}) {
 		coins: 0, pages: 0, matter: 0, probes: 0,
 		price: data.TUNING.startPrice,
 		owned: {},
+		friends: {},
 		height: 0, phase: 1,
 		log: [],
 		seen: {},          // journal lines that are only worth saying once
@@ -33,7 +35,8 @@ export function createState(data, { golden = 0 } = {}) {
 
 // Recomputes everything derived from what is owned. Call after `owned` changes.
 export function refresh(state, data) {
-	state.mods = computeMods(state.owned, data.PROJECTS, data.TUNING.base);
+	const perks = perkEffects(state.friends, data.NEIGHBOURS, data.TUNING.friends);
+	state.mods = computeMods(state.owned, data.PROJECTS, data.TUNING.base, perks);
 	state.mods.yield *= 1 + state.golden * data.TUNING.goldenBonus;
 	resize(state.plots, state.mods.plots);
 	return state;
@@ -156,6 +159,11 @@ export function tick(state, dt, data, rng) {
 		events.push({ type: 'phase', id: phase.id });
 		say(state, data, phase.log);
 	}
+	for (const def of newlyMet(state, data.NEIGHBOURS)) {
+		meet(state, def);
+		events.push({ type: 'meet', id: def.id });
+		say(state, data, def.meet);
+	}
 	return events;
 }
 
@@ -169,6 +177,18 @@ export function buyProject(state, id, data) {
 	if (!def || state.done || !buy(state, def)) return false;
 	refresh(state, data);
 	return true;
+}
+
+// Gives a neighbour a gift. Returns null, or { reaction, hearts, perks }.
+export function giveGift(state, neighbourId, giftId, data) {
+	const def = data.NEIGHBOURS.find(n => n.id === neighbourId);
+	const gift = data.GIFTS.find(g => g.id === giftId);
+	if (!def || !gift || state.done) return null;
+	const result = give(state, def, gift, data.TUNING.friends);
+	if (!result) return null;
+	for (const perk of result.perks) say(state, data, `${def.name}, ${perk.hearts} hearts: ${perk.text}`);
+	if (result.perks.length) refresh(state, data);
+	return result;
 }
 
 export function nudgePrice(state, dir, data) {
@@ -203,6 +223,7 @@ export function serialize(state) {
 export function restore(saved, data) {
 	const fresh = createState(data);
 	if (!saved || saved.v !== VERSION || !Array.isArray(saved.plots) || typeof saved.owned !== 'object') return fresh;
+	// Fields added since the save was made keep their fresh values.
 	return refresh({ ...fresh, ...saved }, data);
 }
 

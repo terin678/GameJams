@@ -4,13 +4,14 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { DATA, SPRITES, PALETTE, VIEW, SOUNDS, EVENT_SOUNDS, MUSIC } from '../../games/beanstalk/src/data/index.js';
 import { validateProject, EFFECTS } from '../../games/beanstalk/src/core/projects.js';
+import { validateNeighbour, validateGift } from '../../games/beanstalk/src/core/neighbours.js';
 import { heightFor } from '../../games/beanstalk/src/core/phases.js';
 import { plotOrder } from '../../games/beanstalk/src/core/layout.js';
 import { parsePixelMap } from '../../shared/pixelart.js';
 import { validateSfx } from '../../shared/sfx.js';
 import { validateSong } from '../../shared/music.js';
 
-const { TUNING: T, PROJECTS, SEASONS, WEATHER, PHASES, MILESTONES, LANDMARKS } = DATA;
+const { TUNING: T, PROJECTS, SEASONS, WEATHER, PHASES, MILESTONES, LANDMARKS, NEIGHBOURS, GIFTS } = DATA;
 const ascending = list => list.every((v, i) => i === 0 || v > list[i - 1]);
 
 test('every project is well formed', () => {
@@ -50,6 +51,29 @@ test('all the plots you can buy fit in the farm view', () => {
 	const plots = PROJECTS.reduce((n, p) => n + (p.effect?.plots ?? 0) * (p.max ?? 1), T.base.plots);
 	assert.ok(plots <= VIEW.plots.cols * VIEW.plots.rows, `${plots} plots`);
 	assert.equal(plotOrder(VIEW.plots.cols, VIEW.plots.rows).length, VIEW.plots.cols * VIEW.plots.rows);
+});
+
+test('every neighbour and gift is well formed', () => {
+	const giftIds = new Set(GIFTS.map(g => g.id));
+	assert.equal(giftIds.size, GIFTS.length, 'gift ids are unique');
+	for (const g of GIFTS) assert.deepEqual(validateGift(g), [], g.id);
+	assert.equal(new Set(NEIGHBOURS.map(n => n.id)).size, NEIGHBOURS.length, 'neighbour ids are unique');
+	for (const n of NEIGHBOURS) {
+		assert.deepEqual(validateNeighbour(n, giftIds, T.friends), [], n.id);
+		for (const c of Object.values(n.look)) assert.ok(PALETTE[c], `${n.id} look "${c}"`);
+		assert.ok(SPRITES[`friend_${n.id}`], `sprite for ${n.id}`);
+	}
+});
+
+test('each neighbour loves a gift you can give when you meet them, and every gift is loved by someone', () => {
+	const gift = id => GIFTS.find(g => g.id === id);
+	for (const n of NEIGHBOURS) {
+		assert.ok(n.loves.some(id => gift(id).phase <= (n.unlock.phase ?? 1)), n.id);
+	}
+	for (const g of GIFTS) {
+		assert.ok(NEIGHBOURS.some(n => n.loves.includes(g.id) || n.likes.includes(g.id)), `nobody wants ${g.id}`);
+	}
+	assert.ok(NEIGHBOURS.some(n => (n.unlock.phase ?? 1) === 1 && (n.unlock.grown ?? 0) <= 100), 'someone to meet early');
 });
 
 test('seasons and weather make sense', () => {
@@ -128,5 +152,5 @@ test('every sound is valid, and every event sound exists', () => {
 	const names = Object.values(EVENT_SOUNDS).flatMap(v => (typeof v === 'string' ? [v] : Object.values(v)));
 	for (const n of names) assert.ok(SOUNDS[n], n);
 	for (const id of Object.keys(EVENT_SOUNDS.weather)) assert.ok(WEATHER.some(w => w.id === id), id);
-	for (const n of ['plant', 'harvest', 'buy', 'deny', 'price', 'ending']) assert.ok(SOUNDS[n], n);
+	for (const n of ['plant', 'harvest', 'buy', 'deny', 'price', 'ending', 'heart', 'love', 'like', 'neutral', 'dislike']) assert.ok(SOUNDS[n], n);
 });

@@ -7,6 +7,7 @@ import { stageOf } from '../core/farm.js';
 import { calendar } from '../core/seasons.js';
 import { stalkFrac } from '../core/phases.js';
 import { plotOrder, mixColor } from '../core/layout.js';
+import { heartsOf } from '../core/neighbours.js';
 
 const CROW_SECONDS = 1.6;
 
@@ -113,6 +114,15 @@ export function createFarmView(canvas, data, { SPRITES, PALETTE, VIEW }) {
 		for (const [tag, x] of Object.entries(VIEW.props)) {
 			if (has(state, tag)) put(art[tag][0], x, horizon - art[tag][0].height + 12);
 		}
+
+		// Friends drop by: anyone with a heart strolls along the lane.
+		data.NEIGHBOURS.forEach((n, i) => {
+			const friend = state.friends[n.id];
+			if (!friend || heartsOf(friend.points, T.friends) < 1) return;
+			const img = art[`friend_${n.id}`][0];
+			const x = 22 + i * 34 + Math.sin(t * 0.35 + i * 1.7) * 12;
+			put(img, x, horizon - img.height + 15 - (Math.floor(t * 3 + i) % 2));
+		});
 
 		const stages = art.bean.length;
 		state.plots.forEach((g, i) => {

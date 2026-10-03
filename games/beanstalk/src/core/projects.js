@@ -15,19 +15,23 @@ const REQUIRES = ['grown', 'height', 'phase'];
 const PHASES = [1, 2, 3];
 const START = { add: 0, mul: 1, flag: false };
 
-export function computeMods(owned, defs, base = {}) {
+// `extras` are effect objects from elsewhere (neighbours' perks), each applied once.
+export function computeMods(owned, defs, base = {}, extras = []) {
 	const mods = {};
 	for (const [key, kind] of Object.entries(EFFECTS)) mods[key] = base[key] ?? START[kind];
-	for (const def of defs) {
-		const n = owned[def.id] ?? 0;
-		if (!n) continue;
-		for (const [key, v] of Object.entries(def.effect ?? {})) {
+	const apply = (effect, n) => {
+		for (const [key, v] of Object.entries(effect ?? {})) {
 			const kind = EFFECTS[key];
 			if (kind === 'add') mods[key] += v * n;
 			else if (kind === 'mul') mods[key] *= v ** n;
 			else mods[key] = true;
 		}
+	};
+	for (const def of defs) {
+		const n = owned[def.id] ?? 0;
+		if (n) apply(def.effect, n);
 	}
+	for (const effect of extras) apply(effect, 1);
 	return mods;
 }
 

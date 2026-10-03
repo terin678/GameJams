@@ -16,18 +16,25 @@
 			margin: 0; background: var(--bg); color: var(--ink);
 			font: 14px/1.5 ui-monospace, 'Cascadia Mono', Menlo, Consolas, monospace;
 		}
-		#links { padding: 8px 12px; font-size: 12px; color: var(--muted); }
+		#top {
+			display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center;
+			gap: 6px 16px; padding: 8px 16px; font-size: 12px; color: var(--muted);
+		}
 		#links a { color: var(--muted); text-decoration: none; }
 		#links a:hover { color: var(--bean); }
+		#settings { display: flex; gap: 6px; }
+		#settings button { font-size: 12px; padding: 3px 8px; }
 
-		/* Three fixed columns: the farm, your numbers, the shop. Every line in the
-		   middle column is always there, so buttons never move under the pointer. */
+		/* Three columns: the farm with its journal, your numbers, and a tabbed panel
+		   of things to do. Sections that unlock later arrive at the bottom of the
+		   middle column or as a new tab, so no button ever moves under the pointer. */
 		#app {
-			display: grid; gap: 8px 28px; justify-content: center; align-items: start; padding: 8px 16px 40px;
+			display: grid; gap: 12px 28px; justify-content: center; align-items: start; padding: 4px 16px 40px;
 			grid-template-columns: minmax(240px, 360px) minmax(300px, 380px) minmax(300px, 440px);
-			grid-template-areas: 'scene status shop';
+			grid-template-areas: 'scene status shop' 'journal status shop';
 		}
-		#scene { grid-area: scene; position: sticky; top: 12px; }
+		#scene { grid-area: scene; }
+		#journal { grid-area: journal; }
 		#status { grid-area: status; }
 		#shop { grid-area: shop; }
 		#farm {
@@ -37,7 +44,20 @@
 		#calendar { margin: 8px 0 0; color: var(--muted); text-align: center; }
 		#status p { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 		#status h2:first-of-type { margin-top: 14px; }
-		#shop h2:first-child { margin-top: 6px; }
+		#journal h2 { margin-top: 0; }
+		kbd {
+			font: inherit; font-size: 11px; color: var(--muted); border: 1px solid var(--line);
+			border-radius: 4px; padding: 1px 5px;
+		}
+
+		/* Something new has unlocked: a brief glow so it gets noticed. */
+		@keyframes reveal {
+			0% { opacity: 0; box-shadow: 0 0 0 0 rgba(143, 224, 106, 0); }
+			30% { opacity: 1; box-shadow: 0 0 18px 2px rgba(143, 224, 106, 0.55); }
+			100% { box-shadow: 0 0 0 0 rgba(143, 224, 106, 0); }
+		}
+		.reveal { animation: reveal 2.4s ease-out; border-radius: 6px; }
+		@media (prefers-reduced-motion: reduce) { .reveal { animation: none; } }
 
 		h1 { margin: 0; font-size: 26px; letter-spacing: 0.06em; }
 		h1 small { font-size: 13px; color: var(--gold); letter-spacing: 0; font-weight: 400; }
@@ -63,11 +83,30 @@
 		.row { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; }
 		.price button { padding: 2px 9px; }
 
-		/* Fixed-height boxes that scroll, so a long list never pushes the page about. */
-		#projects {
-			display: grid; gap: 6px; align-content: start; height: 26rem; overflow-y: auto;
-			padding-right: 4px; scrollbar-width: thin;
+		/* The tab bar looks like a section heading until a second tab turns up. */
+		#tabs {
+			display: flex; gap: 4px 18px; flex-wrap: wrap; margin: 0 0 8px; padding-bottom: 3px;
+			border-bottom: 1px solid var(--line);
 		}
+		#tabs button {
+			position: relative; background: none; border: none; border-radius: 0; padding: 0 0 2px;
+			font-size: 12px; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase;
+			color: var(--muted); border-bottom: 2px solid transparent;
+		}
+		#tabs button:hover, #tabs button:focus-visible { color: var(--ink); background: none; }
+		#tabs button.on { color: var(--ink); border-bottom-color: var(--bean); }
+		#tabs button:only-child { color: var(--muted); border-bottom-color: transparent; cursor: default; }
+		#tabs button.fresh::after {
+			content: ''; position: absolute; top: 1px; right: -9px; width: 6px; height: 6px;
+			border-radius: 50%; background: var(--gold);
+		}
+
+		/* Fixed-height panels that scroll, so a long list never pushes the page about. */
+		.panel {
+			display: grid; gap: 6px; align-content: start; height: 40rem; max-height: calc(100vh - 110px);
+			min-height: 22rem; overflow-y: auto; padding-right: 4px; scrollbar-width: thin;
+		}
+		.panel[hidden] { display: none; }
 		#projects h3 {
 			margin: 6px 0 0; font-size: 11px; font-weight: 400; color: var(--muted);
 			letter-spacing: 0.08em; text-transform: uppercase;
@@ -77,16 +116,27 @@
 		#projects .cost { color: var(--gold); }
 		#projects small { display: block; color: var(--muted); font-size: 12px; }
 
+		.friend { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 9px 11px; }
+		.friend .who { display: flex; align-items: baseline; gap: 6px; }
+		.friend .hearts { margin-left: auto; color: #ff7aa8; letter-spacing: 1px; white-space: nowrap; }
+		.friend .hearts i { font-style: normal; color: var(--line); }
+		.friend p { font-size: 12px; min-height: 1.5em; }
+		.friend .said { font-size: 13px; font-style: italic; }
+		.gifts { display: flex; flex-wrap: wrap; gap: 5px; margin: 6px 0 4px; }
+		.gifts button { font-size: 12px; padding: 3px 8px; background: var(--bg); }
+		.gifts .cost { color: var(--gold); }
+		.gifts .mark { display: inline-block; width: 1ch; text-align: center; color: var(--muted); }
+		.gifts .love { border-color: #ff7aa8; }
+		.gifts .love .mark { color: #ff7aa8; }
+		.gifts .like .mark { color: var(--bean); }
+		.gifts .dislike { opacity: 0.55; }
+
 		#log {
 			list-style: none; margin: 0; padding: 0; color: var(--muted);
-			height: 11rem; overflow-y: auto; scrollbar-width: thin;
+			height: 9.2rem; overflow-y: auto; scrollbar-width: thin;
 		}
-		.locked { opacity: 0.45; }
 		#log li:first-child { color: var(--ink); }
 		#log li::before { content: '> '; color: var(--bean); }
-
-		footer { margin: 24px 0 6px; font-size: 12px; }
-		footer button { font-size: 12px; padding: 3px 8px; }
 
 		.overlay {
 			position: fixed; inset: 0; z-index: 5; display: grid; place-items: center;
@@ -112,29 +162,41 @@
 		@media (max-width: 1100px) {
 			#app {
 				grid-template-columns: minmax(240px, 340px) minmax(300px, 440px);
-				grid-template-areas: 'scene status' 'shop shop';
+				grid-template-areas: 'scene status' 'journal status' 'shop shop';
 			}
-			#scene { position: static; }
+			.panel { height: 26rem; }
 		}
 		@media (max-width: 720px) {
-			#app { grid-template-columns: minmax(0, 1fr); grid-template-areas: 'scene' 'status' 'shop'; }
+			#app { grid-template-columns: minmax(0, 1fr); grid-template-areas: 'scene' 'status' 'shop' 'journal'; }
 			#farm { width: auto; height: 36vh; margin: 0 auto; }
 			#status p { white-space: normal; }
-			#projects { height: 22rem; }
+			.panel { height: 24rem; }
 		}
 	</style>
 </head>
 <body>
-	<nav id="links">
-		<a href="../../">&larr; all games</a> &middot;
-		<a data-feedback="bug" href="https://github.com/terin678/GameJams/issues/new/choose">bug</a> &middot;
-		<a data-feedback="idea" href="https://github.com/terin678/GameJams/issues/new/choose">idea</a>
-	</nav>
+	<header id="top">
+		<nav id="links">
+			<a href="../../">&larr; all games</a> &middot;
+			<a data-feedback="bug" href="https://github.com/terin678/GameJams/issues/new/choose">bug</a> &middot;
+			<a data-feedback="idea" href="https://github.com/terin678/GameJams/issues/new/choose">idea</a>
+		</nav>
+		<div id="settings">
+			<button id="mute" type="button">Sound: on</button>
+			<button id="music" type="button">Music: on</button>
+			<button id="reset" type="button">Start over</button>
+		</div>
+	</header>
 
 	<main id="app">
 		<section id="scene">
 			<canvas id="farm" width="240" height="320" aria-label="Your farm and the beanstalk"></canvas>
 			<p id="calendar"></p>
+		</section>
+
+		<section id="journal">
+			<h2>Journal</h2>
+			<ul id="log"></ul>
 		</section>
 
 		<section id="status">
@@ -146,6 +208,7 @@
 			<h2>Farm</h2>
 			<div class="row">
 				<button id="tend" type="button">Plant a bean</button>
+				<span class="muted"><kbd>Space</kbd></span>
 			</div>
 			<p id="plots">&nbsp;</p>
 			<p class="muted" id="growing">&nbsp;</p>
@@ -162,31 +225,23 @@
 			</div>
 			<p class="muted" id="demand">&nbsp;</p>
 
-			<div id="research" class="locked">
+			<!-- These stay hidden until the game reaches them. -->
+			<div id="research" hidden>
 				<h2>Almanac</h2>
 				<p>Pages: <b id="pages">0</b> <span class="muted" id="pages-rate"></span></p>
 			</div>
 
-			<div id="space" class="locked">
+			<div id="space" hidden>
 				<h2>Beyond</h2>
 				<p>Seed probes: <b id="probes">0</b></p>
 				<p>Matter: <b id="matter">0</b></p>
 			</div>
-
-			<footer class="row muted">
-				<button id="mute" type="button">Sound: on</button>
-				<button id="music" type="button">Music: on</button>
-				<button id="reset" type="button">Start over</button>
-			</footer>
-			<p class="muted">Space or Enter tends. Saves itself.</p>
 		</section>
 
 		<section id="shop">
-			<h2>Projects</h2>
-			<div id="projects"></div>
-
-			<h2>Journal</h2>
-			<ul id="log"></ul>
+			<div id="tabs" role="toolbar" aria-label="Panels"></div>
+			<div id="projects" class="panel"></div>
+			<div id="neighbours" class="panel" hidden></div>
 		</section>
 	</main>
 

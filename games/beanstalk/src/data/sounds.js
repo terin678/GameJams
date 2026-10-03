@@ -10,6 +10,12 @@ export const SOUNDS = {
 	season: { wave: 'sine', notes: [440, 554], dur: 0.3, vol: 0.12 },
 	rain: { wave: 'noise', f0: 3000, f1: 600, dur: 0.6, vol: 0.1 },
 	crow: { wave: 'sawtooth', notes: [520, 400, 520, 380], dur: 0.35, vol: 0.14 },
+	meet: { wave: 'triangle', notes: [392, 523, 659], dur: 0.3, vol: 0.16 },
+	love: { wave: 'sine', notes: [659, 784, 1047, 1319], dur: 0.4, vol: 0.18 },
+	like: { wave: 'sine', notes: [523, 659], dur: 0.2, vol: 0.15 },
+	neutral: { wave: 'sine', f0: 440, dur: 0.12, vol: 0.12 },
+	dislike: { wave: 'triangle', notes: [330, 262], dur: 0.25, vol: 0.14 },
+	heart: { wave: 'triangle', notes: [523, 659, 784, 1047, 1319], dur: 0.6, vol: 0.2 },
 	ending: { wave: 'sine', notes: [523, 392, 330, 262, 196, 262], dur: 2.4, vol: 0.25 },
 };
 
@@ -20,6 +26,7 @@ export const EVENT_SOUNDS = {
 	phase: 'phase',
 	season: 'season',
 	crow: 'crow',
+	meet: 'meet',
 	full: 'milestone',
 	weather: { rain: 'rain' },
 };
