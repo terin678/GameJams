@@ -160,6 +160,15 @@ buttons. It saves itself every few seconds.
   the farm for good (a golden goose, a singing harp, the Giant's help).
   Failures annoy the Giant; annoy him three times and he stamps every bean
   out of the ground. Add a ledge by adding an entry to the data.
+- **The Guard** (`src/data/guard.js`): from 2,500 beans, pests raid the farm
+  every few minutes. Each raid is forecast ("4 slugs and 2 mice"), and you
+  fill your guard posts with animals to suit: ducks eat slugs, cats catch
+  mice, dogs chase rabbits. The raid then plays out by itself, on the farm.
+  A win pays a bounty and counts towards ranks that change the farm for
+  good; a loss costs plots and beans from the barn. It is rolled out one
+  idea at a time (one pest, then two, bigger waves, a third pest), and at
+  ten wins the animals learn to post themselves. Pests, animals, waves and
+  ranks are all rows in the data.
 - New systems appear as tabs beside Projects, and sections such as the Almanac
   stay hidden until the game reaches them.
 - **Light** (`src/data/sky.js`): a farm day is a minute, with dawn, sunset and

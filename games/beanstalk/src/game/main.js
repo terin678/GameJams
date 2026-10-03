@@ -1,7 +1,7 @@
 // Boot: load the save, catch up on time away, then run the loop.
 
 import { DATA, SPRITES, PALETTE, VIEW, SOUNDS, EVENT_SOUNDS, MUSIC, SKY } from '../data/index.js';
-import { createState, tick, tend, buyProject, giveGift, crossSeeds, chooseSeedling, climb, chooseAtLedge, nudgePrice, simulateOffline, serialize, restore, isSave, newGamePlus } from '../core/sim.js';
+import { createState, tick, tend, buyProject, giveGift, crossSeeds, chooseSeedling, climb, chooseAtLedge, postAnimal, buildPost, nudgePrice, simulateOffline, serialize, restore, isSave, newGamePlus } from '../core/sim.js';
 import { encodeSave, decodeSave } from '../core/save.js';
 import { createStore } from '../../../../shared/storage.js';
 import { createRng } from '../../../../shared/rng.js';
@@ -68,6 +68,12 @@ const view = createView(document, { ...DATA, SKY }, {
 		const result = chooseAtLedge(state, index, DATA, rng);
 		sfx.play(!result ? 'deny' : result.stomp ? 'stomp' : result.won ? (result.find ? 'heart' : 'like') : 'dislike');
 		if (result?.stomp) buzz([80, 40, 120]);
+	},
+	post(id, delta) {
+		sfx.play(postAnimal(state, id, delta, DATA) ? 'price' : 'deny');
+	},
+	build() {
+		sfx.play(buildPost(state, DATA) ? 'buy' : 'deny');
 	},
 	// The player has looked at something new (a tab), so stop flagging it.
 	seen(key) {
@@ -187,6 +193,7 @@ function react(events) {
 		sfx.play(typeof sound === 'string' ? sound : sound?.[e.id]);
 		if (e.type === 'crow') farm.crow(seconds());
 		if (e.type === 'fair' && e.id === 'won') buzz([20, 40, 20]);
+		if (e.type === 'raid') buzz([30, 30, 30]);
 	}
 }
 

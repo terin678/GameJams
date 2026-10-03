@@ -249,6 +249,49 @@ export const SPRITES = {
 		'.bb.',
 		'b..b',
 	]] },
+	// The guard (data/guard.js): pests, and the animals posted against them.
+	slug: { frames: [[
+		'.....k',
+		'.hhhhh',
+		'hhHhHh',
+	]] },
+	mouse: { frames: [[
+		'n.n...',
+		'nnnn..',
+		'knnnnr',
+		'.n..n.',
+	]] },
+	rabbit: { frames: [[
+		'c.c...',
+		'c.c...',
+		'ccc...',
+		'kcccc.',
+		'cccccw',
+		'c..cc.',
+	]] },
+	duck: { frames: [[
+		'.ww...',
+		'okw...',
+		'.wwwww',
+		'.wwww.',
+		'..o.o.',
+	]] },
+	cat: { frames: [[
+		'o.o....',
+		'ooo...o',
+		'kok...o',
+		'ooooooo',
+		'.ooooo.',
+		'.o...o.',
+	]] },
+	dog: { frames: [[
+		'H.H.....',
+		'hhh....h',
+		'khk....h',
+		'hhhhhhhh',
+		'.hhhhhh.',
+		'.h....h.',
+	]] },
 	// Things that appear on the farm when a project is bought (see VIEW.props).
 	can: { frames: [[
 		'.nn..n',

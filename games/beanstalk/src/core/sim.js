@@ -10,6 +10,8 @@ import { newlyMet, meet, give, perkEffects } from './neighbours.js';
 import { createSeeds, unlockDue, cross, choose, judge, seedEffects } from './seeds.js';
 import { rulesFor, twistsFor, lineFor } from './runs.js';
 import { createClimb, unlockDue as climbDue, startClimb, arrive, choose as chooseOption, nextEncounter, findEffects } from './climb.js';
+import { createGuard, unlockDue as guardDue, openGuard, step as guardStep, assign, buyPost, rankEffects, waveText } from './guard.js';
+import { formatNumber } from './format.js';
 
 const VERSION = 1;
 
@@ -28,6 +30,7 @@ export function createState(data, { golden = 0 } = {}) {
 		friends: {},
 		seeds: createSeeds(data.SEEDS),
 		climb: createClimb(),
+		guard: createGuard(data.GUARD),
 		height: 0, phase: 1,
 		log: [],
 		seen: {},          // journal lines that are only worth saying once
@@ -46,7 +49,8 @@ export function refresh(state, data) {
 	state.rules = rulesFor(state.golden, data.RUNS);
 	const bred = seedEffects(state.seeds, data.SEEDS);
 	const found = findEffects(state.climb, data.CLIMB);
-	state.mods = computeMods(state.owned, data.PROJECTS, data.TUNING.base, [...perks, ...bred, ...found]);
+	const ranks = rankEffects(state.guard, data.GUARD);
+	state.mods = computeMods(state.owned, data.PROJECTS, data.TUNING.base, [...perks, ...bred, ...found, ...ranks]);
 	for (const [key, share] of Object.entries(data.TUNING.golden)) state.mods[key] *= 1 + state.golden * share;
 	resize(state.plots, state.mods.plots);
 	return state;
@@ -90,6 +94,32 @@ function tendNext(state) {
 		state.grown += state.mods.yield;
 	}
 	return did;
+}
+
+// A raid on the farm begins or ends. A win pays a bounty and may earn a rank;
+// after a loss, the pests still in the beans eat plots and help themselves to the barn.
+function raid(state, data, e, rng) {
+	const G = data.GUARD;
+	const { guard } = state;
+	if (e.type === 'raid') {
+		guard.said = '';
+		say(state, data, G.lines.raid.replace('{wave}', waveText(e.wave, G)));
+		return;
+	}
+	if (e.id === 'won') {
+		const bounty = Math.round(G.bountySeconds * Math.max(1, state.farmRate) * state.price);
+		state.coins += bounty;
+		guard.said = `${G.lines.won} Bounty: ${formatNumber(bounty)} coins.`;
+	} else {
+		let eaten = 0;
+		for (let i = 0; i < e.left * G.loss.plotsEach; i++) if (eatOne(state.plots, rng) >= 0) eaten++;
+		const taken = Math.floor(state.beans * G.loss.barnShare);
+		state.beans -= taken;
+		guard.said = `${G.lines.lost} They ate ${eaten} ${eaten === 1 ? 'plot' : 'plots'} and took ${formatNumber(taken)} beans from the barn.`;
+	}
+	say(state, data, guard.said);
+	for (const rank of e.ranks) say(state, data, `${rank.name}: ${rank.text}`);
+	if (e.ranks.length) refresh(state, data);
 }
 
 // A new spell of weather begins.
@@ -213,6 +243,15 @@ export function tick(state, dt, data, rng) {
 		events.push({ type: 'ledge', id: nextEncounter(state, data.CLIMB).id });
 		say(state, data, `Your climber has reached ${nextEncounter(state, data.CLIMB).name.replace(/^The /, 'the ')}.`);
 	}
+	if (guardDue(state, data.GUARD)) {
+		openGuard(state, data.GUARD, rng);
+		events.push({ type: 'guard' });
+		say(state, data, data.GUARD.log);
+	}
+	for (const e of guardStep(state, dt, data.GUARD, rng)) {
+		raid(state, data, e, rng);
+		events.push(e);
+	}
 	for (const def of newlyMet(state, data.NEIGHBOURS)) {
 		meet(state, def);
 		events.push({ type: 'meet', id: def.id });
@@ -261,6 +300,12 @@ export function chooseAtLedge(state, index, data, rng) {
 	refresh(state, data);
 	return result;
 }
+
+// Posts one more or one fewer of an animal on guard.
+export const postAnimal = (state, id, delta, data) => !state.done && assign(state, id, delta, data.GUARD);
+
+// Builds another guard post.
+export const buildPost = (state, data) => !state.done && buyPost(state, data.GUARD);
 
 // Starts a cross: pays for it and sets the seedlings growing.
 export const crossSeeds = (state, data, rng) => !state.done && cross(state, data.SEEDS, rng);

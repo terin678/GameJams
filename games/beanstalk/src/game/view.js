@@ -14,6 +14,7 @@ import { calendar, growthMult, seasonNote } from '../core/seasons.js';
 import { periodAt } from '../core/sky.js';
 import { nextTwist, twistsFor, endingLine } from '../core/runs.js';
 import { nextEncounter, climbBlocked, climbingFor, optionBlocked, findsOf, temper } from '../core/climb.js';
+import { raidIn, postsUsed, postCost, defendersFor, ranksEarned, nextRank, hasDrill, needsAttention, waveText } from '../core/guard.js';
 import { available, affordable, costOf } from '../core/projects.js';
 import { crossCost, canCross, growingFor, fairTrait, fairBar, ribbonCount, luckOf } from '../core/seeds.js';
 import { heartsOf, heartProgress, giftsFor, giftCost, canGive, waitFor, nextPerk } from '../core/neighbours.js';
@@ -28,6 +29,7 @@ const TABS = [
 	{ id: 'neighbours', label: 'Neighbours', unlocked: state => Object.keys(state.friends).length > 0 },
 	{ id: 'seeds', label: 'Seeds', unlocked: state => state.seeds.open, wants: state => growingFor(state) === 0 },
 	{ id: 'climb', label: 'Climb', unlocked: state => state.climb.open, wants: state => state.climb.waiting },
+	{ id: 'guard', label: 'Guard', unlocked: state => state.guard.open, wants: (state, data) => needsAttention(state, data.GUARD) },
 ];
 const REACTION_MARK = { love: '♥', like: '+', neutral: '·', dislike: '×' };
 
@@ -115,6 +117,12 @@ export function createView(doc, data, handlers) {
 		if (b.dataset.climb) handlers.climb();
 		if (b.dataset.option) handlers.ledge(Number(b.dataset.option));
 	});
+	$('guard').addEventListener('click', e => {
+		const b = e.target.closest('button');
+		if (!b) return;
+		if (b.dataset.post) handlers.post(b.dataset.post, Number(b.dataset.delta));
+		if (b.dataset.build) handlers.build();
+	});
 	$('tabs').addEventListener('click', e => {
 		const b = e.target.closest('[data-tab]');
 		if (!b) return;
@@ -124,13 +132,13 @@ export function createView(doc, data, handlers) {
 
 	function tabs(state) {
 		const open = TABS.filter(t => t.unlocked(state));
-		const sig = open.map(t => `${t.id}:${!!state.seen[`tab:${t.id}`]}:${!!t.wants?.(state)}`).join('|') + tab;
+		const sig = open.map(t => `${t.id}:${!!state.seen[`tab:${t.id}`]}:${!!t.wants?.(state, data)}`).join('|') + tab;
 		if (shown.get('tabs') === sig) return;
 		const known = shown.get('tabIds') ?? '';
 		shown.set('tabs', sig);
 		shown.set('tabIds', open.map(t => t.id).join('|'));
 		$('tabs').replaceChildren(...open.map(t => {
-			const fresh = t.id !== tab && (t.wants?.(state) || (t.id !== 'projects' && !state.seen[`tab:${t.id}`]));
+			const fresh = t.id !== tab && (t.wants?.(state, data) || (t.id !== 'projects' && !state.seen[`tab:${t.id}`]));
 			const b = el('button', { type: 'button', className: `${t.id === tab ? 'on' : ''} ${fresh ? 'fresh' : ''}` }, t.label);
 			b.dataset.tab = t.id;
 			b.setAttribute('aria-pressed', String(t.id === tab));
@@ -361,6 +369,62 @@ export function createView(doc, data, handlers) {
 		if (again) $('climb').querySelector(again)?.focus();
 	}
 
+	// The Guard: the raid that is coming (or going on), who is posted, and the record so far.
+	function guard(state) {
+		const G = data.GUARD;
+		const { guard: g } = state;
+		const { fight } = g;
+		const left = Math.ceil(raidIn(state));
+		const cost = postCost(g, G);
+		const canBuild = !!cost && state.coins >= cost.coins;
+		const used = postsUsed(g);
+		const drilled = hasDrill(g, G);
+		const sig = [left, JSON.stringify(g.roster), g.posts, g.wins, g.losses, JSON.stringify(fight), g.said, canBuild].join('|');
+		if (shown.get('guard') === sig) return;
+		shown.set('guard', sig);
+		const d = doc.activeElement?.dataset ?? {};
+		const focused = d.post ? `[data-post="${d.post}"][data-delta="${d.delta}"]` : d.build ? '[data-build]' : null;
+
+		const sum = counts => Object.values(counts).reduce((a, b) => a + b, 0);
+		const now = fight
+			? [el('h3', { className: 'down' }, 'Raid!'),
+				el('p', {}, `${waveText(fight.foes, G)} still in the beans. ${sum(fight.up)} of ${used} animals on their feet.`)]
+			: [el('h3', {}, `Next raid in ${formatDuration(left)}`),
+				el('p', {}, `Coming: ${waveText(g.wave, G)}.`),
+				el('p', { className: 'muted' }, 'Post animals that suit what is coming: about one for every two pests. The wrong animal is little use.')];
+
+		const posts = defendersFor(g, G).map(def => {
+			const n = g.roster[def.id] ?? 0;
+			const button = (label, delta, disabled) => {
+				const b = el('button', { type: 'button', disabled: disabled || !!fight || drilled }, label);
+				b.dataset.post = def.id;
+				b.dataset.delta = String(delta);
+				b.setAttribute('aria-label', `${delta > 0 ? 'Post another' : 'Stand down a'} ${def.name.toLowerCase()}`);
+				return b;
+			};
+			return el('div', { className: 'post' },
+				el('span', {}, el('b', {}, def.plural), el('span', { className: 'muted' }, ` ${def.text}`)),
+				button('−', -1, n === 0), el('span', { className: 'n' }, String(n)), button('+', 1, used >= g.posts));
+		});
+		const build = el('button', { type: 'button', disabled: !canBuild }, 'Build another post ',
+			el('span', { className: 'gold' }, cost ? `(${costText(cost)})` : ''));
+		build.dataset.build = '1';
+
+		const earned = ranksEarned(g, G);
+		const next = nextRank(g, G);
+		$('guard').replaceChildren(
+			el('div', { className: 'box' }, ...now, g.said ? el('p', { className: 'said' }, g.said) : ''),
+			el('div', { className: 'box' }, el('h3', {}, `Posts · ${used} of ${g.posts} filled`), ...posts,
+				drilled ? el('p', { className: 'muted' }, 'The animals take their own posts now.') : '',
+				cost ? build : el('p', { className: 'muted' }, 'Every post is built.')),
+			el('div', { className: 'box' }, el('h3', {}, `Record · ${g.wins} won, ${g.losses} lost`),
+				earned.length
+					? el('ul', { className: 'finds' }, ...earned.map(r => el('li', {}, el('b', {}, r.name), ` ${r.text}`)))
+					: el('p', { className: 'muted' }, 'A win pays a bounty. A loss costs plots and beans from the barn.'),
+				el('p', { className: 'muted' }, next ? `At ${next.wins} ${next.wins === 1 ? 'win' : 'wins'}: ${next.text}` : 'Every rank earned.')));
+		if (focused) $('guard').querySelector(focused)?.focus();
+	}
+
 	function journal(state) {
 		const sig = `${state.log.length}:${state.log[0]}`;
 		if (shown.get('log') === sig) return;
@@ -424,6 +488,7 @@ export function createView(doc, data, handlers) {
 			if (tab === 'neighbours') neighbours(state);
 			if (tab === 'seeds') seeds(state, cal.year);
 			if (tab === 'climb') climb(state);
+			if (tab === 'guard') guard(state);
 			journal(state);
 			shown.set('ready', true);   // from now on, anything that appears is news
 		},

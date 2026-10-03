@@ -2,9 +2,10 @@
 // game can be finished. Set BEANSTALK_TIMELINE=1 to print what the bot bought when.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { createState, tick, tend, buyProject, giveGift, crossSeeds, chooseSeedling, climb, chooseAtLedge, nudgePrice } from '../../games/beanstalk/src/core/sim.js';
+import { createState, tick, tend, buyProject, giveGift, crossSeeds, chooseSeedling, climb, chooseAtLedge, buildPost, nudgePrice } from '../../games/beanstalk/src/core/sim.js';
 import { available, affordable } from '../../games/beanstalk/src/core/projects.js';
 import { nextEncounter, optionBlocked } from '../../games/beanstalk/src/core/climb.js';
+import { createGuard, makeWave, bestRoster, defendersFor, setRoster, postCost, step as guardStep } from '../../games/beanstalk/src/core/guard.js';
 import { canCross, crossCost, growingFor, fairTrait } from '../../games/beanstalk/src/core/seeds.js';
 import { calendar } from '../../games/beanstalk/src/core/seasons.js';
 import { demand, autoPriceDir } from '../../games/beanstalk/src/core/market.js';
@@ -19,13 +20,14 @@ const MINUTE = 60;
 function playBot({ seed = 1, limit = 8 * 60 * MINUTE, clicksPerSecond = 3, verbose = false, golden = 0 } = {}) {
 	const rng = createRng(seed);
 	const state = createState(DATA, { golden });
-	const at = { phase: {}, bought: {}, buys: [] };
+	const at = { phase: {}, bought: {}, buys: [], guard: null };
 	const dt = T.tickSeconds;
 	let click = 0;
 	let second = 0;
 	while (!state.done && state.time < limit) {
 		for (const e of tick(state, dt, DATA, rng)) {
 			if (e.type === 'phase') at.phase[e.id] = state.time;
+			if (e.type === 'guard') at.guard = state.time;
 		}
 		click += clicksPerSecond * dt;
 		while (click >= 1) {
@@ -57,6 +59,13 @@ function playBot({ seed = 1, limit = 8 * 60 * MINUTE, clicksPerSecond = 3, verbo
 			chooseAtLedge(state, open.find(i => options[i].find) ?? open[0], DATA, rng);
 		} else {
 			climb(state, DATA);
+		}
+		// Posts the right animals for the raid that is coming, and builds posts when it has coins to spare.
+		if (state.guard.open && !state.guard.fight) {
+			const { guard } = state;
+			const cost = postCost(guard, DATA.GUARD);
+			if (cost && state.coins > 3 * cost.coins) buildPost(state, DATA);
+			setRoster(state, bestRoster(guard.wave, guard.posts, defendersFor(guard, DATA.GUARD)), DATA.GUARD);
 		}
 		for (const def of available(state, DATA.PROJECTS)) {
 			if (!affordable(state, def) || !buyProject(state, def.id, DATA)) continue;
@@ -129,6 +138,52 @@ test('a second run is quicker, but still a proper game', () => {
 test('the bot climbs all the way up', () => {
 	assert.equal(state.climb.ledge, DATA.CLIMB.encounters.length);
 	assert.ok(state.climb.finds.length >= 5, `${state.climb.finds.length} finds`);
+});
+
+test('the guard arrives in the quiet stretch of phase 1, and a careful player wins most raids', () => {
+	const opened = at.guard / MINUTE;
+	if (verbose) console.log(`guard opens at ${opened.toFixed(0)} min; raids won ${state.guard.wins}, lost ${state.guard.losses}`);
+	assert.ok(opened >= 12 && opened <= 22, `opened at ${opened.toFixed(0)} min`);
+	const { wins, losses } = state.guard;
+	assert.ok(wins / (wins + losses) >= 0.7, `won ${wins} of ${wins + losses}`);
+	assert.ok(wins >= DATA.GUARD.ranks.at(-1).wins, `${wins} wins is short of the top rank`);
+	assert.equal(state.guard.posts, DATA.GUARD.posts.max);
+});
+
+// At every size of wave: one matched animal for every two pests usually wins,
+// one more post makes it safe, and the wrong animals lose.
+test('in every wave tier, matching the animals to the pests is what wins', () => {
+	const G = DATA.GUARD;
+	const N = 200;
+	const winRate = (tier, posts, how) => {
+		let won = 0;
+		for (let seed = 1; seed <= N; seed++) {
+			const rng = createRng(seed * 13 + tier.wins);
+			const wave = makeWave(tier.wins, G, rng);
+			const all = defendersFor({ wins: tier.wins }, G);
+			const lead = Object.keys(wave).sort((x, y) => wave[y] - wave[x])[0];
+			const useless = all.find(d => !d.strong.includes(lead));
+			const roster = how === 'right' ? bestRoster(wave, posts, all) : { [useless.id]: posts };
+			// `wins: 0` keeps the drill from fixing a bad roster.
+			const s = { time: 0, guard: { ...createGuard(G), open: true, wins: 0, posts, wave, roster } };
+			for (let end = null; !end; s.time += 0.1) {
+				end = guardStep(s, 0.1, G, rng).find(e => e.type === 'raidEnd');
+				if (end?.id === 'won') won++;
+			}
+		}
+		return won / N;
+	};
+	const bad = [];
+	for (const tier of G.waves) {
+		const posts = Math.ceil(tier.size / 2);
+		const right = winRate(tier, posts, 'right');
+		const wrong = winRate(tier, posts, 'wrong');
+		const safe = winRate(tier, posts + 1, 'right');
+		const note = `wave of ${tier.size}: ${posts} posts right ${Math.round(right * 100)}%, wrong ${Math.round(wrong * 100)}%; ${posts + 1} posts ${Math.round(safe * 100)}%`;
+		if (verbose) console.log(note);
+		if (right < 0.65 || wrong > 0.35 || safe < 0.9) bad.push(note);
+	}
+	assert.deepEqual(bad, []);
 });
 
 test('the first purchase comes quickly', () => {

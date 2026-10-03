@@ -32,7 +32,7 @@ export const TUNING = {
 	},
 	// Stalk height: [beans ever grown, metres] points (see heightFor). The middle
 	// two set how many beans the clouds (phase 2) and space (phase 3) take.
-	height: { points: [[1, 0.3], [5e4, 2000], [5.5e7, 100e3], [1e30, 8.8e26]] },
+	height: { points: [[1, 0.3], [5e4, 2000], [1.2e8, 100e3], [1e30, 8.8e26]] },
 	universeBeans: 1e30,      // every atom is bean
 	// Neighbours: a gift every giftSeconds each; hearts from points.
 	friends: {

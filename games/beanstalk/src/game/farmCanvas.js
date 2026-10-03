@@ -44,6 +44,8 @@ export function createFarmView(canvas, data, { SPRITES, PALETTE, VIEW, SKY }) {
 	const art = {};
 	for (const [name, s] of Object.entries(SPRITES)) art[name] = s.frames.map(f => bake(f, PALETTE, VIEW.scale));
 	const leafRight = bake(SPRITES.leaf.frames[0], PALETTE, VIEW.scale, true);
+	// The guard's animals are drawn facing left; these face right.
+	const facingRight = Object.fromEntries(data.GUARD.defenders.map(d => [d.id, bake(SPRITES[d.id].frames[0], PALETTE, VIEW.scale, true)]));
 	const order = plotOrder(grid.cols, grid.rows);
 	const helperCount = (state, kind) => Math.min(VIEW.maxHelpers,
 		data.PROJECTS.reduce((n, p) => n + (p.helper === kind ? state.owned[p.id] ?? 0 : 0), 0));
@@ -142,7 +144,8 @@ export function createFarmView(canvas, data, { SPRITES, PALETTE, VIEW, SKY }) {
 	//   1. backdrop(): grass, farmhouse and its ribbons, scarecrow, bought props
 	//      (then the house lights, which belong to the house, not the foreground)
 	//   2. foreground(): visiting neighbours on the lane, the plots and crops,
-	//      sprinkler spray, farmhands (back rows first), drones above them
+	//      sprinkler spray, the guard and any pests, farmhands (back rows first),
+	//      drones above them
 	//   3. the greenhouse glass, over the plots and everyone working in them
 	//   4. overhead(): the crow, which flies over the glass
 	//   5. rain or snow, in front of everything
@@ -197,6 +200,7 @@ export function createFarmView(canvas, data, { SPRITES, PALETTE, VIEW, SKY }) {
 				}
 			}
 		}
+		sentries(state, t);
 		// Farmhands in the back rows first, so one in front is never hidden by one behind.
 		const hands = [];
 		for (let i = 0; i < helperCount(state, 'farmhand'); i++) {
@@ -209,6 +213,53 @@ export function createFarmView(canvas, data, { SPRITES, PALETTE, VIEW, SKY }) {
 		for (let i = 0; i < helperCount(state, 'drone'); i++) {
 			const row = i % Math.ceil(n / grid.cols);
 			put(art.drone[0], grid.x + (t * 45 + i * 61) % span, grid.y + row * grid.size - 6 + Math.sin(t * 3 + i) * 2);
+		}
+	}
+
+	// Where animal number `i` waits: beside the plots in use, alternating sides,
+	// one to a row, starting another column further out when the rows run out.
+	function postAt(i, box) {
+		const rows = Math.max(1, Math.round((box.h - 8) / grid.size));
+		const slot = Math.floor(i / 2);
+		const out = 2 + Math.floor(slot / rows) * (grid.size + 2);
+		const x = i % 2 ? box.x + box.w + out : box.x - grid.size - out;
+		return { x: Math.max(1, Math.min(VIEW.width - grid.size - 1, x)), y: box.y + 6 + (slot % rows) * grid.size };
+	}
+
+	// The guard. Between raids each animal waits at its post beside the plots.
+	// In a raid the pests are in among the crops with the animals still on
+	// their feet after them; the ones worn out sit the rest of it out.
+	function sentries(state, t) {
+		const { guard } = state;
+		if (!guard.open) return;
+		const { fight } = guard;
+		const n = state.plots.length;
+		const box = farmBox(n);
+		const feet = (img, y) => y + grid.size - img.height;
+		let post = 0;
+		let chasing = 0;
+		for (const d of data.GUARD.defenders) {
+			const up = fight?.up[d.id] ?? 0;
+			for (let i = 0; i < (guard.roster[d.id] ?? 0); i++, post++) {
+				const img = art[d.id][0];
+				if (i < up) {
+					const { x, y } = cell((Math.floor(t * 2.2 + chasing * 0.5) * 5 + chasing * 7) % n);
+					put(Math.floor(t * 2.2 + chasing) % 2 ? img : facingRight[d.id], x, feet(img, y) - (Math.floor(t * 6 + chasing) % 2));
+					chasing++;
+				} else {
+					const { x, y } = postAt(post, box);
+					put(x < stalkX ? facingRight[d.id] : img, x, feet(img, y) - (fight ? 0 : Math.floor(t * 1.2 + post * 0.6) % 2));
+				}
+			}
+		}
+		if (!fight) return;
+		let k = 0;
+		for (const f of data.GUARD.foes) {
+			for (let i = 0; i < (fight.foes[f.id] ?? 0); i++, k++) {
+				const { x, y } = cell((Math.floor(t * 0.9 + k * 0.4) * 3 + k * 5) % n);
+				const img = art[f.id][0];
+				put(img, x + 2, feet(img, y) - (Math.floor(t * 5 + k) % 2));
+			}
 		}
 	}
 

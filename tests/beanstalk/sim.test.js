@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { createState, refresh, tick, tend, buyProject, giveGift, crossSeeds, chooseSeedling, climb, chooseAtLedge, nudgePrice, simulateOffline, serialize, restore, newGamePlus } from '../../games/beanstalk/src/core/sim.js';
+import { createState, refresh, tick, tend, buyProject, giveGift, crossSeeds, chooseSeedling, climb, chooseAtLedge, postAnimal, buildPost, nudgePrice, simulateOffline, serialize, restore, newGamePlus } from '../../games/beanstalk/src/core/sim.js';
 import { DATA } from '../../games/beanstalk/src/data/index.js';
 import { createRng } from '../../shared/rng.js';
 
@@ -392,4 +392,63 @@ test('New Game+ starts over with a Golden Bean that boosts yield', () => {
 	assert.equal(again.golden, 1);
 	assert.equal(again.mods.yield, s.mods.yield * (1 + T.golden.yield));
 	assert.equal(again.mods.growth, s.mods.growth * (1 + T.golden.growth));
+});
+
+test('the guard: a raid is forecast, fought and paid for', () => {
+	const G = DATA.GUARD;
+	const s = createState(DATA);
+	assert.equal(postAnimal(s, 'duck', 1, DATA), false, 'no guard yet');
+	s.grown = G.unlock.grown;
+	const opened = tick(s, 0.1, DATA, createRng(1));
+	assert.ok(opened.some(e => e.type === 'guard'));
+	assert.ok(s.log.includes(G.log));
+	assert.equal(postAnimal(s, 'duck', 1, DATA), true);
+	assert.equal(postAnimal(s, 'duck', 1, DATA), true);
+	s.coins = G.posts.cost.coins;
+	assert.equal(buildPost(s, DATA), true);
+	assert.equal(s.coins, 0);
+	assert.equal(postAnimal(s, 'duck', 1, DATA), true);
+
+	// A roll that lands every animal's attempt and never lets a pest wear one out.
+	const roll = (G.odds.tire + G.odds.strong) / 2;
+	const lucky = { next: () => roll, pick: list => list[0], range: min => min };
+	const events = [];
+	for (let t = 0; t < G.raid.firstSeconds + 10; t += 0.1) events.push(...tick(s, 0.1, DATA, lucky));
+	assert.ok(events.some(e => e.type === 'raid'));
+	assert.equal(events.find(e => e.type === 'raidEnd')?.id, 'won');
+	assert.equal(s.guard.wins, 1);
+	assert.ok(s.coins > 0, 'a bounty was paid');
+	assert.ok(s.mods.marketing > 1, 'the first rank is in force');
+	assert.ok(s.log.some(line => line.startsWith(G.ranks[0].name)));
+	assert.ok(s.log.some(line => line.startsWith('Raid!')));
+});
+
+test('the guard: a lost raid costs plots and beans from the barn', () => {
+	const G = DATA.GUARD;
+	const s = createState(DATA);
+	s.grown = G.unlock.grown;
+	s.owned.plot = 5;
+	refresh(s, DATA);
+	s.plots.fill(0.5);
+	const rng = createRng(2);
+	tick(s, 0.1, DATA, rng);
+	s.beans = 1000;
+	s.price = 100;          // nothing sells, so the barn only loses what is taken
+	s.time = s.guard.nextAt;
+	const events = tick(s, 0.1, DATA, rng);
+	assert.equal(events.find(e => e.type === 'raidEnd').id, 'lost', 'nobody was posted');
+	assert.equal(s.guard.losses, 1);
+	assert.equal(s.beans, 1000 * (1 - G.loss.barnShare));
+	const wave = G.waves[0].size;
+	assert.equal(s.plots.filter(p => p === null).length, wave * G.loss.plotsEach);
+	assert.match(s.log[0], /ate 3 plots/);
+});
+
+test('an old save without a guard gets one', () => {
+	const s = createState(DATA);
+	const saved = JSON.parse(JSON.stringify(serialize(s)));
+	delete saved.guard;
+	const back = restore(saved, DATA);
+	assert.equal(back.guard.open, false);
+	assert.equal(back.guard.posts, DATA.GUARD.posts.start);
 });
