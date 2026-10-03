@@ -11,6 +11,10 @@
 	<header>
 		<h1>GAME<span>JAMS</span></h1>
 		<p>Small browser games, built fast. Click one and play.</p>
+		<nav class="feedback" aria-label="Feedback">
+			<a data-feedback="idea" href="https://github.com/terin678/GameJams/issues/new/choose">💡 Suggest an idea</a>
+			<a data-feedback="bug" href="https://github.com/terin678/GameJams/issues/new/choose">🐞 Report a bug</a>
+		</nav>
 	</header>
 	<main>
 		<div id="filters" class="filters" aria-label="Filter by tag"></div>
@@ -18,7 +22,7 @@
 		<p id="error" class="error" hidden></p>
 	</main>
 	<footer>
-		<span>Add a game: drop a folder in <code>games/</code> and a line in <code>games.json</code>.</span>
+		<span>Ideas, bugs, features: <a data-feedback href="https://github.com/terin678/GameJams/issues/new/choose">open an issue on GitHub</a> (needs a free GitHub account).</span>
 	</footer>
 	<script type="module" src="portal/portal.js"></script>
 </body>

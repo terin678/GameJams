@@ -1,0 +1,32 @@
+name: Bug report
+description: Something broken, stuck or wrong in a game or the portal.
+title: "[Bug] "
+labels: [bug]
+body:
+  - type: input
+    id: game
+    attributes:
+      label: Which game?
+      placeholder: Fowl Play, Superposition, the portal...
+    validations:
+      required: true
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened?
+      description: And what did you expect instead?
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: How can we make it happen again?
+      placeholder: |
+        1. Start a game
+        2. Grab a duck egg
+        3. ...
+  - type: input
+    id: device
+    attributes:
+      label: Device and browser
+      placeholder: e.g. Windows + Chrome, iPhone + Safari

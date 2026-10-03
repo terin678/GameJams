@@ -1,0 +1,27 @@
+name: Idea, feature or enhancement
+description: A new game, a new feature, or a way to make something better.
+title: "[Idea] "
+labels: [enhancement]
+body:
+  - type: dropdown
+    id: kind
+    attributes:
+      label: What kind of idea?
+      options:
+        - New game
+        - New feature
+        - Enhancement to something that exists
+    validations:
+      required: true
+  - type: input
+    id: game
+    attributes:
+      label: Which game? (leave blank for a new one)
+      placeholder: Fowl Play, Superposition, the portal...
+  - type: textarea
+    id: idea
+    attributes:
+      label: The idea
+      description: What should it do, and what makes it fun?
+    validations:
+      required: true

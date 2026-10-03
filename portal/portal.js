@@ -1,4 +1,7 @@
 import { validateEntry, entryHref, sortEntries } from './manifest.js';
+import { installPage } from '../shared/site.js';
+
+installPage();
 
 const grid = document.getElementById('games');
 const filters = document.getElementById('filters');

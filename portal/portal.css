@@ -33,6 +33,19 @@ h1 {
 h1 span { color: var(--accent); }
 header p { margin: 8px 0 0; color: var(--muted); }
 
+.feedback { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; }
+.feedback a {
+	font: 600 13px system-ui, sans-serif;
+	padding: 7px 14px;
+	border-radius: 8px;
+	border: 1px solid var(--line);
+	background: var(--panel);
+	color: var(--ink);
+	text-decoration: none;
+}
+.feedback a:hover, .feedback a:focus-visible { border-color: var(--accent); background: var(--panel-hi); outline: none; }
+footer a { color: var(--accent-2); }
+
 main { flex: 1; }
 
 .filters { display: flex; flex-wrap: wrap; gap: 8px; margin: 16px 0 20px; }

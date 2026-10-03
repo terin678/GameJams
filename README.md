@@ -52,6 +52,18 @@ Art and sound are generated in code: sprites are strings of palette characters
 
 Use relative paths everywhere so the site works under `/GameJams/`.
 
+## Feedback and visitor counts
+
+Settings live in `shared/site.js`; every page calls `installPage()`.
+
+- **Feedback**: any `<a data-feedback="bug|idea">` becomes a link to the matching
+  GitHub issue form in `.github/ISSUE_TEMPLATE/` (game pages pre-fill which game).
+  `data-feedback` with no value opens the template chooser. Posting needs a GitHub account.
+- **Visitor counts**: [GoatCounter](https://www.goatcounter.com), free for hobby
+  sites, no cookies so no consent banner. Sign up, pick a site code, put it in
+  `SITE.goatcounter`. Empty means nothing is loaded. Counts show up on your
+  GoatCounter dashboard, per page (portal and each game).
+
 ## Deploy
 
 GitHub Pages, **Settings → Pages → Deploy from a branch → `main` / root**.
