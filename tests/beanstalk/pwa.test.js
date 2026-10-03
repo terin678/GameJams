@@ -149,3 +149,31 @@ test('the Android app has the bean as its icon, at every density, and it is up t
 	}
 	assert.match(readFileSync(res('values/ic_launcher_background.xml'), 'utf8'), /#10131C/i, 'the icon background matches the art');
 });
+
+test('the shipping copy leaves out what is only for development and testing', async t => {
+	const testing = appHtml(page);
+	const shipping = appHtml(page, { ship: true });
+	assert.match(testing, /data-feedback="bug"/);
+	assert.match(testing, /in testing/);
+	assert.doesNotMatch(shipping, /data-feedback|issues\/new|in testing|test-only/);
+	assert.match(shipping, /<a href="privacy\.html">Privacy<\/a>/, 'the privacy link stays');
+	assert.match(shipping, /&copy; \d{4} Veracity/, 'so does the copyright line');
+	assert.match(shipping, /id="open-menu"/);
+	try {
+		await import('esbuild');
+	} catch (e) {
+		return t.skip('esbuild is not installed: run npm install');
+	}
+	const read = (out, f) => readFileSync(new URL(f, out), 'utf8');
+	let out = await buildApp({ ship: true });
+	const ship = read(out, 'app.js');
+	assert.equal(read(out, 'build.txt').trim(), 'ship');
+	assert.doesNotMatch(ship, /#perf|console\.|debugger/);
+	assert.doesNotMatch(ship, /window\.game\s*=/, 'no console handle');
+	assert.doesNotMatch(read(out, 'index.html'), /data-feedback/);
+	// Leave the everyday testing copy in place.
+	out = await buildApp();
+	assert.equal(read(out, 'build.txt').trim(), 'test');
+	assert.match(read(out, 'app.js'), /#perf/);
+	assert.match(read(out, 'app.js'), /window\.game\s*=/);
+});

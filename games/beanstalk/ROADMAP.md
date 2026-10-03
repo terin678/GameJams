@@ -116,7 +116,7 @@ start a fresh farm.
 - [ ] iPhone: the installable web version already works there. A real App Store app needs a Mac with Xcode and Apple's developer programme (yearly fee); not planned yet.
 - [x] No analytics in the app copy (the script that loads it is not bundled).
 - [x] Saves: a farm survived an app update and a cold restart on the emulator (2026-10-03), so it stays in the app's own web storage. Recheck once on a real phone.
-- [ ] Take the bug and idea links (they open GitHub) and the "in testing" line out of the app copy at launch.
+- [x] A shipping build (`npm run sync:ship` in `app/`) leaves out the bug and idea links, the "in testing" line, the console handle, the `#perf` meter and console output. The Android release build refuses anything else.
 - [x] Android back button: closes the menu or the time-away card; with nothing open it puts the app away, still running.
 - [ ] Keep-awake and vibration through Capacitor plugins (the web versions are patchy inside an app).
 - [ ] Pause the music and the game clock when the app goes to the background; catch up on return (the time-away code already does this for the website).

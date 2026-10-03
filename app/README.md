@@ -55,14 +55,20 @@ keyAlias=upload
 keyPassword=...
 ```
 
-Build the bundle:
+Build the bundle, from the shipping copy of the game:
 
 ```bash
 cd app
-npm run sync
+npm run sync:ship
 cd android
 ./gradlew bundleRelease
 ```
+
+`sync:ship` is `sync` with the development and testing parts left out: the bug
+and idea links, the "in testing" note, the `game` console handle, the `#perf`
+meter and console output. The release build stops with a message if the copy
+in place is the testing one. Run plain `npm run sync` afterwards to go back to
+the testing copy for everyday work.
 
 The file to upload is `app/android/app/build/outputs/bundle/release/app-release.aab`.
 Before each new upload, raise `versionCode` in `android/app/build.gradle` by one.

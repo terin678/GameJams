@@ -253,7 +253,7 @@ function step() {
 let stale = true;
 let farmInView = true;
 let drawnAt = -Infinity;
-const perf = location.hash === '#perf' ? { frames: 0, work: 0, since: seconds(), el: null } : null;
+const perf = !globalThis.BEANSTALK_SHIP && location.hash === '#perf' ? { frames: 0, work: 0, since: seconds(), el: null } : null;
 function frame() {
 	const began = seconds();
 	step();
@@ -330,7 +330,8 @@ phone?.addListener('backButton', () => {
 if (!globalThis.BEANSTALK_APP && 'serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => {});
 
 // For poking at the game from the console: game.state, game.skip(60).
-window.game = {
+// Left out of the shipping app, along with the #perf meter.
+if (!globalThis.BEANSTALK_SHIP) window.game = {
 	music,
 	get state() { return state; },
 	skip(s) {

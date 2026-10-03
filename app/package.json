@@ -7,7 +7,9 @@
 		"build": "cd .. && node tools/build-app.mjs",
 		"cap": "npx --yes node@22 node_modules/@capacitor/cli/bin/capacitor",
 		"sync": "npm run build && npm run cap -- sync android",
-		"open": "npm run cap -- open android"
+		"open": "npm run cap -- open android",
+		"build:ship": "cd .. && node tools/build-app.mjs --ship",
+		"sync:ship": "npm run build:ship && npm run cap -- sync android"
 	},
 	"dependencies": {
 		"@capacitor/android": "^8.0.0",

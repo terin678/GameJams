@@ -265,8 +265,10 @@
 	<header id="top">
 		<nav id="links">
 			<a href="../../">&larr; all games</a> &middot;
+			<!-- test-only: left out of the shipping app (tools/build-app.mjs) -->
 			<a data-feedback="bug" href="https://github.com/terin678/GameJams/issues/new/choose">bug</a> &middot;
 			<a data-feedback="idea" href="https://github.com/terin678/GameJams/issues/new/choose">idea</a>
+			<!-- /test-only -->
 		</nav>
 		<div id="settings">
 			<button id="mute" type="button">Sound: on</button>
@@ -368,7 +370,10 @@
 			</div>
 
 			<h4>About</h4>
-			<p>Beanstalk is in testing: things will change, and the bug and idea links at the top are the way to say what should. <a href="privacy.html">Privacy</a></p>
+			<!-- test-only -->
+			<p>Beanstalk is in testing: things will change, and the bug and idea links at the top are the way to say what should.</p>
+			<!-- /test-only -->
+			<p>An idle farm that gets out of hand. <a href="privacy.html">Privacy</a></p>
 			<p class="muted">&copy; 2026 Veracity. All rights reserved.</p>
 
 			<h4>Start over</h4>

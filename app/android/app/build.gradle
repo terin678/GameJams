@@ -59,6 +59,17 @@ dependencies {
     implementation project(':capacitor-cordova-android-plugins')
 }
 
+// A release must be made from the shipping copy of the game, with the testing
+// links and tools taken out. tools/build-app.mjs marks each copy in build.txt.
+tasks.matching { it.name in ['bundleRelease', 'assembleRelease'] }.configureEach {
+    doFirst {
+        def mark = file('src/main/assets/public/build.txt')
+        if (!mark.exists() || mark.text.trim() != 'ship') {
+            throw new GradleException("This is the testing copy of the game. Run 'npm run sync:ship' in app/ first.")
+        }
+    }
+}
+
 apply from: 'capacitor.build.gradle'
 
 try {
