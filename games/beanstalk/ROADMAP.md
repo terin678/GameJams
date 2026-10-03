@@ -102,7 +102,7 @@ start a fresh farm.
 - [x] Price decided: paid, about $1, with optional tips. No ads.
 - [x] Web saves decided: nothing carries over.
 - [x] App id: `com.veracity.beanstalk`, set in `app/capacitor.config.json`. It can never change after release.
-- [ ] Choose the name for the copyright line (app About text and store listing).
+- [x] Copyright line: "© 2026 Veracity", in the Menu's About section and on the privacy page. Use the same name as the developer name on the store listing.
 
 **A build step, for the app only**
 - [x] `npm run build:app` (tools/build-app.mjs, using esbuild) writes `app/www`: one minified script with no source map, the page, the icons, the privacy page. The website keeps running unbundled.
@@ -155,8 +155,8 @@ the same as on the website, it is a concern, and the answers are these:
   hard to read. Not planned.
 - **No source maps** in anything shipped.
 - **Copyright is the real protection.** The repository has no licence file,
-  which means all rights are reserved already. Add a short copyright line to
-  the app's about text and the store listing.
+  which means all rights are reserved already. The Menu's About section and
+  the privacy page carry "© 2026 Veracity"; put the same on the store listing.
 - **When the game leaves the free portal:** make the repository private (or
   move Beanstalk to its own private one) and take the page down. Everything
   published before then stays out there: the full readable source and its

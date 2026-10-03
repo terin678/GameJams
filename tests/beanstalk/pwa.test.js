@@ -107,6 +107,7 @@ test('the page registers the service worker from the game folder', () => {
 test('there is a privacy page, linked from the menu', () => {
 	const privacy = readFileSync(game('privacy.html'), 'utf8');
 	assert.match(page, /<a href="privacy\.html">Privacy<\/a>/);
+	assert.match(page, /&copy; \d{4} Veracity/, 'the copyright line');
 	assert.match(privacy, /GoatCounter/);
 	assert.match(privacy, /no purchases inside the game/);
 	assert.doesNotMatch(privacy, /<script/);
