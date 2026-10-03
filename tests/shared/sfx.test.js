@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { normalizeSfx, validateSfx, Sfx } from '../../shared/sfx.js';
+import { normalizeSfx, validateSfx, Sfx, silentWavUri, isIOS } from '../../shared/sfx.js';
 
 // Just enough of an AudioContext to watch what unlock() does with it.
 function fakeAudio(state) {
@@ -21,6 +21,53 @@ function fakeAudio(state) {
 	}
 	return { FakeContext, made };
 }
+
+test('silentWavUri is a valid, silent WAV file', () => {
+	const uri = silentWavUri(0.5, 8000);
+	assert.ok(uri.startsWith('data:audio/wav;base64,'));
+	const bytes = Buffer.from(uri.split(',')[1], 'base64');
+	assert.equal(bytes.length, 44 + 4000);
+	assert.equal(bytes.toString('latin1', 0, 4), 'RIFF');
+	assert.equal(bytes.toString('latin1', 8, 16), 'WAVEfmt ');
+	assert.equal(bytes.readUInt32LE(4), bytes.length - 8);
+	assert.equal(bytes.readUInt32LE(40), 4000);
+	assert.ok(bytes.subarray(44).every(b => b === 128));
+});
+
+test('isIOS spots iPhones, and iPads pretending to be Macs', () => {
+	assert.equal(isIOS({ userAgent: 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X)' }), true);
+	assert.equal(isIOS({ userAgent: 'Mozilla/5.0 (Macintosh)', platform: 'MacIntel', maxTouchPoints: 5 }), true);
+	assert.equal(isIOS({ userAgent: 'Mozilla/5.0 (Macintosh)', platform: 'MacIntel', maxTouchPoints: 0 }), false);
+	assert.equal(isIOS({ userAgent: 'Mozilla/5.0 (Linux; Android 14)' }), false);
+});
+
+test('on an iPhone, unlock starts a silent loop so the ringer switch does not mute the game', () => {
+	const { FakeContext } = fakeAudio('running');
+	const players = [];
+	class FakeAudio {
+		constructor(src) { this.src = src; this.paused = true; this.plays = 0; players.push(this); }
+		setAttribute() {}
+		play() { this.plays++; this.paused = false; return Promise.resolve(); }
+	}
+	const nav = Object.getOwnPropertyDescriptor(globalThis, 'navigator');
+	Object.defineProperty(globalThis, 'navigator', { value: { userAgent: 'iPhone' }, configurable: true });
+	globalThis.AudioContext = FakeContext;
+	globalThis.Audio = FakeAudio;
+	try {
+		const sfx = new Sfx({});
+		sfx.unlock();
+		sfx.unlock();
+		assert.equal(players.length, 1);
+		assert.equal(players[0].loop, true);
+		assert.equal(players[0].plays, 1, 'started once, then left playing');
+		assert.ok(players[0].src.startsWith('data:audio/wav'));
+	} finally {
+		delete globalThis.AudioContext;
+		delete globalThis.Audio;
+		if (nav) Object.defineProperty(globalThis, 'navigator', nav);
+		else delete globalThis.navigator;
+	}
+});
 
 test('unlock wakes a suspended context from every gesture until it runs', () => {
 	const { FakeContext, made } = fakeAudio('suspended');

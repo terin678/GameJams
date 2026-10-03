@@ -24,6 +24,34 @@ export function validateSfx(def) {
 	return errors;
 }
 
+// A short silent WAV as a data: URI. Looping it in an <audio> element makes an
+// iPhone treat the page as media playback, which the ringer switch does not mute.
+export function silentWavUri(seconds = 0.5, rate = 8000) {
+	const n = Math.floor(seconds * rate);
+	const bytes = new Uint8Array(44 + n).fill(128, 44);   // 8-bit silence is 128
+	const view = new DataView(bytes.buffer);
+	const text = (at, s) => [...s].forEach((c, i) => view.setUint8(at + i, c.charCodeAt(0)));
+	text(0, 'RIFF');
+	view.setUint32(4, 36 + n, true);
+	text(8, 'WAVEfmt ');
+	view.setUint32(16, 16, true);    // format chunk size
+	view.setUint16(20, 1, true);     // PCM
+	view.setUint16(22, 1, true);     // mono
+	view.setUint32(24, rate, true);
+	view.setUint32(28, rate, true);  // bytes per second
+	view.setUint16(32, 1, true);     // bytes per sample
+	view.setUint16(34, 8, true);     // bits per sample
+	text(36, 'data');
+	view.setUint32(40, n, true);
+	let binary = '';
+	for (const b of bytes) binary += String.fromCharCode(b);
+	return `data:audio/wav;base64,${btoa(binary)}`;
+}
+
+// iPhones and iPads (which can claim to be Macs).
+export const isIOS = (nav = globalThis.navigator) =>
+	/iPad|iPhone|iPod/.test(nav?.userAgent ?? '') || (nav?.platform === 'MacIntel' && nav?.maxTouchPoints > 1);
+
 export class Sfx {
 	constructor(defs, { muted = false } = {}) {
 		this.defs = defs;
@@ -43,7 +71,17 @@ export class Sfx {
 			try {
 				const session = globalThis.navigator?.audioSession;
 				if (session) session.type = 'playback';
-			} catch (e) { /* not supported: the ringer switch decides */ }
+			} catch (e) { /* not supported: the silent loop below covers it */ }
+			if (isIOS() && globalThis.Audio) {
+				this.keepAlive = new Audio(silentWavUri());
+				this.keepAlive.loop = true;
+				this.keepAlive.setAttribute('playsinline', '');
+				// Don't hold the phone's audio while the page is in the background;
+				// the next tap starts it again.
+				globalThis.document?.addEventListener('visibilitychange', () => {
+					if (globalThis.document.hidden) this.keepAlive.pause();
+				});
+			}
 			this.ctx = new AC();
 			this.master = this.ctx.createGain();
 			this.master.gain.value = 0.5;
@@ -53,6 +91,8 @@ export class Sfx {
 			const data = this.noise.getChannelData(0);
 			for (let i = 0; i < len; i++) data[i] = Math.random() * 2 - 1;
 		}
+		// Must be started from a gesture; try again on each one until it takes.
+		if (this.keepAlive?.paused) this.keepAlive.play()?.catch?.(() => {});
 		if (this.ctx.state === 'running') return;
 		// Phones often hand over a suspended context even inside a gesture. Ask
 		// for it to start, and play one silent sample: older iOS only unlocks
