@@ -145,7 +145,9 @@ export function createView(doc, data, handlers) {
 			set('beans', formatNumber(state.beans));
 			set('price', state.price.toFixed(2));
 			$('price-up').disabled = $('price-down').disabled = mods.autoprice;
-			const selling = `${perSecond(demand(state.price, mods.marketing, T.market))} a second`;
+			// A trickle reads better as "one every 40s" than as "0.0 a second".
+			const buyRate = demand(state.price, mods.marketing, T.market);
+			const selling = buyRate >= 0.1 ? `${perSecond(buyRate)} a second` : `one every ${formatDuration(1 / buyRate)}`;
 			set('demand', mods.autoprice ? `Accountant's price · people buy ${selling}` : `At that price people buy ${selling}`);
 
 			const research = mods.pagesRate > 0 || state.pages > 0;
@@ -182,12 +184,31 @@ export function createView(doc, data, handlers) {
 
 		ending(state) {
 			if (!state) return show('ending', false);
-			lines('ending-body', [
-				`${formatNumber(state.grown)} beans. A stalk ${formatHeight(state.height)} tall.`,
-				`It took ${state.day} days, or ${formatDuration(state.time)} of yours.`,
-				'There is nothing left to plant, and nowhere left to plant it.',
-				'You still have the first bean in your pocket. It has turned to gold.',
-			]);
+			const stats = doc.createElement('dl');
+			stats.className = 'stats';
+			stats.append(...[
+				['Beans grown', formatNumber(state.grown)],
+				['Stalk', formatHeight(state.height)],
+				['Farm days', formatNumber(state.day)],
+				['Your time', formatDuration(state.time)],
+			].map(([label, value]) => {
+				const box = doc.createElement('div');
+				const dt = doc.createElement('dt');
+				dt.textContent = label;
+				const dd = doc.createElement('dd');
+				dd.textContent = value;
+				box.append(dt, dd);
+				return box;
+			}));
+			const say = (text, cls = '') => {
+				const p = doc.createElement('p');
+				p.textContent = text;
+				p.className = cls;
+				return p;
+			};
+			$('ending-body').replaceChildren(stats,
+				say('There is nothing left to plant, and nowhere left to plant it.'),
+				say('The first bean is still in your pocket. It has turned to gold.', 'gold'));
 			show('ending', true);
 			$('again').focus();
 		},

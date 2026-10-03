@@ -46,9 +46,11 @@ export function createFarmView(canvas, data, { SPRITES, PALETTE, VIEW }) {
 	const skyY = frac => Math.round(horizon - frac * horizon);
 	const cell = i => ({ x: grid.x + order[i].col * grid.size, y: grid.y + order[i].row * grid.size });
 	const put = (img, x, y) => ctx.drawImage(img, Math.round(x), Math.round(y));
+	const scenes = data.PROJECTS.filter(p => p.scene);
+	const has = (state, tag) => scenes.some(p => p.scene === tag && state.owned[p.id] > 0);
 	let crowUntil = 0;
 
-	function sky(season, t) {
+	function sky(state, season, t) {
 		const g = ctx.createLinearGradient(0, horizon, 0, 0);
 		for (const s of VIEW.skyStops) g.addColorStop(s.at, s.color ?? season.sky);
 		ctx.fillStyle = g;
@@ -60,7 +62,7 @@ export function createFarmView(canvas, data, { SPRITES, PALETTE, VIEW }) {
 		}
 		ctx.globalAlpha = 1;
 		data.LANDMARKS.filter(m => m.sprite).forEach((m, i) => {
-			const img = art[m.sprite][0];
+			const img = art[m.greenBy && state.owned[m.greenBy] ? `${m.sprite}_green` : m.sprite][0];
 			const drift = m.sprite === 'cloud' ? Math.sin(t / 6) * 8 : 0;
 			const x = i % 2 ? stalkX + 30 : stalkX - 30 - img.width;
 			put(img, x + drift, skyY(m.y) - img.height / 2);
@@ -77,9 +79,17 @@ export function createFarmView(canvas, data, { SPRITES, PALETTE, VIEW }) {
 		ctx.fillRect(stalkX - 2, top, 1, horizon - top);
 		ctx.fillRect(stalkX - 3, top - 2, 6, 3);
 		const leaf = art.leaf[0];
+		// With canopy solar, the leaves above the clouds catch the light.
+		const glowAbove = has(state, 'glow') ? skyY(data.LANDMARKS.find(m => m.sprite === 'cloud').y) : -1;
 		for (let y = horizon - 12, i = 0; y > top + 4; y -= 13, i++) {
-			if (i % 2) put(leafRight, stalkX + 2, y);
-			else put(leaf, stalkX - 2 - leaf.width, y);
+			const x = i % 2 ? stalkX + 2 : stalkX - 2 - leaf.width;
+			put(i % 2 ? leafRight : leaf, x, y);
+			if (y < glowAbove) {
+				ctx.fillStyle = PALETTE.y;
+				ctx.globalAlpha = 0.6 + 0.4 * Math.sin(t * 2 + i);
+				ctx.fillRect(i % 2 ? x + leaf.width - 4 : x + 2, y, 2, 2);
+				ctx.globalAlpha = 1;
+			}
 		}
 		return top;
 	}
@@ -100,6 +110,9 @@ export function createFarmView(canvas, data, { SPRITES, PALETTE, VIEW }) {
 		ctx.fillRect(0, horizon, VIEW.width, 2);
 		put(art.farmhouse[0], 8, horizon - art.farmhouse[0].height + 12);
 		if (state.mods.scarecrow) put(art.scarecrow[0], VIEW.width - 30, horizon - art.scarecrow[0].height + 12);
+		for (const [tag, x] of Object.entries(VIEW.props)) {
+			if (has(state, tag)) put(art[tag][0], x, horizon - art[tag][0].height + 12);
+		}
 
 		const stages = art.bean.length;
 		state.plots.forEach((g, i) => {
@@ -110,6 +123,17 @@ export function createFarmView(canvas, data, { SPRITES, PALETTE, VIEW }) {
 		});
 
 		const n = state.plots.length;
+		// Sprinklers: a few drops arcing over every other plot.
+		if (has(state, 'sprinkle')) {
+			ctx.fillStyle = '#bfe6ff';
+			for (let i = 0; i < n; i += 2) {
+				const { x, y } = cell(i);
+				for (let d = 0; d < 3; d++) {
+					const f = (t * 1.5 + d / 3 + i * 0.13) % 1;
+					ctx.fillRect(Math.round(x + 2 + f * 11), Math.round(y + 3 - Math.sin(f * Math.PI) * 5), 1, 1);
+				}
+			}
+		}
 		for (let i = 0; i < helperCount(state, 'farmhand'); i++) {
 			const { x, y } = cell((Math.floor(t * 1.3 + i * 0.6) * 7 + i * 5) % n);
 			put(art.farmhand[0], x, y - 8 - (Math.floor(t * 4 + i) % 2));
@@ -172,7 +196,7 @@ export function createFarmView(canvas, data, { SPRITES, PALETTE, VIEW }) {
 		draw(state, t) {
 			const { season } = calendar(state.day, data.SEASONS, T.calendar);
 			const weather = data.WEATHER.find(w => w.id === state.weather);
-			sky(season, t);
+			sky(state, season, t);
 			const top = stalk(state, t);
 			probes(state, top, t);
 			ground(state, season, t);

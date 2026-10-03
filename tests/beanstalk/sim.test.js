@@ -44,6 +44,15 @@ test('the market turns beans into coins', () => {
 	assert.ok(Math.abs(s.coins - (10 - s.beans) * s.price) < 1e-9);
 });
 
+test('a sky-high price cannot earn coins without beans leaving the barn', () => {
+	const s = createState(DATA);
+	s.beans = 2;
+	s.price = 12;
+	run(s, 30);
+	assert.equal(s.coins, (2 - s.beans) * 12);
+	assert.ok(Number.isInteger(s.beans));
+});
+
 test('the price buttons move the price', () => {
 	const s = createState(DATA);
 	nudgePrice(s, 1, DATA);

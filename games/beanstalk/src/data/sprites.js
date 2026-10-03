@@ -18,7 +18,36 @@ export const PALETTE = {
 	s: '#f0c090', // skin
 	h: '#9a6a3b', // wood
 	p: '#b48cf0', // galaxy
+	P: '#7a5ac8',
+	R: '#8f2a24', // roof shadow
+	C: '#d9cfa0', // wall shadow
+	H: '#5a3a1a', // dark wood
 };
+
+// Swap palette characters, e.g. a moon that has been planted over.
+const recolor = (rows, map) => rows.map(r => [...r].map(ch => map[ch] ?? ch).join(''));
+
+const MOON = [
+	'..nnnn..',
+	'.nnnNnn.',
+	'nnnnnnnn',
+	'nNnnnnnn',
+	'nnnnnNnn',
+	'nnNnnnnn',
+	'.nnnnnn.',
+	'..nnnn..',
+];
+const GALAXY = [
+	'..........pp..',
+	'....ppp....pp.',
+	'..pp...pp...p.',
+	'.p...pwwp..pp.',
+	'.p..pwyywp.p..',
+	'.pp..pwwp...p.',
+	'.p...pp...pp..',
+	'.pp....ppp....',
+	'..pp..........',
+];
 
 export const SPRITES = {
 	soil: { frames: [[
@@ -103,18 +132,20 @@ export const SPRITES = {
 		'...hh...',
 	]] },
 	farmhouse: { frames: [[
-		'......rr......',
-		'.....rrrr.....',
-		'....rrrrrr....',
-		'...rrrrrrrr...',
-		'..rrrrrrrrrr..',
-		'.rrrrrrrrrrrr.',
-		'..cccccccccc..',
-		'..cbbcccbbcc..',
-		'..cbbcccbbcc..',
-		'..ccccchhccc..',
-		'..ccccchhccc..',
-		'..ccccchhccc..',
+		'...........NN...',
+		'.......rr..NN...',
+		'......rrrr.NN...',
+		'.....rrrrrrNN...',
+		'....rrrrrrrrN...',
+		'...rrrrrrrrrr...',
+		'..rrrrrrrrrrrr..',
+		'.RRRRRRRRRRRRRR.',
+		'..cccccccccccC..',
+		'..cwwcccccwwcC..',
+		'..cbbcchhcbbcC..',
+		'..cbbcchhcbbcC..',
+		'..cccccHhccccC..',
+		'..CCCCChhCCCCC..',
 	]] },
 	crow: { frames: [
 		[
@@ -142,16 +173,8 @@ export const SPRITES = {
 		'wwwwwwwwwwwwwwww',
 		'.wwwwwwwwwwwwww.',
 	]] },
-	moon: { frames: [[
-		'..nnnn..',
-		'.nnnNnn.',
-		'nnnnnnnn',
-		'nNnnnnnn',
-		'nnnnnNnn',
-		'nnNnnnnn',
-		'.nnnnnn.',
-		'..nnnn..',
-	]] },
+	moon: { frames: [MOON] },
+	moon_green: { frames: [recolor(MOON, { n: 'g', N: 'G' })] },
 	sun: { frames: [[
 		'..yyyy..',
 		'.yyyyyy.',
@@ -162,6 +185,16 @@ export const SPRITES = {
 		'.yyyyyy.',
 		'..yyyy..',
 	]] },
+	sun_green: { frames: [[
+		'..gggg..',
+		'.gyyyyg.',
+		'gyyyyyyg',
+		'gyyGyyyg',
+		'gyyyyyyg',
+		'gyyyyGyg',
+		'.gyyyyg.',
+		'..gggg..',
+	]] },
 	star: { frames: [[
 		'..w..',
 		'..w..',
@@ -169,19 +202,75 @@ export const SPRITES = {
 		'..w..',
 		'..w..',
 	]] },
-	galaxy: { frames: [[
-		'........pp..',
-		'..ppp..pp...',
-		'.pp.pwwp....',
-		'....wwww....',
-		'...pwwp.pp..',
-		'..pp..ppp...',
-		'.pp.........',
-	]] },
+	galaxy: { frames: [GALAXY] },
+	galaxy_green: { frames: [recolor(GALAXY, { p: 'g', w: 'y' })] },
 	probe: { frames: [[
 		'.g.',
 		'gyg',
 		'.g.',
+	]] },
+	// Things that appear on the farm when a project is bought (see VIEW.props).
+	can: { frames: [[
+		'.nn..n',
+		'nnnnn.',
+		'nNnn..',
+		'nnnn..',
+		'.nn...',
+	]] },
+	compost: { frames: [[
+		'...gg...',
+		'..hHhh..',
+		'.hHhhHh.',
+		'hhHhhhHh',
+		'HHHHHHHH',
+	]] },
+	sign: { frames: [[
+		'cccccc',
+		'cGGGGc',
+		'cccccc',
+		'..hh..',
+		'..hh..',
+		'..hh..',
+		'..hh..',
+		'..hh..',
+	]] },
+	stall: { frames: [[
+		'rrwwrrwwrrww',
+		'rrwwrrwwrrww',
+		'.rwwrrwwrrw.',
+		'.h........h.',
+		'.h........h.',
+		'.h.gg.gg..h.',
+		'hhhhhhhhhhhh',
+		'hHHHHHHHHHHh',
+		'hHHHHHHHHHHh',
+		'h..........h',
+	]] },
+	library: { frames: [[
+		'.....nn.....',
+		'....nnnn....',
+		'...nnnnnn...',
+		'..nnnnnnnn..',
+		'.nnnnnnnnnn.',
+		'NNNNNNNNNNNN',
+		'.nnnnnnnnnn.',
+		'.nbnbnnbnbn.',
+		'.nbnbnnbnbn.',
+		'.nnnnhhnnnn.',
+		'.nnnnhhnnnn.',
+		'NNNNNNNNNNNN',
+	]] },
+	billboard: { frames: [[
+		'kkkkkkkkkkkk',
+		'kwwwwggwwwwk',
+		'kwwwgGGgwwwk',
+		'kwwwgGGgwwwk',
+		'kwwwwggwwwwk',
+		'kkkkkkkkkkkk',
+		'..h......h..',
+		'..h......h..',
+		'..h......h..',
+		'..h......h..',
 	]] },
 };
 
@@ -202,6 +291,10 @@ export const VIEW = {
 	],
 	stars: { count: 60, above: 0.4 },
 	glass: { tint: 'rgba(200, 244, 255, 0.2)', frame: '#e8fbff' },   // the greenhouse
+	// Where a project's `scene` prop stands: x of its left edge; it sits on the grass.
+	props: { can: 44, compost: 56, library: 76, billboard: 140, sign: 168, stall: 182 },
+	// Scene tags that are effects, not props.
+	effects: ['sprinkle', 'glow'],
 	maxHelpers: 8,
 	maxProbes: 24,
 };

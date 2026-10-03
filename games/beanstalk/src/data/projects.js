@@ -1,28 +1,30 @@
 // Everything you can buy, in the order it is listed on screen.
 // The format is documented in core/projects.js. To add a project, add a line.
 // `helper` names the sprite that walks the farm for each one owned.
+// `scene` is something the farm view shows for good once it is bought: a prop
+// (see VIEW.props in sprites.js) or an effect ('sprinkle', 'glow').
 export const PROJECTS = [
 	// ---- Phase 1: The Plot (coins) ----
 	{ id: 'plot', phase: 1, title: 'Dig another plot', flavor: 'More dirt, more beans.',
 		cost: { coins: 4 }, costGrowth: 1.35, max: 11, effect: { plots: 1 } },
 	{ id: 'watering_can', phase: 1, title: 'Watering can', flavor: 'Beans grow 50% faster when watered. Who knew.',
-		cost: { coins: 8 }, requires: { grown: 4 }, effect: { growth: 1.5 } },
+		cost: { coins: 8 }, requires: { grown: 4 }, effect: { growth: 1.5 }, scene: 'can' },
 	{ id: 'scarecrow', phase: 1, title: 'Scarecrow', flavor: 'His name is Gerald. Crows respect him.',
 		cost: { coins: 20 }, requires: { grown: 12 }, effect: { scarecrow: true } },
 	{ id: 'farmhand', phase: 1, title: 'Hire a farmhand', flavor: 'Plants and picks so you do not have to.',
 		cost: { coins: 15 }, costGrowth: 1.45, max: 8, requires: { grown: 10 }, effect: { tend: 0.8 }, helper: 'farmhand' },
 	{ id: 'market_stall', phase: 1, title: 'Market stall', flavor: 'A table, a sign and a cash tin. Demand doubles.',
-		cost: { coins: 40 }, requires: { grown: 30 }, effect: { marketing: 2 } },
+		cost: { coins: 40 }, requires: { grown: 30 }, effect: { marketing: 2 }, scene: 'stall' },
 	{ id: 'accountant', phase: 1, title: 'Accountant', flavor: 'Sets the bean price for you. Sighs a lot.',
 		cost: { coins: 60 }, requires: { grown: 60 }, effect: { autoprice: true } },
 	{ id: 'compost', phase: 1, title: 'Compost heap', flavor: 'Each plant gives twice the beans. Do not ask what is in it.',
-		cost: { coins: 90 }, requires: { grown: 80 }, effect: { yield: 2 } },
+		cost: { coins: 90 }, requires: { grown: 80 }, effect: { yield: 2 }, scene: 'compost' },
 	{ id: 'sprinkler', phase: 1, title: 'Sprinklers', flavor: 'Tsk-tsk-tsk-tsk. Growth +50%.',
-		cost: { coins: 150 }, requires: { grown: 150, has: ['watering_can'] }, effect: { growth: 1.5 } },
+		cost: { coins: 150 }, requires: { grown: 150, has: ['watering_can'] }, effect: { growth: 1.5 }, scene: 'sprinkle' },
 	{ id: 'greenhouse', phase: 1, title: 'Greenhouse', flavor: 'Winter is now something that happens to other farms.',
 		cost: { coins: 220 }, requires: { grown: 250 }, effect: { greenhouse: true } },
 	{ id: 'road_sign', phase: 1, title: 'Roadside sign', flavor: '"BEANS 500 FT". Demand doubles.',
-		cost: { coins: 300 }, requires: { grown: 400, has: ['market_stall'] }, effect: { marketing: 2 } },
+		cost: { coins: 300 }, requires: { grown: 400, has: ['market_stall'] }, effect: { marketing: 2 }, scene: 'sign' },
 	{ id: 'heirloom', phase: 1, title: 'Heirloom seeds', flavor: 'Grandma kept these in a tin. Yield doubles.',
 		cost: { coins: 500 }, requires: { grown: 800, has: ['compost'] }, effect: { yield: 2 } },
 	{ id: 'county_fair', phase: 1, title: 'Win the county fair', flavor: 'First prize, legumes. Demand doubles.',
@@ -30,7 +32,7 @@ export const PROJECTS = [
 
 	// ---- Phase 2: Agribusiness (coins and almanac pages) ----
 	{ id: 'library', phase: 2, title: 'Almanac library', flavor: 'Someone should be writing this down. +1 page a second.',
-		cost: { coins: 1000 }, effect: { pagesRate: 1 } },
+		cost: { coins: 1000 }, effect: { pagesRate: 1 }, scene: 'library' },
 	{ id: 'scholar', phase: 2, title: 'Hire a bean scholar', flavor: 'Has opinions about pods. +1 page a second.',
 		cost: { coins: 2500 }, costGrowth: 2, max: 5, requires: { has: ['library'] }, effect: { pagesRate: 1 } },
 	{ id: 'field', phase: 2, title: 'Buy the neighbour\'s field', flavor: 'They were not using it properly. +4 plots.',
@@ -44,7 +46,7 @@ export const PROJECTS = [
 	{ id: 'jingle', phase: 2, title: 'Radio jingle', flavor: '"Beans, beans, they\'re good for your..." Demand triples.',
 		cost: { pages: 60 }, requires: { has: ['library'] }, effect: { marketing: 3 } },
 	{ id: 'billboard', phase: 2, title: 'Billboards', flavor: 'A bean, forty feet tall, winking. Demand triples.',
-		cost: { coins: 4000 }, effect: { marketing: 3 } },
+		cost: { coins: 4000 }, effect: { marketing: 3 }, scene: 'billboard' },
 	{ id: 'gene_fast', phase: 2, title: 'Impatient beans', flavor: 'They want to be ripe already. Growth +50%.',
 		cost: { pages: 180 }, requires: { has: ['gene_pods'] }, effect: { growth: 1.5 } },
 	{ id: 'cloud_harvest', phase: 2, title: 'Cloud harvest', flavor: 'The stalk is up there anyway. It rains every day now.',
@@ -54,7 +56,7 @@ export const PROJECTS = [
 	{ id: 'gene_giant', phase: 2, title: 'Giant beans', flavor: 'One per wheelbarrow. Yield triples.',
 		cost: { pages: 400 }, requires: { has: ['gene_fast'] }, effect: { yield: 3 } },
 	{ id: 'canopy_solar', phase: 2, title: 'Canopy solar', flavor: 'The leaves above the clouds never see night. Growth +50%.',
-		cost: { coins: 30000 }, requires: { height: 10000 }, effect: { growth: 1.5 } },
+		cost: { coins: 30000 }, requires: { height: 10000 }, effect: { growth: 1.5 }, scene: 'glow' },
 	{ id: 'cuisine', phase: 2, title: 'Bean cuisine', flavor: 'Every restaurant is a bean restaurant. Demand x5.',
 		cost: { pages: 500 }, requires: { has: ['jingle', 'futures'] }, effect: { marketing: 5 } },
 	{ id: 'gene_stack', phase: 2, title: 'Beans that grow beans', flavor: 'The scholars are no longer sure who is breeding whom. Yield x4.',

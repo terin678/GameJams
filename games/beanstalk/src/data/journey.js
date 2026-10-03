@@ -28,14 +28,15 @@ export const MILESTONES = [
 ];
 
 // Where heights sit in the sky of the farm view: y is 0 at the ground, 1 at the
-// top of the screen, logarithmic in between. `sprite` is drawn beside the stalk.
+// top of the screen, logarithmic in between. `sprite` is drawn beside the stalk;
+// once the `greenBy` project is owned, `<sprite>_green` is drawn instead.
 export const LANDMARKS = [
 	{ height: 1, y: 0 },
 	{ height: 2000, y: 0.3, sprite: 'cloud' },
 	{ height: 100e3, y: 0.42 },
-	{ height: 384.4e6, y: 0.55, sprite: 'moon' },
-	{ height: 1.496e11, y: 0.67, sprite: 'sun' },
+	{ height: 384.4e6, y: 0.55, sprite: 'moon', greenBy: 'lunar_soil' },
+	{ height: 1.496e11, y: 0.67, sprite: 'sun', greenBy: 'dyson_trellis' },
 	{ height: 9.461e15, y: 0.78, sprite: 'star' },
-	{ height: 9.461e20, y: 0.9, sprite: 'galaxy' },
+	{ height: 9.461e20, y: 0.9, sprite: 'galaxy', greenBy: 'co_op' },
 	{ height: 8.8e26, y: 1 },
 ];

@@ -94,6 +94,15 @@ test('every sprite parses, and its frames are all one size', () => {
 
 test('the view only uses sprites that exist', () => {
 	for (const m of LANDMARKS) if (m.sprite) assert.ok(SPRITES[m.sprite], m.sprite);
+	for (const p of PROJECTS) {
+		if (!p.scene) continue;
+		assert.ok(p.scene in VIEW.props ? SPRITES[p.scene] : VIEW.effects.includes(p.scene), `${p.id} scene "${p.scene}"`);
+	}
+	for (const m of LANDMARKS) {
+		if (!m.greenBy) continue;
+		assert.ok(PROJECTS.some(p => p.id === m.greenBy), m.greenBy);
+		assert.ok(SPRITES[`${m.sprite}_green`], `${m.sprite}_green`);
+	}
 	for (const p of PROJECTS) if (p.helper) assert.ok(SPRITES[p.helper], `${p.id} helper`);
 	for (const x of [...SEASONS, ...WEATHER]) if (x.fx) assert.ok(['rain', 'snow'].includes(x.fx), `${x.id} fx`);
 	for (const name of ['soil', 'bean', 'farmhand', 'drone', 'scarecrow', 'farmhouse', 'crow', 'leaf', 'probe']) {

@@ -14,7 +14,7 @@ export function createState(data, { golden = 0 } = {}) {
 		v: VERSION,
 		time: 0,
 		day: 0, dayT: 0, weather: null,
-		plots: [], tendAcc: 0, tendAt: 0, priceAcc: 0,
+		plots: [], tendAcc: 0, tendAt: 0, priceAcc: 0, saleAcc: 0,
 		beans: 0,          // in the barn, unsold
 		grown: 0,          // ever grown; this is what the stalk is made of
 		coins: 0, pages: 0, matter: 0, probes: 0,
@@ -125,9 +125,10 @@ export function tick(state, dt, data, rng) {
 		state.probes *= Math.exp(mods.replicate * dt);
 	}
 
-	const { sold, revenue } = sell(state.beans, state.price, mods.marketing, dt, T.market);
-	state.beans -= sold;
-	state.coins += revenue;
+	const sale = sell(state.beans, state.price, mods.marketing, dt, T.market, state.saleAcc);
+	state.beans -= sale.sold;
+	state.coins += sale.revenue;
+	state.saleAcc = sale.acc;
 	if (mods.autoprice) {
 		state.priceAcc += dt;
 		if (state.priceAcc >= T.market.autoprice.everySeconds) {

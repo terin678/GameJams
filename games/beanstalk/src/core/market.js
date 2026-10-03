@@ -3,9 +3,13 @@
 // Beans per second the public will buy at this price.
 export const demand = (price, marketing, t) => t.demandBase * marketing / price ** t.elasticity;
 
-export function sell(stock, price, marketing, dt, t) {
-	const sold = Math.min(stock, demand(price, marketing, t) * dt);
-	return { sold, revenue: sold * price };
+// Beans are sold whole. `acc` carries the part-sold bean between calls, so a
+// slow market visibly takes one bean and pays for one bean, never a sliver.
+// With an empty barn a customer waits, but only one.
+export function sell(stock, price, marketing, dt, t, acc = 0) {
+	const wanted = acc + demand(price, marketing, t) * dt;
+	const sold = Math.min(Math.floor(stock), Math.floor(wanted));
+	return { sold, revenue: sold * price, acc: Math.min(wanted - sold, 1) };
 }
 
 export function adjustPrice(price, dir, t) {

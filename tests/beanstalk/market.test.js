@@ -11,11 +11,23 @@ test('demand falls with price and rises with marketing', () => {
 });
 
 test('sell moves beans at the demand rate and pays the asking price', () => {
-	assert.deepEqual(sell(100, 2, 1, 4, T), { sold: 2, revenue: 4 });
+	assert.deepEqual(sell(100, 2, 1, 4, T), { sold: 2, revenue: 4, acc: 0 });
 });
 
-test('you cannot sell beans you do not have', () => {
-	assert.deepEqual(sell(0.5, 1, 1, 10, T), { sold: 0.5, revenue: 0.5 });
+test('beans sell whole: a slow market pays nothing until a bean actually goes', () => {
+	const slow = sell(5, 10, 1, 10, T);            // 0.02 beans/sec for 10s
+	assert.equal(slow.sold, 0);
+	assert.equal(slow.revenue, 0);
+	assert.ok(Math.abs(slow.acc - 0.2) < 1e-9);
+	const later = sell(5, 10, 1, 40, T, slow.acc); // the rest of that bean
+	assert.equal(later.sold, 1);
+	assert.equal(later.revenue, 10);
+	assert.ok(later.acc < 1e-9);
+});
+
+test('you cannot sell beans you do not have, and only one customer waits', () => {
+	assert.deepEqual(sell(0, 1, 1, 10, T), { sold: 0, revenue: 0, acc: 1 });
+	assert.deepEqual(sell(3, 1, 1, 10, T), { sold: 3, revenue: 3, acc: 1 });
 });
 
 test('adjustPrice steps by a ratio, in whole cents, inside the limits', () => {
