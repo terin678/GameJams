@@ -2,10 +2,11 @@
 // cross-references before they reach the browser.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { DATA, SPRITES, PALETTE, VIEW, SOUNDS, EVENT_SOUNDS, MUSIC } from '../../games/beanstalk/src/data/index.js';
+import { DATA, SPRITES, PALETTE, VIEW, SOUNDS, EVENT_SOUNDS, MUSIC, SKY } from '../../games/beanstalk/src/data/index.js';
 import { validateProject, EFFECTS } from '../../games/beanstalk/src/core/projects.js';
 import { validateNeighbour, validateGift } from '../../games/beanstalk/src/core/neighbours.js';
 import { validateSeeds } from '../../games/beanstalk/src/core/seeds.js';
+import { validateSky } from '../../games/beanstalk/src/core/sky.js';
 import { heightFor } from '../../games/beanstalk/src/core/phases.js';
 import { plotOrder } from '../../games/beanstalk/src/core/layout.js';
 import { parsePixelMap } from '../../shared/pixelart.js';
@@ -85,6 +86,20 @@ test('seed breeding data is well formed', () => {
 	const topBar = SEEDS.fair.firstBar + SEEDS.fair.barStep * Math.floor((SEEDS.maxLevel - SEEDS.fair.firstBar) / SEEDS.fair.barStep);
 	assert.ok(topBar <= SEEDS.maxLevel);
 	assert.ok(SPRITES.ribbon);
+});
+
+test('the light through the day is well formed, and night is short', () => {
+	assert.deepEqual(validateSky(SKY), []);
+	assert.match(SKY.window, /^#[0-9a-f]{6}$/i);
+	for (const x of [...SEASONS, ...WEATHER.filter(w => w.tint).map(w => ({ id: w.id, sky: w.tint.color, grass: w.tint.color }))]) {
+		assert.match(x.sky, /^#[0-9a-f]{6}$/i, x.id);
+		assert.match(x.grass, /^#[0-9a-f]{6}$/i, x.id);
+	}
+	for (const w of WEATHER) if (w.tint) assert.ok(w.tint.amount > 0 && w.tint.amount <= 1, w.id);
+	const dark = SKY.keys.reduce((sum, k, i) => sum + (i && k.night === 1 && SKY.keys[i - 1].night === 1 ? k.at - SKY.keys[i - 1].at : 0), 0);
+	assert.ok(dark > 0.05 && dark < 0.3, `fully dark for ${dark} of the day`);
+	assert.ok(T.calendar.daySeconds >= 30, 'a day is long enough to watch the light change');
+	assert.ok(VIEW.windows.length > 0);
 });
 
 test('seasons and weather make sense', () => {

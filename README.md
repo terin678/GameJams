@@ -148,6 +148,12 @@ buttons. It saves itself every few seconds.
   wins a ribbon, which lifts demand and makes crosses luckier.
 - New systems appear as tabs beside Projects, and sections such as the Almanac
   stay hidden until the game reaches them.
+- **Light** (`src/data/sky.js`): a farm day is a minute, with dawn, sunset and
+  a short night (stars low in the sky, lit farmhouse windows). Rain greys the
+  sky and a dry spell warms it. The view eases toward the right colours, so
+  seasons, weather and time of day all blend. The calendar only drives what
+  you see; weather runs on its own clock (`TUNING.weather`), so changing the
+  length of a day does not change what you earn.
 - **Music:** the tune is data as well (`src/data/music.js`): chords, bass, a
   lead line and a drum pattern, eight bars that loop. `shared/music.js` plays
   it with WebAudio (no audio files) and any game can use it. It has its own

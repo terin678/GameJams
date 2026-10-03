@@ -1,6 +1,6 @@
 // Boot: load the save, catch up on time away, then run the loop.
 
-import { DATA, SPRITES, PALETTE, VIEW, SOUNDS, EVENT_SOUNDS, MUSIC } from '../data/index.js';
+import { DATA, SPRITES, PALETTE, VIEW, SOUNDS, EVENT_SOUNDS, MUSIC, SKY } from '../data/index.js';
 import { createState, tick, tend, buyProject, giveGift, crossSeeds, chooseSeedling, nudgePrice, simulateOffline, serialize, restore, newGamePlus } from '../core/sim.js';
 import { createStore } from '../../../../shared/storage.js';
 import { createRng } from '../../../../shared/rng.js';
@@ -30,8 +30,8 @@ function audio() {
 
 let state = restore(store.get('save'), DATA);
 
-const farm = createFarmView(document.getElementById('farm'), DATA, { SPRITES, PALETTE, VIEW });
-const view = createView(document, DATA, {
+const farm = createFarmView(document.getElementById('farm'), DATA, { SPRITES, PALETTE, VIEW, SKY });
+const view = createView(document, { ...DATA, SKY }, {
 	tend() {
 		const did = tend(state, DATA);
 		sfx.play(did ?? 'deny');

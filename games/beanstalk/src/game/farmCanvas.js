@@ -9,6 +9,7 @@ import { stalkFrac } from '../core/phases.js';
 import { plotOrder, mixColor } from '../core/layout.js';
 import { heartsOf } from '../core/neighbours.js';
 import { ribbonCount } from '../core/seeds.js';
+import { skyTarget, ease, toHex } from '../core/sky.js';
 
 const CROW_SECONDS = 1.6;
 
@@ -25,10 +26,17 @@ function bake(rows, palette, scale, flip = false) {
 	return c;
 }
 
-export function createFarmView(canvas, data, { SPRITES, PALETTE, VIEW }) {
+export function createFarmView(canvas, data, { SPRITES, PALETTE, VIEW, SKY }) {
 	canvas.width = VIEW.width;
 	canvas.height = VIEW.height;
-	const ctx = canvas.getContext('2d');
+	const screen = canvas.getContext('2d');
+	// The ground and everything standing on it are drawn on their own layer, so
+	// the light of the hour can tint exactly those pixels and not the sky behind.
+	const layer = document.createElement('canvas');
+	layer.width = VIEW.width;
+	layer.height = VIEW.height;
+	const land = layer.getContext('2d');
+	let ctx = screen;
 	const { horizon, stalkX, plots: grid } = VIEW;
 	const T = data.TUNING;
 
@@ -39,12 +47,16 @@ export function createFarmView(canvas, data, { SPRITES, PALETTE, VIEW }) {
 	const helperCount = (state, kind) => Math.min(VIEW.maxHelpers,
 		data.PROJECTS.reduce((n, p) => n + (p.helper === kind ? state.owned[p.id] ?? 0 : 0), 0));
 
+	// Stars fill the whole sky; the low ones only show at night.
 	const starRng = createRng(5);
-	const stars = Array.from({ length: VIEW.stars.count }, () => ({
+	const stars = Array.from({ length: VIEW.stars.count * 2 }, (_, i) => ({
 		x: Math.floor(starRng.range(0, VIEW.width)),
-		y: starRng.range(VIEW.stars.above, 1),
+		y: i % 2 ? starRng.range(VIEW.stars.above, 1) : starRng.range(0.06, VIEW.stars.above),
 		tw: starRng.range(0, 6),
 	}));
+	// The colours on screen, drifting toward wherever the light says they should be.
+	let shade = null;
+	let lastT = null;
 	const skyY = frac => Math.round(horizon - frac * horizon);
 	const cell = i => ({ x: grid.x + order[i].col * grid.size, y: grid.y + order[i].row * grid.size });
 	const put = (img, x, y) => ctx.drawImage(img, Math.round(x), Math.round(y));
@@ -52,13 +64,13 @@ export function createFarmView(canvas, data, { SPRITES, PALETTE, VIEW }) {
 	const has = (state, tag) => scenes.some(p => p.scene === tag && state.owned[p.id] > 0);
 	let crowUntil = 0;
 
-	function sky(state, season, t) {
+	function sky(state, t) {
 		const g = ctx.createLinearGradient(0, horizon, 0, 0);
-		for (const s of VIEW.skyStops) g.addColorStop(s.at, s.color ?? season.sky);
+		for (const s of VIEW.skyStops) g.addColorStop(s.at, s.color ?? toHex(shade.sky));
 		ctx.fillStyle = g;
 		ctx.fillRect(0, 0, VIEW.width, horizon);
 		for (const s of stars) {
-			ctx.globalAlpha = 0.45 + 0.4 * Math.sin(t * 1.5 + s.tw);
+			ctx.globalAlpha = (0.45 + 0.4 * Math.sin(t * 1.5 + s.tw)) * (s.y < VIEW.stars.above ? shade.night[0] : 1);
 			ctx.fillStyle = '#ffffff';
 			ctx.fillRect(s.x, skyY(s.y), 1, 1);
 		}
@@ -105,10 +117,11 @@ export function createFarmView(canvas, data, { SPRITES, PALETTE, VIEW }) {
 		}
 	}
 
-	function ground(state, season, t) {
-		ctx.fillStyle = season.grass;
+	function ground(state, t) {
+		const grass = toHex(shade.grass);
+		ctx.fillStyle = grass;
 		ctx.fillRect(0, horizon, VIEW.width, VIEW.height - horizon);
-		ctx.fillStyle = mixColor(season.grass, '#000000', 0.25);
+		ctx.fillStyle = mixColor(grass, '#000000', 0.25);
 		ctx.fillRect(0, horizon, VIEW.width, 2);
 		put(art.farmhouse[0], 8, horizon - art.farmhouse[0].height + 12);
 		const house = { x: 8, y: horizon - art.farmhouse[0].height + 12 };
@@ -165,6 +178,25 @@ export function createFarmView(canvas, data, { SPRITES, PALETTE, VIEW }) {
 		}
 	}
 
+	// Dawn, dusk and dark wash over the ground and everything on it; then the
+	// farmhouse lights come on.
+	function light() {
+		land.globalCompositeOperation = 'source-atop';
+		land.globalAlpha = shade.light[3];
+		land.fillStyle = toHex(shade.light.slice(0, 3));
+		land.fillRect(0, 0, VIEW.width, VIEW.height);
+		land.globalAlpha = 1;
+		land.globalCompositeOperation = 'source-over';
+		screen.drawImage(layer, 0, 0);
+		ctx.globalAlpha = shade.night[0];
+		ctx.fillStyle = SKY.window;
+		const house = { x: 8, y: horizon - art.farmhouse[0].height + 12 };
+		for (const [x, y, w, h] of VIEW.windows) {
+			ctx.fillRect(house.x + x * VIEW.scale, house.y + y * VIEW.scale, w * VIEW.scale, h * VIEW.scale);
+		}
+		ctx.globalAlpha = 1;
+	}
+
 	// The box around the plots in use, in screen pixels.
 	function farmBox(n) {
 		let x0 = Infinity, y0 = Infinity, x1 = 0, y1 = 0;
@@ -211,10 +243,22 @@ export function createFarmView(canvas, data, { SPRITES, PALETTE, VIEW }) {
 		draw(state, t) {
 			const { season } = calendar(state.day, data.SEASONS, T.calendar);
 			const weather = data.WEATHER.find(w => w.id === state.weather);
-			sky(state, season, t);
+			// Ease the colours toward the light of this moment.
+			const target = skyTarget(state.dayT / T.calendar.daySeconds, season, weather, SKY);
+			const want = { sky: target.sky, grass: target.grass, light: [...target.light.color, target.light.amount], night: [target.night] };
+			const dt = lastT === null ? Infinity : Math.max(0, Math.min(1, t - lastT));
+			lastT = t;
+			if (!shade) shade = want;
+			else for (const k of Object.keys(want)) shade[k] = ease(shade[k], want[k], dt, SKY.easeRate);
+
+			sky(state, t);
 			const top = stalk(state, t);
 			probes(state, top, t);
-			ground(state, season, t);
+			ctx = land;
+			land.clearRect(0, 0, VIEW.width, VIEW.height);
+			ground(state, t);
+			ctx = screen;
+			light();
 			const glass = state.mods.greenhouse ? farmBox(state.plots.length) : null;
 			if (glass) greenhouse(glass);
 			const fx = weather?.fx ?? season.fx;

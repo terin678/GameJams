@@ -319,6 +319,8 @@ export const VIEW = {
 	props: { can: 44, compost: 56, library: 76, billboard: 140, sign: 168, stall: 182 },
 	// Scene tags that are effects, not props.
 	effects: ['sprinkle', 'glow'],
+	// Farmhouse window panes, in sprite pixels [x, y, w, h]; lit at night.
+	windows: [[3, 10, 2, 2], [10, 10, 2, 2]],
 	maxRibbons: 5,        // drawn on the farmhouse
 	maxHelpers: 8,
 	maxProbes: 24,

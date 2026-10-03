@@ -15,7 +15,7 @@ export function createState(data, { golden = 0 } = {}) {
 	const state = {
 		v: VERSION,
 		time: 0,
-		day: 0, dayT: 0, weather: null,
+		day: 0, dayT: 0, weather: null, weatherT: 0,
 		plots: [], tendAcc: 0, tendAt: 0, priceAcc: 0, saleAcc: 0,
 		beans: 0,          // in the barn, unsold
 		grown: 0,          // ever grown; this is what the stalk is made of
@@ -85,7 +85,8 @@ function tendNext(state) {
 	return did;
 }
 
-function newDay(state, data, rng, events) {
+// A new spell of weather begins.
+function newWeather(state, data, rng, events) {
 	const { mods } = state;
 	const w = mods.rainmaker ? data.WEATHER.find(x => x.summoned) : rollWeather(rng, data.WEATHER);
 	state.weather = null;
@@ -112,8 +113,12 @@ export function tick(state, dt, data, rng) {
 	state.time += dt;
 
 	const was = calendar(state.day, data.SEASONS, T.calendar).season;
-	const days = advance(state, dt, T.calendar);
-	for (let i = 0; i < days; i++) newDay(state, data, rng, events);
+	advance(state, dt, T.calendar);
+	state.weatherT += dt;
+	while (state.weatherT >= T.weather.everySeconds) {
+		state.weatherT -= T.weather.everySeconds;
+		newWeather(state, data, rng, events);
+	}
 	const { season } = calendar(state.day, data.SEASONS, T.calendar);
 	if (season !== was) {
 		events.push({ type: 'season', id: season.id });

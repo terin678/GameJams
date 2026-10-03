@@ -5,7 +5,10 @@ export const TUNING = {
 	startPrice: 1,
 	// Modifiers before any project is bought (see EFFECTS in core/projects.js).
 	base: { plots: 1, probeYield: 40 },
-	calendar: { daySeconds: 5, daysPerSeason: 7 },
+	// The calendar only drives what you see (the light, the seasons, the fair).
+	// Weather has its own clock, so stretching the day changes nothing you earn.
+	calendar: { daySeconds: 60, daysPerSeason: 3 },
+	weather: { everySeconds: 20 },   // how long one spell of weather lasts
 	market: {
 		demandBase: 2,        // beans/sec bought at a price of 1.00
 		elasticity: 2,        // halve the price, sell four times as many

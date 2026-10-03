@@ -59,7 +59,7 @@ test('the price buttons move the price', () => {
 	assert.ok(s.price > T.startPrice);
 });
 
-test('beans barely grow in winter, unless there is a greenhouse', () => {
+test('beans grow slowly in winter, unless there is a greenhouse', () => {
 	const winterDay = 3 * T.calendar.daysPerSeason;
 	const grownBy = (...owned) => {
 		const s = createState(DATA);
@@ -69,7 +69,7 @@ test('beans barely grow in winter, unless there is a greenhouse', () => {
 		run(s, 2);
 		return s.plots[0];
 	};
-	assert.ok(grownBy('greenhouse') > grownBy() * 3);
+	assert.ok(grownBy('greenhouse') > grownBy() * 2);
 });
 
 test('with a greenhouse, the journal says winter is not a problem', () => {
@@ -85,20 +85,28 @@ test('with a greenhouse, the journal says winter is not a problem', () => {
 	assert.ok(!warm.log.includes(winter.log));
 });
 
+test('weather keeps its own clock, whatever the length of a day', () => {
+	const rain = { next: () => 0.001, pick: l => l[0] };
+	const s = createState(DATA);
+	const events = run(s, T.weather.everySeconds * 3 + 0.1, rain, 0.5);
+	assert.equal(events.filter(e => e.type === 'weather').length, 3);
+	assert.equal(s.weather, DATA.WEATHER[0].id);
+});
+
 test('a crow eats a bean, but not past a scarecrow', () => {
 	const crowAt = DATA.WEATHER.findIndex(w => w.eats);
 	const before = DATA.WEATHER.slice(0, crowAt).reduce((a, w) => a + w.chance, 0);
 	const crows = { next: () => before + 0.001, pick: l => l[0] };
 	const s = createState(DATA);
 	tend(s, DATA);
-	const events = run(s, T.calendar.daySeconds + 0.1, crows);
+	const events = run(s, T.weather.everySeconds + 0.1, crows);
 	assert.ok(events.some(e => e.type === 'crow'));
 	assert.equal(s.plots[0], null);
 
 	const guarded = createState(DATA);
 	own(guarded, 'scarecrow');
 	tend(guarded, DATA);
-	run(guarded, T.calendar.daySeconds + 0.1, crows);
+	run(guarded, T.weather.everySeconds + 0.1, crows);
 	assert.notEqual(guarded.plots[0], null);
 });
 

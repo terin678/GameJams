@@ -10,3 +10,4 @@ export const DATA = { TUNING, SEASONS, WEATHER, PHASES, MILESTONES, LANDMARKS, P
 export { SPRITES, PALETTE, VIEW } from './sprites.js';
 export { SOUNDS, EVENT_SOUNDS } from './sounds.js';
 export { MUSIC } from './music.js';
+export { SKY } from './sky.js';

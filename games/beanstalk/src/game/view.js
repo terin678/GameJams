@@ -11,6 +11,7 @@ import { formatNumber, formatMoney, formatHeight, formatDuration } from '../core
 import { counts, findWork } from '../core/farm.js';
 import { demand } from '../core/market.js';
 import { calendar, growthMult, seasonNote } from '../core/seasons.js';
+import { periodAt } from '../core/sky.js';
 import { available, affordable, costOf } from '../core/projects.js';
 import { crossCost, canCross, growingFor, fairTrait, fairBar, ribbonCount, luckOf } from '../core/seeds.js';
 import { heartsOf, heartProgress, giftsFor, giftCost, canGive, waitFor, nextPerk } from '../core/neighbours.js';
@@ -289,7 +290,8 @@ export function createView(doc, data, handlers) {
 			set('height', formatHeight(state.height));
 			set('phase', phase.name);
 			set('rate', `${perSecond(rate)} beans a second`);
-			set('calendar', `${cal.season.name}, day ${cal.dayOfSeason} · year ${cal.year} · ${weather?.name ?? 'Fair'}`);
+			const period = periodAt(state.dayT / T.calendar.daySeconds, data.SKY.periods);
+			set('calendar', `${cal.season.name}, day ${cal.dayOfSeason} · year ${cal.year} · ${period} · ${weather?.name ?? 'Fair'}`);
 			set('golden', state.golden > 0 ? `Golden Beans: ${state.golden}` : '');
 
 			const c = counts(state.plots);
