@@ -66,7 +66,7 @@
 			30% { opacity: 1; box-shadow: 0 0 18px 2px rgba(143, 224, 106, 0.55); }
 			100% { box-shadow: 0 0 0 0 rgba(143, 224, 106, 0); }
 		}
-		.reveal { animation: reveal 2.4s ease-out; border-radius: 6px; }
+		.reveal { animation: reveal var(--reveal) ease-out; border-radius: 6px; }   /* --reveal is set by view.js, which also times it */
 		@media (prefers-reduced-motion: reduce) { .reveal { animation: none; } }
 
 		h1 { margin: 0; font-size: 26px; letter-spacing: 0.06em; }
@@ -149,11 +149,11 @@
 		.trait { display: grid; grid-template-columns: 4.5rem 1fr auto; gap: 8px; align-items: center; font-size: 13px; margin: 3px 0; }
 		.trait .bar { height: 6px; background: var(--bg); border-radius: 3px; overflow: hidden; }
 		.trait .bar i { display: block; height: 100%; background: var(--bean); }
-		.seedlings { display: grid; gap: 5px; margin-top: 6px; }
-		.seedlings button { text-align: left; font-size: 12px; padding: 6px 9px; background: var(--bg); }
+		.choices { display: grid; gap: 5px; margin-top: 6px; }
+		.choices button { text-align: left; font-size: 12px; padding: 6px 9px; background: var(--bg); }
 		.box .story { font-size: 13px; font-style: italic; margin-bottom: 6px; }
 		.box .said { font-size: 13px; color: var(--ink); }
-		.finds { margin: 0; padding-left: 1.1rem; font-size: 12px; }
+		.gains { margin: 0; padding-left: 1.1rem; font-size: 12px; }
 		.post { display: grid; grid-template-columns: 1fr 2rem 1.5rem 2rem; gap: 4px 6px; align-items: center; font-size: 13px; margin: 4px 0; }
 		.post b + span { font-size: 12px; }
 		.post button { padding: 3px 0; }
@@ -355,12 +355,6 @@
 	<div id="menu" class="overlay" hidden>
 		<div class="card" role="dialog" aria-modal="true" aria-labelledby="menu-title">
 			<h3 id="menu-title">Menu</h3>
-
-			<div id="install-box" hidden>
-				<h4>Install</h4>
-				<p>Put Beanstalk on your home screen. It opens in its own window and works with no signal.</p>
-				<button id="install" type="button">Install Beanstalk</button>
-			</div>
 
 			<div id="backdrop-box">
 				<h4>Farm view</h4>
