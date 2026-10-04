@@ -153,6 +153,9 @@
 		.choices button { text-align: left; font-size: 12px; padding: 6px 9px; background: var(--bg); }
 		.box .story { font-size: 13px; font-style: italic; margin-bottom: 6px; }
 		.box .said { font-size: 13px; color: var(--ink); }
+		#feats { margin: 6px 0; padding-left: 1.1rem; font-size: 12px; }
+		#feats li.todo { color: var(--muted); }
+		#feats-box summary { cursor: pointer; font-size: 13px; }
 		.gains { margin: 0; padding-left: 1.1rem; font-size: 12px; }
 		.post { display: grid; grid-template-columns: 1fr 2rem 1.5rem 2rem; gap: 4px 6px; align-items: center; font-size: 13px; margin: 4px 0; }
 		.post b + span { font-size: 12px; }
@@ -384,6 +387,19 @@
 				<p>One notification, when the farm has done all it can without you. Nothing else, ever.</p>
 				<button id="notify" type="button">Tell me when the farm is waiting: off</button>
 				<p class="muted" id="notify-note"></p>
+			</div>
+
+			<h4>Achievements</h4>
+			<details id="feats-box">
+				<summary id="feats-count">0 earned</summary>
+				<ul id="feats"></ul>
+			</details>
+			<p class="muted" id="bests"></p>
+			<div id="services-box" hidden>
+				<p>They are kept on this device. Switch this on to also send them, and your best scores, to <span id="services-name"></span>; that is the only thing the game ever sends.</p>
+				<button id="services" type="button">Off</button>
+				<button id="services-show" type="button" hidden>See them there</button>
+				<p class="muted" id="services-note"></p>
 			</div>
 
 			<h4>About</h4>
