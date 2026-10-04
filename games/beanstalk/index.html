@@ -270,7 +270,7 @@
 	<header id="top">
 		<nav id="links">
 			<a href="../../">&larr; all games</a> &middot;
-			<!-- test-only: left out of the shipping app (tools/build-app.mjs) -->
+			<!-- test-only: left out of the shipping app (tools/build.mjs) -->
 			<a data-feedback="bug" href="https://github.com/terin678/GameJams/issues/new/choose">bug</a> &middot;
 			<a data-feedback="idea" href="https://github.com/terin678/GameJams/issues/new/choose">idea</a>
 			<!-- /test-only -->
@@ -397,7 +397,7 @@
 		</div>
 	</div>
 
-	<script type="module" src="src/game/main.js"></script>
+	<script type="module" src="app.js"></script>
 	<script type="module">
 		import { installPage } from '../../shared/site.js';
 		installPage({ game: 'Beanstalk' });
