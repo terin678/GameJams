@@ -1,8 +1,0 @@
-{
-	"appId": "com.veracity.beanstalk",
-	"appName": "Beanstalk",
-	"webDir": "www",
-	"android": {
-		"backgroundColor": "#10131c"
-	}
-}

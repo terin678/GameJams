@@ -5,6 +5,7 @@ No build step and no CI: plain ES modules, vendored Phaser 3, tests run locally.
 
 | Game | Where |
 |---|---|
+| **Beanstalk**: an idle farm that gets out of hand (built copy only; see below) | [`games/beanstalk/`](games/beanstalk/) |
 | **Superposition**: Schrödinger's cat in a maze, with quantum powers | [`games/superposition/`](games/superposition/) |
 | **Fowl Play: The Battle of Midair** — 1943 with a pigeon | [`games/midair/`](games/midair/) |
 ## Run it
@@ -117,109 +118,11 @@ all in `src/data/`.
 
 ## Beanstalk
 
-An idle farming game. Plant one bean, sell beans, buy projects, and watch the
-stalk grow from the garden to the edge of the universe. A run is a few hours,
-in three phases: The Plot, Agribusiness, Beyond. Where it is heading is in
-[games/beanstalk/ROADMAP.md](games/beanstalk/ROADMAP.md).
+An idle farming game: plant one bean and keep going until the stalk runs out
+of universe. Play it at [`games/beanstalk/`](games/beanstalk/).
 
-Finishing gives a Golden Bean for **New Game+**: it doubles your harvest and
-speeds the next run up. The world remembers (neighbours half-recognise you,
-the first plot grows a golden bean) and each run adds a twist, such as harder
-winters or pickier fair judges (`src/data/runs.js`).
-
-Click **Tend** (or press Space / Enter) to plant and pick. Everything else is
-buttons. It saves itself every few seconds.
-
-- **Time away:** the farm keeps working while the tab is closed, at 15% speed,
-  for up to 8 hours of absence (about 70 minutes of work at most). You get a
-  summary when you come back.
-- **Add a project:** add a line to `src/data/projects.js` (cost, what it
-  requires, what it does). `data.test.js` checks it, and `balance.test.js`
-  plays the whole game with a bot. The bot plays perfectly and should take
-  2 to 2.8 hours, with never more than 7 minutes between purchases; a person
-  takes rather longer. See the bot's timeline with:
-
-  ```bash
-  BEANSTALK_TIMELINE=1 node --test tests/beanstalk/balance.test.js
-  ```
-- Seasons, weather, prices, milestones and the height of everything in the sky
-  are in `src/data/` too.
-- **Neighbours** (`src/data/neighbours.js`): people who turn up as the farm
-  grows. Give each a gift every 30 seconds; you find out what they love by
-  trying. Hearts unlock perks (more demand, faster growth, extra helpers).
-  Add a neighbour or a gift by adding an entry; `data.test.js` checks it.
-- **Seeds** (`src/data/seeds.js`): from 400 beans you can breed your own seed
-  line. A cross costs coins, grows out for 15 seconds, then offers three
-  seedlings, each better in one trait (size, vigour, flavour) and maybe worse
-  in another. Every autumn the county fair judges one trait; clearing the bar
-  wins a ribbon, which lifts demand and makes crosses luckier.
-- **The Climb** (`src/data/climb.js`): from phase 2 you can send a climber up
-  the stalk, one ledge at a time, as far as the stalk has grown. Each ledge
-  is a short scene with choices: some cost something, some need a friend or
-  a good seed line, some are risky. Successes bring home finds that change
-  the farm for good (a golden goose, a singing harp, the Giant's help).
-  Failures annoy the Giant; annoy him three times and he stamps every bean
-  out of the ground. Add a ledge by adding an entry to the data.
-- **The Guard** (`src/data/guard.js`): from 6,000 beans, pests raid the farm
-  every few minutes. Each raid is forecast ("4 slugs and 2 mice"), and you
-  fill your guard posts with animals to suit: ducks eat slugs, cats catch
-  mice, dogs chase rabbits. The raid then plays out by itself, on the farm.
-  A win pays a bounty and counts towards ranks that change the farm for
-  good; a loss costs plots and beans from the barn. It is rolled out one
-  idea at a time (one pest, then two, bigger waves, a third pest), and at
-  ten wins the animals learn to post themselves. In phase 2 tougher pests
-  come down the stalk (cloud moths, giant magpies), bats and geese turn up
-  to deal with them, and you train your animals with Almanac pages. Pests,
-  animals, waves and ranks are all rows in the data.
-- **The Blight** (`src/data/blight.js`): the Guard's last stage, in phase 3.
-  Some probes go to seed and eat the rest. You set what share of the swarm
-  stands guard: guards clear the blight but neither plant nor spread, so
-  the job is finding the split that grows the swarm fastest, and finding
-  it again when the blight adapts. Left alone it stalls the swarm; it
-  never wipes it out.
-- **The Exchange** (`src/data/exchange.js`): in phase 2 a desk opens where you
-  buy and sell crates of beans. The price follows the year (cheapest at
-  harvest, dearest in spring), the weather pushes it about (rain is a glut,
-  a dry spell a shortage) and there is a chart of the last few minutes. Buy
-  with a share of your coins, sell later for more, less a small fee.
-- **The end of money**: midway through phase 2 the project "Corner the
-  market" closes the market for good. A bean is fixed at the price it was
-  fetching, your coins are counted out in beans, and from then on every
-  price in the game is quoted and paid in beans. Demand bonuses earned
-  after that raise the harvest instead. (Inside, `coins` is still the
-  wallet; `rate` in the state says what a bean is worth.)
-- **Phone app (not released)**: `npm run build:app` makes a bundled, minified
-  copy of the game in `app/www` for wrapping with Capacitor; see
-  `app/README.md`. The website does not use it and has no build step.
-- **Where the page code lives**: `src/game/` (the loop in `main.js`, what the
-  buttons do in `actions.js`, the device in `platform.js`, one file per tab
-  in `view/`). `games/beanstalk/docs/refactor-plan.md` has the map and how
-  to add a tab. `tests/beanstalk/page.test.js` plays the game through the
-  real page in Node.
-- New systems appear as tabs beside Projects, and sections such as the Almanac
-  stay hidden until the game reaches them.
-- **Light** (`src/data/sky.js`): a farm day is a minute, with dawn, sunset and
-  a short night (stars low in the sky, lit farmhouse windows). Rain greys the
-  sky and a dry spell warms it. The view eases toward the right colours, so
-  seasons, weather and time of day all blend. The calendar only drives what
-  you see; weather runs on its own clock (`TUNING.weather`), so changing the
-  length of a day does not change what you earn.
-- **Install it:** Beanstalk is an installable web app. In Chrome on Android
-  use the Menu's Install button (or "Add to Home screen"); on an iPhone use
-  Share, then "Add to Home Screen". It then opens in its own window and works
-  with no signal. `sw.js` fetches fresh files whenever it is online and keeps
-  a copy for when it is not, so there are no version numbers to bump and no
-  hard refresh needed. Icons are drawn from the bean sprite by
-  `node tools/make-icons.mjs` (a test fails if they are stale).
-- **Move a farm between devices:** Menu, "Copy my code", then paste it into
-  the Menu on the other device and "Load the code above".
-- On a phone the Tend button stays fixed at the bottom of the screen.
-  The farm sits behind the page, between the top bar and the Tend button,
-  and everything else scrolls over it on see-through panels (Menu, "Farm
-  behind the page", to turn that off).
-- **Music:** the tune is data as well (`src/data/music.js`): chords, bass, a
-  lead line and a drum pattern, eight bars that loop. `shared/music.js` plays
-  it with WebAudio (no audio files) and any game can use it. It has its own
-  on/off button and pauses while the tab is hidden.
-- From the browser console, `game.state` is the live game and `game.skip(60)`
-  fast-forwards a minute.
+Only the built game is here (one minified script, the page, icons). It is
+developed in a separate private repository and published into this folder by
+that repository's deploy script, so do not edit `games/beanstalk/` by hand:
+the next deploy replaces it. `tests/shared/beanstalk.test.js` checks that no
+source has slipped back in. © 2026 Veracity. All rights reserved.
