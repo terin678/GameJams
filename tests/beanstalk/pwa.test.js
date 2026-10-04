@@ -100,8 +100,8 @@ test('it leaves other sites and non-GET requests alone', () => {
 });
 
 test('the page registers the service worker from the game folder', () => {
-	const main = readFileSync(game('src/game/main.js'), 'utf8');
-	assert.match(main, /serviceWorker[\s\S]*register\('sw\.js'\)/);
+	const platform = readFileSync(game('src/game/platform.js'), 'utf8');
+	assert.match(platform, /serviceWorker[\s\S]*register\('sw\.js'\)/);
 });
 
 test('there is a privacy page, linked from the menu', () => {

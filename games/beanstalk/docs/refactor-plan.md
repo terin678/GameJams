@@ -1,88 +1,93 @@
-# Refactor plan for the page code (proposed, not started)
+# The page-code refactor (done, October 2026)
 
-Written from `unclickable-buttons.md`. Scope: `src/game/` (the page, the loop,
-the phone glue) and its tests. The rules (`src/core`), the data (`src/data`)
-and the farm canvas are not touched: the notes found nothing wrong there.
+Planned from `unclickable-buttons.md`, approved by the owner once the fix was
+confirmed on the iPhone, and carried out in one pass. This file records what
+was planned, what was built, and where the two differ.
+
+Scope: `src/game/` (the page, the loop, the device glue) and its tests. The
+rules (`src/core`), the data (`src/data`) and the farm canvas were not touched.
 
 The goal in one line: **a button, once on screen, stays the same button until
 it genuinely goes away**, and a test fails if that stops being true.
 
-Each step below lands on its own, with its tests, and leaves the game
-shippable. Nothing changes for the player except presses that always work.
+## What the page code looks like now
 
-## 1. Standing integration tests first (before moving any code)
+```
+src/game/
+  main.js          the game while it runs: state, clock, saving, when to redraw
+  actions.js       what the buttons do (rules + a sound for how it went); no page, testable
+  platform.js      the device: sound switches, vibration, wake lock, install, back button, #perf
+  farmCanvas.js    the pixel farm (unchanged)
+  view.js          wires the page together: tabs, journal, pop-up cards
+  view/
+    dom.js         el(), the text cache, and morph(): change the page in place
+    text.js        how numbers and prices are worded (coins or beans)
+    status.js      the status column
+    projects.js  neighbours.js  seeds.js  guard.js  climb.js  exchange.js
+```
 
-Extend `tests/beanstalk/view.test.js` so the refactor has a net under it.
+A panel is `{ id, label, unlocked(state), wants?(state), render(state), press(dataset, handlers) }`.
+`render` builds what the tab should look like now; it remembers nothing.
+`view.js` morphs the page to match on every update.
 
-- **No lost presses.** For every panel, in the states that have countdowns
-  (after a gift, during a raid forecast, with the exchange repricing): press
-  down, run a few seconds of game, release; the button must be the same node
-  and the click must reach the game. Today this passes only because of the
-  interim "no rebuild under a finger" measure; after step 2 it must pass with
-  that measure removed.
-- **Play it through the page.** Drive the first ten minutes of a run by
-  clicking real buttons (Tend, buy, gift, cross) instead of calling the rules
-  directly, and check the farm gets where the bot gets.
-- **Press everything.** In an early, a mid and a late farm, open every tab and
-  press every enabled button once; nothing throws, and each press reaches a
-  handler.
-- **Stays in step.** After any sequence of ticks, the text on screen equals a
-  fresh page drawn from the same state (catches a panel going stale).
+To add a tab: write one file in `view/` with that shape and add it to the list
+in `view.js`.
 
-## 2. Panels update in place
+## What was planned and what happened
 
-Replace "signature changed, rebuild everything" with two separate steps per
-panel:
+1. **Standing integration tests first.** Done, in `tests/beanstalk/`:
+   - `dom.test.js`: `morph` keeps nodes that are still wanted, slots new ones
+     in, removes old ones, never reuses a canvas for another.
+   - `view.test.js`: the view alone, with recording handlers: nothing is
+     replaced when nothing changed; a countdown changes words and nothing
+     else; every kind of button reaches its handler; a disabled one does not.
+   - `page.test.js`: the real game behind the real page. A press held across
+     six seconds of game time is never lost, in seven situations that used to
+     rebuild; choices that appear (seedlings, a ledge) can be pressed; every
+     enabled button on every tab is pressed in an early, a mid and a late
+     farm; ten minutes are played through the page's own buttons; and after
+     any amount of play the page reads exactly as a fresh page would.
+   - Checked that the net holds: with `morph` changed back to "replace
+     everything", eight of these tests fail.
 
-- **shape**: the list of things in the panel (which projects, which
-  neighbours and gifts, which animals). Nodes are built or removed only when
-  the shape changes.
-- **values**: text, `disabled`, bar widths. Written into the existing nodes on
-  every update, through the same "only if different" cache used for the
-  status column.
+2. **Panels update in place.** Done, but by a different route from the one
+   planned. The plan was to split each panel by hand into "shape" (built
+   rarely) and "values" (written often). What was built instead is `morph`:
+   a panel still just describes itself from scratch, and one 50-line function
+   makes the page match while keeping every node that is still wanted. Same
+   outcome for the player, far less code per panel, and a new panel gets the
+   behaviour for free. Elements are matched by tag and `data-*` attributes.
 
-A countdown then changes one text node and nothing else. Consequences:
+   Consequences, as planned:
+   - the stopgap "no rebuild under a finger" is gone;
+   - the hand-written signatures and the "forget every signature" side door
+     (where the bug was) are gone: there is no "has this changed?" bookkeeping
+     left to get wrong;
+   - the six copies of focus and scroll restoring are gone (the nodes stay, so
+     focus and scroll stay).
 
-- the interim press-hold measure, `GUARD_MS` (the 350 ms click blackout) and
-  the six hand-written focus and scroll restores can all be deleted;
-- the "forget every signature" side door goes: prices are values, redrawn
-  like any other.
+   One thing kept that the plan said could go: **the 350 ms pause on the
+   project list after it changes shape.** It protects against a different
+   problem (you buy a one-off project, the next one slides up under the
+   pointer, a quick second click buys it), which in-place updates do not
+   solve. It now lives in `view/projects.js`.
 
-Order: Guard and Neighbours first (they rebuild once a second today), then
-Exchange, Projects, Seeds, Climb.
+   Cost: every update now builds the visible tab's description and compares
+   it. Measured in the browser at about 0.4 ms per tick-and-redraw on a
+   mid-game farm, the same as before.
 
-## 3. One module per panel
+3. **One module per panel.** Done as planned. Nothing is shared by name
+   between panels any more; the only cache left is the text cache in `dom.js`.
 
-Split `view.js` (about 650 lines, one closure) into `src/game/view/`:
-`status.js`, `tabs.js`, `projects.js`, `neighbours.js`, `seeds.js`, `guard.js`,
-`climb.js`, `exchange.js`, `journal.js`, over a small `dom.js` (the `el`
-helper, the text cache, the shape/values helper from step 2). Each panel
-exports one `create(root, data, handlers)` returning `update(state)`, owns its
-own cache, and can be tested alone. `view.js` becomes the list of panels.
+4. **`main.js` does one job.** Done. Device glue moved to `platform.js`; what
+   buttons do moved to `actions.js` (which is what lets `page.test.js` play
+   the real game); "the page needs redrawing" is one function, `changed()`.
 
-This is what makes the original collision impossible to write again: nothing
-is shared by name between panels.
+## Still true, still not done
 
-## 4. `main.js` does one job
-
-Move the browser and phone glue (wake lock, install prompt, service worker,
-back button, vibration, the audio unlock, the `#perf` meter) into
-`src/game/platform.js`. `main.js` keeps the loop and the handlers. Replace the
-`stale` flag with one function, `changed()`, that the loop and every handler
-call, so "the page needs redrawing" has a single entry point.
-
-## Not proposed
-
-- **Reworking how systems plug into `tick`.** The notes found no mistake that
-  came from it. Leave it until one does.
-- **A UI framework.** In-place updates for six small panels are a few dozen
-  lines of helper; a framework would be the first runtime dependency and a
-  build step for the website.
-- **Testing on iOS in automation.** Not possible with the tools here. The
-  standing test asserts the property Safari needs instead; a person with an
-  iPhone confirms it.
-
-## Size and order
-
-Steps 1 and 2 are the ones that fix things; 3 and 4 are tidying that makes
-the fix stick. A sensible stopping point exists after each.
+- **No automated test on iOS.** The tools here all run Chromium, which never
+  showed the bug. The tests assert the property Safari needs. A person with an
+  iPhone confirms it after changes to `view/dom.js`.
+- **`platform.js` and the loop in `main.js` have no unit tests** (they are
+  browser-only). They are exercised by the Android emulator runs and by hand.
+- **How systems plug into `tick`** (`core/sim.js`) was left alone, as planned.

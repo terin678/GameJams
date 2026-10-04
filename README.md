@@ -191,6 +191,11 @@ buttons. It saves itself every few seconds.
 - **Phone app (not released)**: `npm run build:app` makes a bundled, minified
   copy of the game in `app/www` for wrapping with Capacitor; see
   `app/README.md`. The website does not use it and has no build step.
+- **Where the page code lives**: `src/game/` (the loop in `main.js`, what the
+  buttons do in `actions.js`, the device in `platform.js`, one file per tab
+  in `view/`). `games/beanstalk/docs/refactor-plan.md` has the map and how
+  to add a tab. `tests/beanstalk/page.test.js` plays the game through the
+  real page in Node.
 - New systems appear as tabs beside Projects, and sections such as the Almanac
   stay hidden until the game reaches them.
 - **Light** (`src/data/sky.js`): a farm day is a minute, with dawn, sunset and

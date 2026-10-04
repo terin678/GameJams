@@ -87,11 +87,12 @@ the bot's time and move the bounds if the ratio is not about 2 to 3.
 
 ## Page code: a bug, its notes, and a refactor
 
-Buttons that would not press on an iPhone (issue 3) were traced to the page
-rebuilding every panel on every update. The fix, how it was found, and what
-else turned up are in `docs/unclickable-buttons.md`. The refactor proposed
-from those findings is in `docs/refactor-plan.md`; it waits for the owner's
-go-ahead, and for the fix to be confirmed on the iPhone.
+Buttons that would not press on an iPhone (issue 3, closed) were traced to the
+page rebuilding every panel on every update. The fix, how it was found, and
+what else turned up are in `docs/unclickable-buttons.md`. The refactor that
+followed is done and described in `docs/refactor-plan.md`: one file per tab,
+the page changed in place instead of rebuilt, and tests that play the game
+through the page. That file also says how to add a tab.
 
 ## Step 5 checklist: Capacitor and the Play Store
 

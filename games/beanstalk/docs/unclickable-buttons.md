@@ -124,6 +124,13 @@ that presses a Guard button, moves the raid countdown on, and checks the
 button is still the same node until release. The refactor should make this
 unnecessary; until then it protects every panel.
 
+## Afterwards
+
+The owner confirmed on the iPhone that presses land (4 October), and issue 3
+was closed. The refactor these notes fed is written up in `refactor-plan.md`;
+it removed the stopgap above along with the mechanism that made the bug
+possible.
+
 ## What else was seen (input for the refactor)
 
 - **For the refactor: whole-panel rebuilds.** Every panel is drawn by "work out

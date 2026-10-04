@@ -1,52 +1,11 @@
-// The page itself: the real index.html and the real view code, run against a
-// DOM in Node. These are the tests that would have caught the unclickable
-// buttons (games/beanstalk/docs/unclickable-buttons.md): they check that the
-// page leaves its buttons alone when nothing has changed, and that pressing a
-// button reaches the game.
+// The view on its own: the real index.html and the real view code, run against
+// a DOM in Node, with handlers that only record what was pressed. These check
+// that the page leaves its buttons alone when nothing has changed, and that
+// pressing a button reaches the game. (The game played through the page is in
+// page.test.js.)
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
-import { JSDOM, VirtualConsole } from 'jsdom';
-import { createView } from '../../games/beanstalk/src/game/view.js';
-import { createState, tick } from '../../games/beanstalk/src/core/sim.js';
-import { DATA, SKY } from '../../games/beanstalk/src/data/index.js';
-import { createRng } from '../../shared/rng.js';
-
-const html = readFileSync(new URL('../../games/beanstalk/index.html', import.meta.url), 'utf8');
-export const PANELS = ['projects', 'neighbours', 'seeds', 'guard', 'climb', 'exchange'];
-
-// A page with the view attached. `calls` records every handler the page invokes.
-export function openPage() {
-	// The chart asks for a canvas, which this DOM does not draw; that is fine, and need not be reported.
-	const dom = new JSDOM(html, { virtualConsole: new VirtualConsole() });
-	const { document } = dom.window;
-	const calls = [];
-	const handlers = new Proxy({}, { get: (_, name) => (...args) => { calls.push([name, ...args]); } });
-	const view = createView(document, { ...DATA, SKY }, handlers);
-	const $ = id => document.getElementById(id);
-	return {
-		document, view, calls, $,
-		// Shows a tab the way a player would, then lets the page catch up.
-		open(tab, state) {
-			[...$('tabs').querySelectorAll('button')].find(b => b.dataset.tab === tab).click();
-			view.update(state, 0);
-		},
-		called: name => calls.filter(c => c[0] === name),
-	};
-}
-
-// A farm far enough along that every tab is open and there is something to press in each.
-export function midGame() {
-	const rng = createRng(1);
-	const state = createState(DATA);
-	state.grown = 6e5;
-	state.height = 3000;
-	state.phase = 2;
-	state.coins = 5e6;
-	state.pages = 5000;
-	for (let t = 0; t < 2; t += 0.1) tick(state, 0.1, DATA, rng);
-	return state;
-}
+import { openPage, midGame, PANELS } from './support/page.js';
 
 test('every tab is there to open in the middle of the game', () => {
 	const page = openPage();
@@ -129,23 +88,30 @@ test('when the money changes from coins to beans, every price is redrawn, once',
 	assert.equal(page.$('wallet-label').textContent, 'Beans');
 });
 
-test('a panel is not rebuilt under a finger: the rebuild waits until the press ends', () => {
+test('a countdown changes the words on the page and nothing else', () => {
 	const page = openPage();
 	const state = midGame();
 	page.view.update(state, 0);
 	page.open('guard', state);
-	const { Event } = page.document.defaultView;
-	const plus = () => page.$('guard').querySelector('[data-post="duck"][data-delta="1"]');
-	const pressed = plus();
-	pressed.dispatchEvent(new Event('pointerdown', { bubbles: true }));
-	// The raid countdown moves on while the finger is down, which would normally rebuild the panel.
+	const buttons = [...page.$('guard').querySelectorAll('button')];
+	const heading = page.$('guard').querySelector('h3');
+	const before = heading.textContent;
 	state.time += 5;
 	page.view.update(state, 0);
-	assert.equal(plus(), pressed, 'still the same button under the finger');
-	pressed.dispatchEvent(new Event('pointerup', { bubbles: true }));
-	pressed.click();
-	assert.deepEqual(page.called('post'), [['post', 'duck', 1]]);
+	assert.notEqual(heading.textContent, before, 'the countdown moved on');
+	assert.match(heading.textContent, /Next raid in/);
+	assert.equal(page.$('guard').querySelector('h3'), heading, 'in the same heading');
+	assert.ok([...page.$('guard').querySelectorAll('button')].every((b, i) => b === buttons[i]), 'beside the same buttons');
+});
+
+test('a disabled button does nothing when pressed', () => {
+	const page = openPage();
+	const state = midGame();
+	state.coins = 0;
 	page.view.update(state, 0);
-	assert.notEqual(plus(), pressed, 'and it catches up afterwards');
-	assert.match(page.$('guard').textContent, /Next raid in/);
+	const b = page.$('projects').querySelector('[data-id][disabled]');
+	assert.ok(b, 'something unaffordable');
+	b.click();
+	b.dispatchEvent(new (page.document.defaultView.Event)('click', { bubbles: true }));
+	assert.deepEqual(page.called('buy'), []);
 });
