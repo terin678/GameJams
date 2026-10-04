@@ -252,8 +252,13 @@
 			body.backdrop #app {
 				padding-top: calc(var(--top-h, 70px) + min(133.33vw, 100dvh - var(--top-h, 70px) - var(--tend-h, 76px)) - 24px);
 			}
+			/* Layers, back to front: the farm; the cards; the two bars (4); pop-up
+			   cards (.overlay). The cards are positioned so they sit over the farm,
+			   but must NOT be given a z-index: the Tend bar lives inside #status, and
+			   a z-index there would trap it in that card's layer, under the cards
+			   that come after it. */
 			body.backdrop #status, body.backdrop #shop, body.backdrop #journal {
-				position: relative; z-index: 1; margin-bottom: 12px; padding: 12px 14px;
+				position: relative; margin-bottom: 12px; padding: 12px 14px;
 				background: rgba(16, 19, 28, 0.76); border: 1px solid var(--line); border-radius: 12px;
 			}
 			body.backdrop #status h2:first-of-type { margin-top: 10px; }

@@ -177,3 +177,14 @@ test('the shipping copy leaves out what is only for development and testing', as
 	assert.match(read(out, 'app.js'), /#perf/);
 	assert.match(read(out, 'app.js'), /window\.game\s*=/);
 });
+
+test('on a phone the Tend bar is above every card: no card is given a layer of its own', () => {
+	// The bar is inside #status. A z-index on the cards would trap it in that
+	// card's layer, and the cards after it would cover the button.
+	const rule = page.match(/body\.backdrop #status, body\.backdrop #shop, body\.backdrop #journal \{([^}]*)\}/);
+	assert.ok(rule, 'the rule for the cards in farm-behind mode');
+	assert.match(rule[1], /position: relative/);
+	assert.doesNotMatch(rule[1], /z-index/);
+	assert.match(page, /#tendbar \{\s*position: fixed;[^}]*z-index: 4/);
+	assert.match(page, /id="tendbar"/);
+});
