@@ -284,13 +284,13 @@
 
 	<main id="app">
 		<section id="scene">
-			<canvas id="farm" width="240" height="320" aria-label="Your farm and the beanstalk"></canvas>
+			<canvas id="farm" width="240" height="320" role="img" aria-label="Your farm and the beanstalk"></canvas>
 			<p id="calendar"></p>
 		</section>
 
 		<section id="journal">
 			<h2>Journal</h2>
-			<ul id="log"></ul>
+			<ul id="log" role="log" aria-live="polite" aria-label="Journal"></ul>
 		</section>
 
 		<section id="status">
@@ -334,7 +334,7 @@
 		</section>
 
 		<section id="shop">
-			<div id="tabs" role="toolbar" aria-label="Panels"></div>
+			<div id="tabs" role="toolbar" aria-label="Panels (left and right arrows move between them)"></div>
 			<div id="projects" class="panel"></div>
 			<div id="neighbours" class="panel" hidden></div>
 			<div id="seeds" class="panel" hidden></div>
@@ -345,7 +345,7 @@
 	</main>
 
 	<div id="away" class="overlay" hidden>
-		<div class="card" role="dialog" aria-labelledby="away-title">
+		<div class="card" role="dialog" aria-modal="true" aria-labelledby="away-title">
 			<h3 id="away-title">While you were away</h3>
 			<div id="away-body"></div>
 			<button id="away-ok" type="button">Back to work</button>
@@ -353,7 +353,7 @@
 	</div>
 
 	<div id="menu" class="overlay" hidden>
-		<div class="card" role="dialog" aria-labelledby="menu-title">
+		<div class="card" role="dialog" aria-modal="true" aria-labelledby="menu-title">
 			<h3 id="menu-title">Menu</h3>
 
 			<div id="install-box" hidden>
@@ -374,6 +374,13 @@
 				<button id="awake" type="button">Keep screen awake: off</button>
 			</div>
 
+			<div id="notify-box" hidden>
+				<h4>Reminder</h4>
+				<p>One notification, when the farm has done all it can without you. Nothing else, ever.</p>
+				<button id="notify" type="button">Tell me when the farm is waiting: off</button>
+				<p class="muted" id="notify-note"></p>
+			</div>
+
 			<h4>About</h4>
 			<!-- test-only -->
 			<p>Beanstalk is in testing: things will change, and the bug and idea links at the top are the way to say what should.</p>
@@ -390,7 +397,7 @@
 	</div>
 
 	<div id="ending" class="overlay" hidden>
-		<div class="card" role="dialog" aria-labelledby="ending-title">
+		<div class="card" role="dialog" aria-modal="true" aria-labelledby="ending-title">
 			<h3 id="ending-title">Every atom is bean.</h3>
 			<div id="ending-body"></div>
 			<button id="again" type="button">Plant it again (New Game+)</button>
