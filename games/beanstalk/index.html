@@ -52,6 +52,7 @@
 			border: 1px solid var(--line); border-radius: 8px; background: #000;
 		}
 		#calendar { margin: 8px 0 0; color: var(--muted); text-align: center; }
+		#calendar-top { display: none; }
 		#status p { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 		#status h2:first-of-type { margin-top: 14px; }
 		#journal h2 { margin-top: 0; }
@@ -241,7 +242,11 @@
 			.trait { grid-template-columns: 4.5rem 1fr; }
 			.trait .muted { grid-column: 1 / -1; }
 			#menu-card:focus { outline: none; }
-			#top { padding-top: calc(8px + env(safe-area-inset-top)); }
+			/* The top bar stays in view with the date in it: the season is one glance away
+			   wherever the page is scrolled to. (The copy under the farm is not needed here.) */
+			#top { position: sticky; top: 0; z-index: 4; background: var(--bg); padding-top: calc(8px + env(safe-area-inset-top)); }
+			#calendar-top { display: block; flex-basis: 100%; margin: 0; text-align: center; color: var(--ink); font-size: 12px; }
+			#calendar { display: none; }
 
 			/* Farm-behind mode: the farm fills the space between the top bar and the
 			   Tend button and stays put, while everything else scrolls over it on
@@ -260,12 +265,6 @@
 				position: absolute; top: 0; left: 50%; transform: translateX(-50%);
 				height: var(--farm-h); width: auto; max-width: none; margin: 0; border: 0; border-radius: 0;
 			}
-			body.backdrop #calendar {
-				position: absolute; top: 6px; left: 0; right: 0; margin: 0; font-size: 12px;
-				color: var(--ink); text-shadow: 0 1px 3px #000, 0 0 6px #000; transition: opacity 0.2s;
-			}
-			/* Once the page is scrolled over the farm, the date would show through the panels' text. */
-			body.backdrop.scrolled #calendar { opacity: 0; }
 			/* The page starts just below the farm, so the first thing you see is all of it. */
 			body.backdrop #app {
 				padding-top: calc(var(--top-h, 70px) + min(133.33vw, 100dvh - var(--top-h, 70px) - var(--tend-h, 76px)) - 24px);
@@ -298,6 +297,8 @@
 			<button id="music" type="button">Music: on</button>
 			<button id="open-menu" type="button">Menu</button>
 		</div>
+		<!-- The date, on a phone: in the bar that stays put, so the season can always be seen. -->
+		<p id="calendar-top">&nbsp;</p>
 	</header>
 
 	<main id="app">
