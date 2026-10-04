@@ -215,7 +215,7 @@
 			#status p { white-space: normal; }
 			.panel { height: 24rem; }
 			/* On a phone the Tend button stays under your thumb, whatever you scroll to. */
-			body { padding-bottom: calc(76px + env(safe-area-inset-bottom)); }
+			body { padding-bottom: calc(var(--tend-h, 76px) + env(safe-area-inset-bottom)); }
 			#tendbar {
 				position: fixed; left: 0; right: 0; bottom: 0; z-index: 4; margin: 0;
 				padding: 10px 16px calc(10px + env(safe-area-inset-bottom));
@@ -223,6 +223,17 @@
 			}
 			#tend { width: 100%; padding: 14px 20px; }
 			#tendbar kbd { display: none; }
+			/* Everything pressed with a thumb is at least 40px tall, with room between. */
+			#settings button, .gifts button, .post button, .trade button, .price button, .choices button, .box > button { min-height: 40px; }
+			.price button { min-width: 40px; }
+			.post { grid-template-columns: 1fr 2.6rem 1.5rem 2.6rem; }
+			#tabs { gap: 2px 18px; }
+			#tabs button { min-height: 40px; padding: 0 2px; }
+			.gifts { gap: 8px; }
+			/* A trait's bar gets the width; what it does goes on the line below. */
+			.trait { grid-template-columns: 4.5rem 1fr; }
+			.trait .muted { grid-column: 1 / -1; }
+			#menu-card:focus { outline: none; }
 			#top { padding-top: calc(8px + env(safe-area-inset-top)); }
 
 			/* Farm-behind mode: the farm fills the space between the top bar and the
@@ -353,7 +364,7 @@
 	</div>
 
 	<div id="menu" class="overlay" hidden>
-		<div class="card" role="dialog" aria-modal="true" aria-labelledby="menu-title">
+		<div class="card" id="menu-card" tabindex="-1" role="dialog" aria-modal="true" aria-labelledby="menu-title">
 			<h3 id="menu-title">Menu</h3>
 
 			<div id="backdrop-box">
