@@ -25,6 +25,8 @@ import { heartsOf, heartProgress, giftsFor, giftCost, canGive, waitFor, nextPerk
 // After the project list changes shape, clicks on it are ignored for a moment,
 // so a button that slid under the pointer isn't bought by accident.
 const GUARD_MS = 350;
+// A press holds off its panel's rebuilds for at most this long, in case the release is never seen.
+const HOLD_MS = 1500;
 
 // The panels of the right-hand column. A tab appears the first time `unlocked` is true.
 const TABS = [
@@ -57,22 +59,47 @@ export function createView(doc, data, handlers) {
 		node.append(...children);
 		return node;
 	};
-	const shown = new Map();
+	// Two caches, kept apart on purpose. `written` is the text last put in each
+	// element, by element id. `drawn` is what each panel last drew (a signature
+	// of everything it shows) plus a few flags, by name. They once shared one
+	// map, and an element id that matched a flag's name had every panel
+	// rebuilding on every update (docs/unclickable-buttons.md).
+	const written = new Map();
+	const drawn = new Map();
 	const set = (id, text) => {
-		if (shown.get(id) === text) return;
-		shown.set(id, text);
+		if (written.get(id) === text) return;
+		written.set(id, text);
 		$(id).textContent = text;
+	};
+	// Whether a panel has anything new to draw. While a finger or the mouse is
+	// down on a panel the answer is no: rebuilding it then would replace the
+	// button being pressed, and on an iPhone the press would be lost. The panel
+	// catches up on the first update after the press ends.
+	let held = null;
+	let heldUntil = 0;
+	const changed = (panel, sig) => {
+		if (drawn.get(panel) === sig) return false;
+		if (held === panel && Date.now() < heldUntil) return false;
+		drawn.set(panel, sig);
+		return true;
 	};
 	const show = (id, on) => { $(id).hidden = !on; };
 	// Shows a section that has just unlocked, with a glow the first time.
 	const reveal = (id, on) => {
 		if ($(id).hidden === !on) return;
 		$(id).hidden = !on;
-		if (on && shown.get('ready')) $(id).classList.add('reveal');
+		if (on && drawn.get('ready')) $(id).classList.add('reveal');
 	};
 	let guardUntil = 0;
 	let tab = 'projects';
 
+	for (const t of TABS) {
+		$(t.id).addEventListener('pointerdown', () => {
+			held = t.id;
+			heldUntil = Date.now() + HOLD_MS;
+		});
+	}
+	for (const type of ['pointerup', 'pointercancel']) doc.addEventListener(type, () => { held = null; });
 	$('tend').addEventListener('click', handlers.tend);
 	$('price-up').addEventListener('click', () => handlers.price(1));
 	$('price-down').addEventListener('click', () => handlers.price(-1));
@@ -133,16 +160,16 @@ export function createView(doc, data, handlers) {
 	function tabs(state) {
 		const open = TABS.filter(t => t.unlocked(state));
 		const sig = open.map(t => `${t.id}:${!!state.seen[`tab:${t.id}`]}:${!!t.wants?.(state, data)}`).join('|') + tab;
-		if (shown.get('tabs') === sig) return;
-		const known = shown.get('tabIds') ?? '';
-		shown.set('tabs', sig);
-		shown.set('tabIds', open.map(t => t.id).join('|'));
+		if (drawn.get('tabs') === sig) return;
+		const known = drawn.get('tabIds') ?? '';
+		drawn.set('tabs', sig);
+		drawn.set('tabIds', open.map(t => t.id).join('|'));
 		$('tabs').replaceChildren(...open.map(t => {
 			const fresh = t.id !== tab && (t.wants?.(state, data) || (t.id !== 'projects' && !state.seen[`tab:${t.id}`]));
 			const b = el('button', { type: 'button', className: `${t.id === tab ? 'on' : ''} ${fresh ? 'fresh' : ''}` }, t.label);
 			b.dataset.tab = t.id;
 			b.setAttribute('aria-pressed', String(t.id === tab));
-			if (shown.get('ready') && !known.includes(t.id)) b.classList.add('reveal');
+			if (drawn.get('ready') && !known.includes(t.id)) b.classList.add('reveal');
 			return b;
 		}));
 		for (const t of TABS) $(t.id).hidden = t.id !== tab;
@@ -165,12 +192,11 @@ export function createView(doc, data, handlers) {
 			return { def, n, cost: costText(costOf(def, n)), can: affordable(state, def) };
 		});
 		const sig = list.map(p => `${p.def.id}:${p.n}:${p.can}`).join('|');
-		if (shown.get('projects') === sig) return;
-		shown.set('projects', sig);
+		if (!changed('projects', sig)) return;
 		const members = list.map(p => p.def.id).join('|');
-		if (shown.get('members') !== members) {
-			if (shown.has('members')) guardUntil = Date.now() + GUARD_MS;
-			shown.set('members', members);
+		if (drawn.get('members') !== members) {
+			if (drawn.has('members')) guardUntil = Date.now() + GUARD_MS;
+			drawn.set('members', members);
 		}
 		const more = list.filter(p => repeatable(p.def));
 		const once = list.filter(p => !repeatable(p.def));
@@ -201,8 +227,7 @@ export function createView(doc, data, handlers) {
 			};
 		});
 		const sig = cards.map(c => `${c.def.id}:${c.friend.points}:${c.wait}:${c.gifts.map(x => `${x.g.id}${x.can ? 1 : 0}`).join('')}`).join('|');
-		if (shown.get('neighbours') === sig) return;
-		shown.set('neighbours', sig);
+		if (!changed('neighbours', sig)) return;
 		const focused = doc.activeElement?.dataset?.gift && [doc.activeElement.dataset.friend, doc.activeElement.dataset.gift];
 		const scroll = $('neighbours').scrollTop;
 		$('neighbours').replaceChildren(...cards.map(({ def, friend, hearts, wait, gifts: list }) => {
@@ -249,8 +274,7 @@ export function createView(doc, data, handlers) {
 		const can = canCross(state, S);
 		const sig = [JSON.stringify(line.traits), line.generation, growing === null ? 'idle' : Math.ceil(growing), can,
 			ribbonCount(line), line.judged, year].join('|');
-		if (shown.get('seeds') === sig) return;
-		shown.set('seeds', sig);
+		if (!changed('seeds', sig)) return;
 		const focused = doc.activeElement?.dataset?.seedling ?? (doc.activeElement?.dataset?.cross ? 'cross' : null);
 
 		const traits = S.traits.map(t => {
@@ -323,8 +347,7 @@ export function createView(doc, data, handlers) {
 		const options = trip.waiting ? enc.options.map(o => optionBlocked(state, o, T.friends)) : [];
 		const sig = [trip.ledge, trip.waiting, left === null ? '' : Math.ceil(left), blocked, options.join(','), trip.finds.length,
 			trip.anger, trip.said, blocked === 'short' ? formatHeight(state.height) : ''].join('|');
-		if (shown.get('climb') === sig) return;
-		shown.set('climb', sig);
+		if (!changed('climb', sig)) return;
 		const focused = doc.activeElement?.dataset?.option ?? (doc.activeElement?.dataset?.climb ? 'climb' : null);
 
 		let now;
@@ -403,8 +426,7 @@ export function createView(doc, data, handlers) {
 		const ex = state.exchange;
 		const canBuy = state.coins > 0;
 		const sig = [ex.price, ex.crates, ex.history.length, canBuy].join('|');
-		if (shown.get('exchange') === sig) return;
-		shown.set('exchange', sig);
+		if (!changed('exchange', sig)) return;
 		const d = doc.activeElement?.dataset ?? {};
 		const focused = d.buy ? `[data-buy="${d.buy}"]` : d.sell ? `[data-sell="${d.sell}"]` : null;
 
@@ -478,8 +500,7 @@ export function createView(doc, data, handlers) {
 		});
 		const sig = [left, JSON.stringify(g.roster), g.posts, g.wins, g.losses, JSON.stringify(fight), g.said, canBuild,
 			JSON.stringify(g.levels), state.phase, training.map(x => x.can).join(''), blightSig(state)].join('|');
-		if (shown.get('guard') === sig) return;
-		shown.set('guard', sig);
+		if (!changed('guard', sig)) return;
 		const d = doc.activeElement?.dataset ?? {};
 		const focused = d.post ? `[data-post="${d.post}"][data-delta="${d.delta}"]` : d.build ? '[data-build]' : d.train ? `[data-train="${d.train}"]`
 			: d.swarm ? `[data-swarm="${d.swarm}"]` : null;
@@ -536,8 +557,8 @@ export function createView(doc, data, handlers) {
 
 	function journal(state) {
 		const sig = `${state.log.length}:${state.log[0]}`;
-		if (shown.get('log') === sig) return;
-		shown.set('log', sig);
+		if (drawn.get('log') === sig) return;
+		drawn.set('log', sig);
 		$('log').replaceChildren(...state.log.map(text => el('li', {}, text)));
 		$('log').scrollTop = 0;
 	}
@@ -548,9 +569,9 @@ export function createView(doc, data, handlers) {
 			const { mods } = state;
 			// When the money changes, every panel that quotes a price is redrawn.
 			money = moneyOf(state);
-			if (shown.get('rate') !== state.rate) {
-				for (const k of ['projects', 'neighbours', 'seeds', 'climb', 'guard', 'exchange']) shown.delete(k);
-				shown.set('rate', state.rate);
+			if (drawn.get('money') !== state.rate) {
+				for (const k of ['projects', 'neighbours', 'seeds', 'climb', 'guard', 'exchange']) drawn.delete(k);
+				drawn.set('money', state.rate);
 			}
 			const cal = calendar(state.day, data.SEASONS, T.calendar);
 			const weather = data.WEATHER.find(w => w.id === state.weather) ?? null;
@@ -611,7 +632,7 @@ export function createView(doc, data, handlers) {
 			if (tab === 'guard') guard(state);
 			if (tab === 'exchange') exchange(state);
 			journal(state);
-			shown.set('ready', true);   // from now on, anything that appears is news
+			drawn.set('ready', true);   // from now on, anything that appears is news
 		},
 
 		muted(on) {

@@ -12,6 +12,7 @@
 		"build:app:ship": "node tools/build-app.mjs --ship"
 	},
 	"devDependencies": {
-		"esbuild": "^0.28.2"
+		"esbuild": "^0.28.2",
+		"jsdom": "^24.1.3"
 	}
 }
