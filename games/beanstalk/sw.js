@@ -13,20 +13,21 @@ const CACHE = 'beanstalk';
 const SLOW_MS = 4000;   // after this long, a kept copy is better than waiting
 
 self.addEventListener('install', () => self.skipWaiting());
-self.addEventListener('activate', event => event.waitUntil(self.clients.claim()));
+self.addEventListener('activate', event => event.waitUntil(Promise.all([self.clients.claim(), prune()])));
 
 self.addEventListener('fetch', event => {
 	const { request } = event;
 	if (request.method !== 'GET' || new URL(request.url).origin !== self.location.origin) return;
-	event.respondWith(respond(request.url));
+	event.respondWith(respond(request.url, event));
 });
 
-async function respond(url) {
+async function respond(url, event) {
 	const cache = await caches.open(CACHE);
 	// 'no-cache' makes the browser check with the server instead of trusting
 	// its ten-minute copy; unchanged files still come back as a quick "not modified".
 	const fresh = fetch(url, { cache: 'no-cache' }).then(response => {
-		if (response.ok) cache.put(url, response.clone());
+		// The worker is kept alive until the copy is stored. A full disk is not the page's problem.
+		if (response.ok) event.waitUntil(cache.put(url, response.clone()).catch(() => {}));
 		return response;
 	});
 	fresh.catch(() => {});   // if we answer from the kept copy, a late failure is not news
@@ -41,4 +42,20 @@ async function respond(url) {
 		if (kept) return kept;
 		throw offline;
 	}
+}
+
+// A new version of this worker arrives with a new version of the site, so
+// that is the moment to forget kept files the site no longer has (it once
+// published dozens of source files; now it is a handful). A file is only
+// forgotten when the server says it is gone; with no answer, it stays.
+async function prune() {
+	const cache = await caches.open(CACHE);
+	await Promise.all((await cache.keys()).map(async request => {
+		try {
+			const response = await fetch(request.url, { method: 'HEAD', cache: 'no-cache' });
+			if (response.status === 404) await cache.delete(request);
+		} catch (offline) {
+			// Keep it.
+		}
+	}));
 }
