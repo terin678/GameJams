@@ -290,8 +290,7 @@
 		<nav id="links">
 			<a href="../../">&larr; all games</a> &middot;
 			<!-- test-only: left out of the shipping app (tools/build.mjs) -->
-			<a data-feedback="bug" href="https://github.com/terin678/GameJams/issues/new/choose">bug</a> &middot;
-			<a data-feedback="idea" href="https://github.com/terin678/GameJams/issues/new/choose">idea</a>
+			<a class="feedback" href="https://discord.gg/4RRjmSPFCx" target="_blank" rel="noopener">feedback</a>
 			<!-- /test-only -->
 		</nav>
 		<div id="settings">
@@ -425,11 +424,11 @@
 			<p class="muted">&copy; 2026 Veracity. All rights reserved.</p>
 
 			<h4>Report a problem</h4>
-			<p>Something broke, or something should be different? Send this. It says how far your farm has got, what you are playing on, and any errors the game hit. It says nothing about you, and it goes nowhere unless you send it.</p>
+			<p>Something broke, or something should be different? Copy this and post it on the game's Discord. It says how far your farm has got, what you are playing on, and any errors the game hit. It says nothing about you, and it goes nowhere unless you post it.</p>
 			<textarea id="report-text" readonly rows="7" aria-label="The report"></textarea>
 			<div class="row">
-				<a id="report-email" class="button" href="#" hidden>Email it</a>
 				<button id="report-copy" type="button">Copy it</button>
+				<a id="report-link" class="button" href="#" target="_blank" rel="noopener" hidden></a>
 			</div>
 			<p class="muted" id="report-note" role="status"></p>
 
