@@ -53,7 +53,6 @@
 		}
 		#calendar { margin: 8px 0 0; color: var(--muted); text-align: center; }
 		#calendar-top { display: none; }
-		#status p { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 		#status h2:first-of-type { margin-top: 14px; }
 		#journal h2 { margin-top: 0; }
 		kbd {
@@ -222,7 +221,6 @@
 		@media (max-width: 720px) {
 			#app { grid-template-columns: minmax(0, 1fr); grid-template-areas: 'scene' 'status' 'shop' 'journal'; }
 			#farm { width: auto; height: 32vh; margin: 0 auto; }
-			#status p { white-space: normal; }
 			.panel { height: 24rem; }
 			/* On a phone the Tend button stays under your thumb, whatever you scroll to. */
 			body { padding-bottom: calc(var(--tend-h, 76px) + env(safe-area-inset-bottom)); }
@@ -283,6 +281,13 @@
 			body.backdrop #status h2:first-of-type { margin-top: 10px; }
 		}
 		@media (min-width: 721px) { #backdrop-box { display: none; } }
+		/* A tablet is wider than a phone and still touched: thumb-sized targets go by the pointer, not the width. */
+		@media (pointer: coarse) {
+			#settings button, .gifts button, .post button, .trade button, .price button, .choices button, .box > button { min-height: 40px; }
+			.price button { min-width: 40px; }
+			#tabs button { min-height: 40px; padding: 0 2px; }
+			.gifts { gap: 8px; }
+		}
 	</style>
 </head>
 <body>
