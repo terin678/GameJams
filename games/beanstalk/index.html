@@ -57,10 +57,12 @@
 		#calendar-top { display: none; }
 		#status h2:first-of-type { margin-top: 14px; }
 		#journal h2 { margin-top: 0; }
+		/* The Space hint is for a keyboard; only a fine pointer that can hover says there is one. */
 		kbd {
 			font: inherit; font-size: 11px; color: var(--muted); border: 1px solid var(--line);
-			border-radius: 4px; padding: 1px 5px;
+			border-radius: 4px; padding: 1px 5px; display: none;
 		}
+		@media (hover: hover) and (pointer: fine) { #tendbar kbd { display: inline-block; } }
 
 		/* Something new has unlocked: a brief glow so it gets noticed. */
 		@keyframes reveal {
