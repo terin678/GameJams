@@ -119,6 +119,7 @@
 		.panel {
 			display: grid; gap: 6px; align-content: start; height: 40rem; max-height: calc(100vh - 110px);
 			min-height: 22rem; overflow-y: auto; padding-right: 4px; scrollbar-width: thin;
+			mask-image: linear-gradient(#000 calc(100% - 1.4rem), transparent);
 		}
 		.panel[hidden] { display: none; }
 		#projects h3 {
@@ -182,6 +183,8 @@
 		#log {
 			list-style: none; margin: 0; padding: 0; color: var(--muted);
 			height: 9.2rem; overflow-y: auto; scrollbar-width: thin;
+			/* Fades at the bottom edge, so a half-shown line reads as more below, not as cut off. */
+			mask-image: linear-gradient(#000 calc(100% - 1.4rem), transparent);
 		}
 		#log li:first-child { color: var(--ink); }
 		#log li::before { content: '> '; color: var(--bean); }
@@ -316,9 +319,8 @@
 			<a class="feedback" href="https://discord.gg/4RRjmSPFCx" target="_blank" rel="noopener">feedback</a>
 			<!-- /test-only -->
 		</nav>
+		<!-- Just the Menu: sound and music are settings inside it, so the bar over the farm is one row (issue #25). -->
 		<div id="settings">
-			<button id="mute" type="button">Sound: on</button>
-			<button id="music" type="button">Music: on</button>
 			<button id="open-menu" type="button">Menu</button>
 		</div>
 		<!-- The date, on a phone: in the bar that stays put, so the season can always be seen. -->
@@ -406,6 +408,12 @@
 	<div id="menu" class="overlay" data-closable hidden>
 		<div class="card" id="menu-card" tabindex="-1" role="dialog" aria-modal="true" aria-labelledby="menu-title">
 			<h3 id="menu-title">Menu</h3>
+
+			<div id="sound-box">
+				<h4>Sound</h4>
+				<button id="mute" type="button">Sound: on</button>
+				<button id="music" type="button">Music: on</button>
+			</div>
 
 			<div id="backdrop-box">
 				<h4>Farm view</h4>
