@@ -30,6 +30,8 @@
 			display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center;
 			gap: 6px 16px; padding: 8px 16px; font-size: 12px; color: var(--muted);
 		}
+		/* The links stand apart (no text between them), so none is mistaken for plain words. */
+		#links { display: flex; gap: 12px; }
 		#links a { color: var(--muted); text-decoration: none; }
 		#links a:hover { color: var(--bean); }
 		#settings { display: flex; gap: 6px; }
@@ -103,7 +105,7 @@
 			border-bottom: 1px solid var(--line);
 		}
 		#tabs button {
-			position: relative; background: none; border: none; border-radius: 0; padding: 0 0 2px;
+			position: relative; background: none; border: none; border-radius: 0; padding: 0 0 2px; min-height: 24px;   /* a pointer target, WCAG 2.5.8 */
 			font-size: 12px; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase;
 			color: var(--muted); border-bottom: 2px solid transparent;
 		}
@@ -134,7 +136,7 @@
 		.friend { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 9px 11px; }
 		.friend .who { display: flex; align-items: baseline; gap: 6px; }
 		.friend .hearts { margin-left: auto; color: #ff7aa8; letter-spacing: 1px; white-space: nowrap; }
-		.friend .hearts i { font-style: normal; color: var(--line); }
+		.friend .hearts i { font-style: normal; color: var(--muted); }   /* outlines, readable, not dimmed into the panel */
 		.friend .bar { height: 4px; margin: 5px 0 4px; background: var(--bg); border-radius: 2px; overflow: hidden; }
 		.friend .bar i { display: block; height: 100%; background: #ff7aa8; border-radius: 2px; transition: width 0.4s; }
 		.friend p { font-size: 12px; min-height: 1.5em; }
@@ -314,7 +316,7 @@
 <body>
 	<header id="top">
 		<nav id="links">
-			<a href="../../">&larr; all games</a> &middot;
+			<a href="../../">&larr; all games</a>
 			<!-- test-only: left out of the shipping app (tools/build.mjs) -->
 			<a class="feedback" href="https://discord.gg/4RRjmSPFCx" target="_blank" rel="noopener">feedback</a>
 			<!-- /test-only -->
@@ -335,7 +337,8 @@
 
 		<section id="journal">
 			<h2>Journal</h2>
-			<ul id="log" role="log" aria-live="polite" aria-label="Journal"></ul>
+			<!-- The live region wraps the list: a list given role=log is no list to a reader. The list scrolls, so it takes the keyboard. -->
+			<div role="log" aria-live="polite" aria-label="Journal"><ul id="log" tabindex="0" aria-label="Journal entries"></ul></div>
 		</section>
 
 		<section id="status">
@@ -380,12 +383,12 @@
 
 		<section id="shop">
 			<div id="tabs" role="toolbar" aria-label="Panels (left and right arrows move between them)"></div>
-			<div id="projects" class="panel"></div>
-			<div id="neighbours" class="panel" hidden></div>
-			<div id="seeds" class="panel" hidden></div>
-			<div id="climb" class="panel" hidden></div>
-			<div id="guard" class="panel" hidden></div>
-			<div id="exchange" class="panel" hidden></div>
+			<div id="projects" class="panel" tabindex="0"></div>
+			<div id="neighbours" class="panel" tabindex="0" hidden></div>
+			<div id="seeds" class="panel" tabindex="0" hidden></div>
+			<div id="climb" class="panel" tabindex="0" hidden></div>
+			<div id="guard" class="panel" tabindex="0" hidden></div>
+			<div id="exchange" class="panel" tabindex="0" hidden></div>
 		</section>
 	</main>
 
@@ -459,7 +462,7 @@
 			<textarea id="report-text" readonly rows="7" aria-label="The report"></textarea>
 			<div class="row">
 				<button id="report-copy" type="button">Copy it</button>
-				<a id="report-link" class="button" href="#" target="_blank" rel="noopener" hidden></a>
+				<a id="report-link" class="button" href="#" target="_blank" rel="noopener" hidden>Open it</a>
 			</div>
 			<p class="muted" id="report-note" role="status"></p>
 
