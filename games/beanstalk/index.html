@@ -20,22 +20,24 @@
 		}
 		* { box-sizing: border-box; }
 		/* Fast taps must not zoom the page (pinch still does), select text or flash. */
-		html { touch-action: manipulation; -webkit-text-size-adjust: 100%; }
+		/* Text is sized in rem from the root, and the root is the browser's own size, so
+		   the text size a person set on their phone or browser is the size they get (#28). */
+		html { touch-action: manipulation; -webkit-text-size-adjust: 100%; font-size: 100%; }
 		button { touch-action: manipulation; user-select: none; -webkit-user-select: none; -webkit-tap-highlight-color: transparent; }
 		body {
 			margin: 0; background: var(--bg); color: var(--ink);
-			font: 14px/1.5 ui-monospace, 'Cascadia Mono', Menlo, Consolas, monospace;
+			font: 0.875rem/1.5 ui-monospace, 'Cascadia Mono', Menlo, Consolas, monospace;
 		}
 		#top {
 			display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center;
-			gap: 6px 16px; padding: 8px 16px; font-size: 12px; color: var(--muted);
+			gap: 6px 16px; padding: 8px 16px; font-size: 0.75rem; color: var(--muted);
 		}
 		/* The links stand apart (no text between them), so none is mistaken for plain words. */
 		#links { display: flex; gap: 12px; }
 		#links a { color: var(--muted); text-decoration: none; }
 		#links a:hover { color: var(--bean); }
 		#settings { display: flex; gap: 6px; }
-		#settings button { font-size: 12px; padding: 3px 8px; }
+		#settings button { font-size: 0.75rem; padding: 3px 8px; }
 
 		/* The desktop layout (src/data/layouts.js names the layouts and their widths;
 		   the @media queries below carry the same numbers, and a test holds them to it).
@@ -61,7 +63,7 @@
 		#journal h2 { margin-top: 0; }
 		/* The Space hint is for a keyboard; only a fine pointer that can hover says there is one. */
 		kbd {
-			font: inherit; font-size: 11px; color: var(--muted); border: 1px solid var(--line);
+			font: inherit; font-size: 0.6875rem; color: var(--muted); border: 1px solid var(--line);
 			border-radius: 4px; padding: 1px 5px; display: none;
 		}
 		@media (hover: hover) and (pointer: fine) { #tendbar kbd { display: inline-block; } }
@@ -75,16 +77,16 @@
 		.reveal { animation: reveal var(--reveal) ease-out; border-radius: 6px; }   /* --reveal is set by view.js, which also times it */
 		@media (prefers-reduced-motion: reduce) { .reveal { animation: none; } }
 
-		h1 { margin: 0; font-size: 26px; letter-spacing: 0.06em; }
-		h1 small { font-size: 13px; color: var(--gold); letter-spacing: 0; font-weight: 400; }
+		h1 { margin: 0; font-size: 1.625rem; letter-spacing: 0.06em; }
+		h1 small { font-size: 0.8125rem; color: var(--gold); letter-spacing: 0; font-weight: 400; }
 		h2 {
-			margin: 20px 0 6px; padding-bottom: 3px; font-size: 12px; font-weight: 600;
+			margin: 20px 0 6px; padding-bottom: 3px; font-size: 0.75rem; font-weight: 600;
 			letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted);
 			border-bottom: 1px solid var(--line);
 		}
 		p { margin: 2px 0; }
-		.big { font-size: 20px; }
-		.big b { color: var(--bean); font-size: 30px; }
+		.big { font-size: 1.25rem; }
+		.big b { color: var(--bean); font-size: 1.875rem; }
 		.muted { color: var(--muted); }
 		b { font-weight: 700; }
 
@@ -95,7 +97,7 @@
 		button:hover:not(:disabled), button:focus-visible { border-color: var(--bean); background: var(--panel-hi); outline: none; }
 		button:active:not(:disabled) { transform: translateY(1px); }
 		button:disabled { opacity: 0.6; cursor: default; }
-		#tend { font-size: 16px; padding: 10px 20px; width: 190px; border-color: var(--bean); }
+		#tend { font-size: 1rem; padding: 10px 20px; width: 190px; border-color: var(--bean); }
 		.row { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; }
 		.price button { padding: 2px 9px; }
 
@@ -106,7 +108,7 @@
 		}
 		#tabs button {
 			position: relative; background: none; border: none; border-radius: 0; padding: 0 0 2px; min-height: 24px;   /* a pointer target, WCAG 2.5.8 */
-			font-size: 12px; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase;
+			font-size: 0.75rem; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase;
 			color: var(--muted); border-bottom: 2px solid transparent;
 		}
 		#tabs button:hover, #tabs button:focus-visible { color: var(--ink); background: none; }
@@ -125,13 +127,13 @@
 		}
 		.panel[hidden] { display: none; }
 		#projects h3 {
-			margin: 6px 0 0; font-size: 11px; font-weight: 400; color: var(--muted);
+			margin: 6px 0 0; font-size: 0.6875rem; font-weight: 400; color: var(--muted);
 			letter-spacing: 0.08em; text-transform: uppercase;
 		}
 		#projects h3:first-child { margin-top: 0; }
 		#projects button { text-align: left; padding: 7px 10px; }
 		#projects .cost { color: var(--gold); }
-		#projects small { display: block; color: var(--muted); font-size: 12px; }
+		#projects small { display: block; color: var(--muted); font-size: 0.75rem; }
 
 		.friend { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 9px 11px; }
 		.friend .who { display: flex; align-items: baseline; gap: 6px; }
@@ -139,10 +141,10 @@
 		.friend .hearts i { font-style: normal; color: var(--muted); }   /* outlines, readable, not dimmed into the panel */
 		.friend .bar { height: 4px; margin: 5px 0 4px; background: var(--bg); border-radius: 2px; overflow: hidden; }
 		.friend .bar i { display: block; height: 100%; background: #ff7aa8; border-radius: 2px; transition: width 0.4s; }
-		.friend p { font-size: 12px; min-height: 1.5em; }
-		.friend .said { font-size: 13px; font-style: italic; }
+		.friend p { font-size: 0.75rem; min-height: 1.5em; }
+		.friend .said { font-size: 0.8125rem; font-style: italic; }
 		.gifts { display: flex; flex-wrap: wrap; gap: 5px; margin: 6px 0 4px; }
-		.gifts button { font-size: 12px; padding: 3px 8px; background: var(--bg); }
+		.gifts button { font-size: 0.75rem; padding: 3px 8px; background: var(--bg); }
 		.gifts .cost { color: var(--gold); }
 		.gifts .mark { display: inline-block; width: 1ch; text-align: center; color: var(--muted); }
 		.gifts .love { border-color: #ff7aa8; }
@@ -151,31 +153,31 @@
 		.gifts .dislike { opacity: 0.55; }
 
 		.box { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 9px 11px; }
-		.box h3 { margin: 0 0 6px; font-size: 13px; }
-		.box p { font-size: 12px; }
-		.trait { display: grid; grid-template-columns: 4.5rem 1fr auto; gap: 8px; align-items: center; font-size: 13px; margin: 3px 0; }
+		.box h3 { margin: 0 0 6px; font-size: 0.8125rem; }
+		.box p { font-size: 0.75rem; }
+		.trait { display: grid; grid-template-columns: 4.5rem 1fr auto; gap: 8px; align-items: center; font-size: 0.8125rem; margin: 3px 0; }
 		.trait .bar { height: 6px; background: var(--bg); border-radius: 3px; overflow: hidden; }
 		.trait .bar i { display: block; height: 100%; background: var(--bean); }
 		.choices { display: grid; gap: 5px; margin-top: 6px; }
 		.choices button.on { border-color: var(--bean); }
 		.choices button small { display: block; color: var(--muted); }
-		#ending h4 { margin: 12px 0 0; font-size: 13px; }
+		#ending h4 { margin: 12px 0 0; font-size: 0.8125rem; }
 		#ending-title:focus { outline: none; }
-		.choices button { text-align: left; font-size: 12px; padding: 6px 9px; background: var(--bg); }
-		.box .story { font-size: 13px; font-style: italic; margin-bottom: 6px; }
-		.box .said { font-size: 13px; color: var(--ink); }
-		#feats { margin: 6px 0; padding-left: 1.1rem; font-size: 12px; }
+		.choices button { text-align: left; font-size: 0.75rem; padding: 6px 9px; background: var(--bg); }
+		.box .story { font-size: 0.8125rem; font-style: italic; margin-bottom: 6px; }
+		.box .said { font-size: 0.8125rem; color: var(--ink); }
+		#feats { margin: 6px 0; padding-left: 1.1rem; font-size: 0.75rem; }
 		#feats li.todo { color: var(--muted); }
-		#feats-box summary { cursor: pointer; font-size: 13px; }
-		.gains { margin: 0; padding-left: 1.1rem; font-size: 12px; }
-		.post { display: grid; grid-template-columns: 1fr 2rem 1.5rem 2rem; gap: 4px 6px; align-items: center; font-size: 13px; margin: 4px 0; }
-		.post b + span { font-size: 12px; }
+		#feats-box summary { cursor: pointer; font-size: 0.8125rem; }
+		.gains { margin: 0; padding-left: 1.1rem; font-size: 0.75rem; }
+		.post { display: grid; grid-template-columns: 1fr 2rem 1.5rem 2rem; gap: 4px 6px; align-items: center; font-size: 0.8125rem; margin: 4px 0; }
+		.post b + span { font-size: 0.75rem; }
 		.post button { padding: 3px 0; }
 		.post .n { text-align: center; font-weight: 700; }
-		.post .train { grid-column: 1 / -1; justify-self: start; padding: 3px 9px; font-size: 12px; }
+		.post .train { grid-column: 1 / -1; justify-self: start; padding: 3px 9px; font-size: 0.75rem; }
 		.box > button { margin-top: 6px; }
 		.chart { display: block; width: 100%; height: 72px; background: var(--bg); border-radius: 6px; margin: 4px 0 6px; }
-		.trade { display: flex; gap: 6px; align-items: center; font-size: 13px; margin: 5px 0; }
+		.trade { display: flex; gap: 6px; align-items: center; font-size: 0.8125rem; margin: 5px 0; }
 		.trade span { width: 2.6rem; }
 		.trade button { flex: 1; padding: 5px 0; }
 		.up { color: var(--bean); }
@@ -201,22 +203,22 @@
 			border-radius: 10px; padding: 20px 24px;
 			max-height: calc(100dvh - 32px); overflow-y: auto;
 		}
-		.card h3 { margin: 0 0 8px; font-size: 18px; color: var(--bean); }
+		.card h3 { margin: 0 0 8px; font-size: 1.125rem; color: var(--bean); }
 		#ending .card { text-align: center; padding: 28px 32px; max-width: 440px; }
-		#ending h3 { font-size: 24px; margin-bottom: 18px; }
+		#ending h3 { font-size: 1.5rem; margin-bottom: 18px; }
 		.stats { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 0 0 18px; }
 		.stats div { background: var(--bg); border: 1px solid var(--line); border-radius: 8px; padding: 8px 6px; }
-		.stats dt { font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); }
-		.stats dd { margin: 2px 0 0; font-size: 20px; font-weight: 700; color: var(--ink); }
+		.stats dt { font-size: 0.6875rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); }
+		.stats dd { margin: 2px 0 0; font-size: 1.25rem; font-weight: 700; color: var(--ink); }
 		#ending p { color: var(--muted); margin: 6px 0; }
 		#ending p.gold { color: var(--gold); }
 		#ending button { margin-top: 18px; border-color: var(--bean); }
 		.card button { margin-top: 14px; padding: 8px 16px; }
 		#menu .card { width: min(440px, 100%); }
-		#report-text { width: 100%; box-sizing: border-box; font: 11px/1.4 ui-monospace, monospace; color: var(--muted); background: var(--bg); border: 1px solid var(--line, #2a3142); border-radius: 6px; padding: 6px 8px; resize: vertical; }
+		#report-text { width: 100%; box-sizing: border-box; font: 0.6875rem/1.4 ui-monospace, monospace; color: var(--muted); background: var(--bg); border: 1px solid var(--line, #2a3142); border-radius: 6px; padding: 6px 8px; resize: vertical; }
 		a.button { display: inline-block; margin-top: 14px; padding: 8px 16px; border: 1px solid var(--line, #2a3142); border-radius: 8px; color: inherit; text-decoration: none; }
-		#menu h4 { margin: 16px 0 4px; font-size: 12px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); }
-		#menu p { font-size: 12px; color: var(--muted); }
+		#menu h4 { margin: 16px 0 4px; font-size: 0.75rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); }
+		#menu p { font-size: 0.75rem; color: var(--muted); }
 		#menu button { margin-top: 6px; }
 		#menu .danger { border-color: #ff8a80; }
 
@@ -256,7 +258,7 @@
 			/* The top bar stays in view with the date in it: the season is one glance away
 			   wherever the page is scrolled to. (The copy under the farm is not needed here.) */
 			#top { position: sticky; top: 0; z-index: 4; background: var(--bg); padding-top: calc(8px + env(safe-area-inset-top)); }
-			#calendar-top { display: block; flex-basis: 100%; margin: 0; text-align: center; color: var(--ink); font-size: 12px; }
+			#calendar-top { display: block; flex-basis: 100%; margin: 0; text-align: center; color: var(--ink); font-size: 0.75rem; }
 			#calendar { display: none; }
 
 			/* Farm-behind mode: the farm fills the space between the top bar and the
@@ -444,7 +446,7 @@
 			</details>
 			<p class="muted" id="bests"></p>
 			<div id="services-box" hidden>
-				<p>They are kept on this device. Switch this on to also send them, and your best scores, to <span id="services-name"></span>; that is the only thing the game ever sends.</p>
+				<p>They are kept on this device. Switch this on to also send them, and your best scores, to <span id="services-name"></span>; nothing else about your farm ever leaves this device.</p>
 				<button id="services" type="button">Off</button>
 				<button id="services-show" type="button" hidden>See them there</button>
 				<p class="muted" id="services-note"></p>
@@ -455,6 +457,7 @@
 			<p>Beanstalk is in testing: things will change, and "Report a problem" below is the way to say what should.</p>
 			<!-- /test-only -->
 			<p>An idle farm that gets out of hand. <a href="privacy.html">Privacy</a></p>
+			<p class="muted" id="integrity-note" hidden></p>
 			<p class="muted">&copy; 2026 Veracity. All rights reserved.</p>
 
 			<h4>Report a problem</h4>
