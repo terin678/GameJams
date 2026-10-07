@@ -285,22 +285,17 @@
 			body.backdrop #status h2:first-of-type { margin-top: 10px; }
 		}
 		@media (min-width: 721px) {
-			/* Farm-behind mode on a wide screen: the farm fills the window under the top
-			   bar and the columns scroll over it on see-through cards. The same option as
-			   on a phone (the website and the app share one feature set); it is off to
-			   begin with here, because the farm is in view anyway. */
+			/* Farm-behind mode on a wide screen: the farm's column stays in view while
+			   the panels scroll, under a top bar that stays too. The same option as on
+			   a phone (the website and the app share one feature set), but a portrait
+			   picture cannot be the backdrop of a landscape window, so the columns keep
+			   their places. Off to begin with here: the farm is in view anyway. */
 			body.backdrop #top { position: sticky; top: 0; z-index: 4; background: var(--bg); border-bottom: 1px solid var(--line); }
-			body.backdrop #calendar-top { display: block; flex-basis: 100%; margin: 0; text-align: center; color: var(--ink); font-size: 12px; }
-			body.backdrop #scene { position: fixed; top: var(--top-h, 70px); bottom: 0; left: 0; right: 0; z-index: 0; overflow: hidden; background: var(--bg); }
-			/* The farm stands where its own column was, on the left, so the cards cover as little of it as they can. */
-			body.backdrop #farm { position: absolute; top: 0; left: 16px; height: min(100%, var(--farm-max, 100%)); width: auto; max-width: none; margin: 0; border: 0; border-radius: 0; }
-			body.backdrop #calendar { display: none; }
-			body.backdrop #app { grid-template-areas: '. status shop' 'journal status shop'; }
-			body.backdrop #status, body.backdrop #shop, body.backdrop #journal {
-				position: relative; padding: 12px 14px;
-				background: rgba(16, 19, 28, 0.76); border: 1px solid var(--line); border-radius: 12px;
-			}
-			body.backdrop #journal { align-self: end; }
+			/* The farm and the journal share the first column's whole height, so both can stick;
+			   --scene-h, the farm box's height, is measured by main.js like the bars are. */
+			body.backdrop #app { grid-template-areas: 'scene status shop' 'scene status shop'; }
+			body.backdrop #scene { position: sticky; top: calc(var(--top-h, 70px) + 8px); align-self: start; }
+			body.backdrop #journal { grid-area: scene; align-self: start; position: sticky; top: calc(var(--top-h, 70px) + 20px + var(--scene-h, 0px)); margin-top: calc(var(--scene-h, 0px) + 12px); }
 		}
 		/* A tablet is wider than a phone and still touched: thumb-sized targets go by the pointer, not the width. */
 		@media (pointer: coarse) {
