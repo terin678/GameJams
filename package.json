@@ -5,7 +5,7 @@
 	"description": "Game jam portal: small browser games on GitHub Pages",
 	"type": "module",
 	"scripts": {
-		"test": "node --test tests/",
+		"test": "node --test \"tests/**/*.test.js\"",
 		"serve": "npx --yes http-server -p 8620 -c-1 .",
 		"setup": "git config core.hooksPath .githooks"
 	}
