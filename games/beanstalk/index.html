@@ -31,7 +31,14 @@
 		#top {
 			display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center;
 			gap: 6px 16px; padding: 8px 16px; font-size: 0.75rem; color: var(--muted);
+			container-type: inline-size;   /* the date's parts are dropped by its width, below */
 		}
+		/* The date in the bar is one line, always (#41): where the bar is too narrow for the
+		   whole of it, the time of day goes first and then the weather word, since the sky
+		   shows both. The widths are in the bar's own characters, so they follow the text
+		   size: the longest date is 48 of them, 36 without the time of day. */
+		@container (max-width: 49ch) { #calendar-top .period { display: none; } }
+		@container (max-width: 37ch) { #calendar-top .weather { display: none; } }
 		/* The links stand apart (no text between them), so none is mistaken for plain words. */
 		#links { display: flex; gap: 12px; }
 		#links a { color: var(--muted); text-decoration: none; }
@@ -77,8 +84,15 @@
 		.reveal { animation: reveal var(--reveal) ease-out; border-radius: 6px; }   /* --reveal is set by view.js, which also times it */
 		@media (prefers-reduced-motion: reduce) { .reveal { animation: none; } }
 
-		h1 { margin: 0; font-size: 1.625rem; letter-spacing: 0.06em; }
-		h1 small { font-size: 0.8125rem; color: var(--gold); letter-spacing: 0; font-weight: 400; }
+		/* A line marked one-line is never broken inside itself (the run line, the date in the
+		   bar, the tabs, the ending card's figures): the storyboard's page checks
+		   (tools/page-checks.mjs) fail a picture where one has become two. */
+		.one-line { white-space: nowrap; }
+		/* The title is a row of whole pieces: the run line drops under BEANSTALK as one when it
+		   does not fit, and its challenge under that, instead of a word of either on a line of
+		   its own at the heading's height (#44). */
+		h1 { margin: 0; font-size: 1.625rem; letter-spacing: 0.06em; display: flex; flex-wrap: wrap; align-items: baseline; column-gap: 0.75rem; }
+		h1 small { font-size: 0.8125rem; color: var(--gold); letter-spacing: 0; font-weight: 400; display: flex; flex-wrap: wrap; column-gap: 0.5em; }
 		h2 {
 			margin: 20px 0 6px; padding-bottom: 3px; font-size: 0.75rem; font-weight: 600;
 			letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted);
@@ -171,7 +185,9 @@
 		#feats-box summary { cursor: pointer; font-size: 0.8125rem; }
 		.gains { margin: 0; padding-left: 1.1rem; font-size: 0.75rem; }
 		.post { display: grid; grid-template-columns: 1fr 2rem 1.5rem 2rem; gap: 4px 6px; align-items: center; font-size: 0.8125rem; margin: 4px 0; }
-		.post b + span { font-size: 0.75rem; }
+		/* The animal's words are a line of their own under its name: beside it they wrapped
+		   raggedly under the − and + buttons at a large text size (#42). */
+		.post b + span { display: block; font-size: 0.75rem; }
 		.post button { padding: 3px 0; }
 		.post .n { text-align: center; font-weight: 700; }
 		.post .train { grid-column: 1 / -1; justify-self: start; padding: 3px 9px; font-size: 0.75rem; }
@@ -206,7 +222,10 @@
 		.card h3 { margin: 0 0 8px; font-size: 1.125rem; color: var(--bean); }
 		#ending .card { text-align: center; padding: 28px 32px; max-width: 440px; }
 		#ending h3 { font-size: 1.5rem; margin-bottom: 18px; }
-		.stats { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 0 0 18px; }
+		/* Each box is at least as wide as the widest figure ("93.0B ly" at 1.25rem, with the box's
+		   padding), else the boxes go one under another: a figure is one line, and at a large
+		   text size on a phone two boxes across broke "93.0B ly" after the number (#43). */
+		.stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(7.5rem, 1fr)); gap: 10px; margin: 0 0 18px; }
 		.stats div { background: var(--bg); border: 1px solid var(--line); border-radius: 8px; padding: 8px 6px; }
 		.stats dt { font-size: 0.6875rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); }
 		.stats dd { margin: 2px 0 0; font-size: 1.25rem; font-weight: 700; color: var(--ink); }
@@ -259,6 +278,8 @@
 			   wherever the page is scrolled to. (The copy under the farm is not needed here.) */
 			#top { position: sticky; top: 0; z-index: 4; background: var(--bg); padding-top: calc(8px + env(safe-area-inset-top)); }
 			#calendar-top { display: block; flex-basis: 100%; margin: 0; text-align: center; color: var(--ink); font-size: 0.75rem; }
+			/* The run line is its own row under the title: beside it, it never fits. */
+			h1 small { flex-basis: 100%; }
 			#calendar { display: none; }
 
 			/* Farm-behind mode: the farm fills the space between the top bar and the
@@ -318,19 +339,21 @@
 <body>
 	<header id="top">
 		<nav id="links">
-			<a href="../../">&larr; all games</a>
+			<a href="../../" data-word="top.allGames">← all games</a>
 			<!-- test-only: left out of the shipping app (tools/build.mjs) -->
-			<a class="feedback" href="https://discord.gg/4RRjmSPFCx" target="_blank" rel="noopener">feedback</a>
+			<a class="feedback" href="https://discord.gg/4RRjmSPFCx" target="_blank" rel="noopener" data-word="top.feedback">feedback</a>
 			<!-- /test-only -->
 		</nav>
 		<!-- Just the Menu: sound and music are settings inside it, so the bar over the farm is one row (issue #25). -->
 		<div id="settings">
-			<button id="open-menu" type="button">Menu</button>
+			<button id="open-menu" type="button" data-word="top.menu">Menu</button>
 		</div>
 		<!-- The date, on a phone: in the bar that stays put, so the season can always be seen. -->
-		<p id="calendar-top">&nbsp;</p>
+		<p id="calendar-top" class="one-line">&nbsp;</p>
 	</header>
 
+	<!-- Every element with data-word (its text) or data-word-label (what a reader hears) is filled
+	     from WORDS in src/data/words.js when the page starts (view.js), so the markup holds no words. -->
 	<main id="app">
 		<section id="scene">
 			<canvas id="farm" width="240" height="320" role="img" aria-label="Your farm and the beanstalk"></canvas>
@@ -338,32 +361,32 @@
 		</section>
 
 		<section id="journal">
-			<h2>Journal</h2>
+			<h2 data-word="journal.title">Journal</h2>
 			<!-- The live region wraps the list: a list given role=log is no list to a reader. The list scrolls, so it takes the keyboard. -->
 			<div role="log" aria-live="polite" aria-label="Journal"><ul id="log" tabindex="0" aria-label="Journal entries"></ul></div>
 		</section>
 
 		<section id="status">
 			<h1>BEANSTALK <small id="golden"></small></h1>
-			<p class="big"><b id="grown">0</b> beans grown</p>
-			<p>Stalk: <b id="height">0.0 m</b> <span class="muted">&middot; <span id="phase"></span></span></p>
+			<p class="big"><b id="grown">0</b> <span data-word="status.grownUnit">beans grown</span></p>
+			<p><span data-word="status.stalk">Stalk:</span> <b id="height">0</b> <span class="muted">&middot; <span id="phase"></span></span></p>
 			<p class="muted" id="rate">&nbsp;</p>
 
-			<h2>Farm</h2>
+			<h2 data-word="status.farm">Farm</h2>
 			<div class="row" id="tendbar">
-				<button id="tend" type="button">Plant a bean</button>
-				<kbd>Space</kbd>
+				<button id="tend" type="button" data-word="status.plant">Plant a bean</button>
+				<kbd data-word="status.spaceKey">Space</kbd>
 			</div>
 			<p id="plots">&nbsp;</p>
 			<p class="muted" id="growing">&nbsp;</p>
 			<p class="muted" id="season">&nbsp;</p>
 			<p class="muted" id="helpers">&nbsp;</p>
 
-			<h2 id="market-title">Market</h2>
-			<p><span id="wallet-label">Coins</span>: <b id="coins">0.00</b></p>
-			<p id="barn-row">Beans in the barn: <b id="beans">0</b></p>
+			<h2 id="market-title" data-word="status.market">Market</h2>
+			<p><span id="wallet-label" data-word="status.coins">Coins</span>: <b id="coins">0.00</b></p>
+			<p id="barn-row"><span data-word="status.inBarn">Beans in the barn:</span> <b id="beans">0</b></p>
 			<div class="row price" id="price-row">
-				<span>Price per bean: <b id="price">1.00</b></span>
+				<span><span data-word="status.price">Price per bean:</span> <b id="price">1.00</b></span>
 				<button id="price-down" type="button" aria-label="Lower the price">&minus;</button>
 				<button id="price-up" type="button" aria-label="Raise the price">+</button>
 			</div>
@@ -371,14 +394,14 @@
 
 			<!-- These stay hidden until the game reaches them. -->
 			<div id="research" hidden>
-				<h2>Almanac</h2>
-				<p>Pages: <b id="pages">0</b> <span class="muted" id="pages-rate"></span></p>
+				<h2 data-word="status.almanac">Almanac</h2>
+				<p><span data-word="status.pages">Pages:</span> <b id="pages">0</b> <span class="muted" id="pages-rate"></span></p>
 			</div>
 
 			<div id="space" hidden>
-				<h2>Beyond</h2>
-				<p>Seed probes: <b id="probes">0</b></p>
-				<p>Matter: <b id="matter">0</b></p>
+				<h2 data-word="status.beyond">Beyond</h2>
+				<p><span data-word="status.probes">Seed probes:</span> <b id="probes">0</b></p>
+				<p><span data-word="status.matter">Matter:</span> <b id="matter">0</b></p>
 				<p class="muted" id="blight-line" hidden>&nbsp;</p>
 			</div>
 		</section>
@@ -396,92 +419,92 @@
 
 	<div id="away" class="overlay" data-closable hidden>
 		<div class="card" role="dialog" aria-modal="true" aria-labelledby="away-title">
-			<h3 id="away-title">While you were away</h3>
+			<h3 id="away-title" data-word="away.title">While you were away</h3>
 			<div id="away-body"></div>
-			<button id="away-ok" type="button">Back to work</button>
+			<button id="away-ok" type="button" data-word="away.ok">Back to work</button>
 		</div>
 	</div>
 
 	<div id="elsewhere" class="overlay" hidden>
 		<div class="card" role="dialog" aria-modal="true" aria-labelledby="elsewhere-title">
-			<h3 id="elsewhere-title">Your farm is open in another tab</h3>
-			<p>It is being played there, so this tab has stopped. Nothing is lost.</p>
-			<button id="elsewhere-ok" type="button">Play here instead</button>
+			<h3 id="elsewhere-title" data-word="elsewhere.title">Your farm is open in another tab</h3>
+			<p data-word="elsewhere.text">It is being played there, so this tab has stopped. Nothing is lost.</p>
+			<button id="elsewhere-ok" type="button" data-word="elsewhere.ok">Play here instead</button>
 		</div>
 	</div>
 
 	<div id="menu" class="overlay" data-closable hidden>
 		<div class="card" id="menu-card" tabindex="-1" role="dialog" aria-modal="true" aria-labelledby="menu-title">
-			<h3 id="menu-title">Menu</h3>
+			<h3 id="menu-title" data-word="menu.title">Menu</h3>
 
 			<div id="sound-box">
-				<h4>Sound</h4>
-				<button id="mute" type="button">Sound: on</button>
-				<button id="music" type="button">Music: on</button>
+				<h4 data-word="menu.sound">Sound</h4>
+				<button id="mute" type="button"></button>
+				<button id="music" type="button"></button>
 			</div>
 
 			<div id="backdrop-box">
-				<h4>Farm view</h4>
-				<p>Keep the farm in view behind the page while you scroll.</p>
-				<button id="backdrop" type="button">Farm behind the page: on</button>
+				<h4 data-word="menu.farmView">Farm view</h4>
+				<p data-word="menu.farmViewText">Keep the farm in view behind the page while you scroll.</p>
+				<button id="backdrop" type="button"></button>
 			</div>
 
 			<div id="awake-box" hidden>
-				<h4>Screen</h4>
-				<p>Stop the screen dimming and locking while the game is open.</p>
-				<button id="awake" type="button">Keep screen awake: off</button>
+				<h4 data-word="menu.screen">Screen</h4>
+				<p data-word="menu.screenText">Stop the screen dimming and locking while the game is open.</p>
+				<button id="awake" type="button"></button>
 			</div>
 
 			<div id="notify-box" hidden>
-				<h4>Reminder</h4>
-				<p>One notification, when the farm has done all it can without you. Nothing else, ever.</p>
-				<button id="notify" type="button">Tell me when the farm is waiting: off</button>
+				<h4 data-word="menu.reminder">Reminder</h4>
+				<p data-word="menu.reminderText">One notification, when the farm has done all it can without you. Nothing else, ever.</p>
+				<button id="notify" type="button"></button>
 				<p class="muted" id="notify-note"></p>
 			</div>
 
-			<h4>Achievements</h4>
+			<h4 data-word="menu.achievements">Achievements</h4>
 			<details id="feats-box">
-				<summary id="feats-count">0 earned</summary>
+				<summary id="feats-count"></summary>
 				<ul id="feats"></ul>
 			</details>
 			<p class="muted" id="bests"></p>
 			<div id="services-box" hidden>
-				<p>They are kept on this device. Switch this on to also send them, and your best scores, to <span id="services-name"></span>; nothing else about your farm ever leaves this device.</p>
-				<button id="services" type="button">Off</button>
-				<button id="services-show" type="button" hidden>See them there</button>
+				<p id="services-text"></p>
+				<button id="services" type="button"></button>
+				<button id="services-show" type="button" hidden data-word="menu.servicesShow">See them there</button>
 				<p class="muted" id="services-note"></p>
 			</div>
 
-			<h4>About</h4>
+			<h4 data-word="menu.about">About</h4>
 			<!-- test-only -->
-			<p>Beanstalk is in testing: things will change, and "Report a problem" below is the way to say what should.</p>
+			<p data-word="menu.testing">Beanstalk is in testing: things will change, and "Report a problem" below is the way to say what should.</p>
 			<!-- /test-only -->
-			<p>An idle farm that gets out of hand. <a href="privacy.html">Privacy</a></p>
+			<p><span data-word="menu.aboutText">An idle farm that gets out of hand.</span> <a href="privacy.html" data-word="menu.privacy">Privacy</a></p>
 			<p class="muted" id="integrity-note" hidden></p>
-			<p class="muted">&copy; 2026 Veracity. All rights reserved.</p>
+			<p class="muted" data-word="menu.copyright">© 2026 Veracity. All rights reserved.</p>
 
-			<h4>Report a problem</h4>
-			<p>Something broke, or something should be different? Copy this and post it on the game's Discord. It says how far your farm has got, what you are playing on, and any errors the game hit. It says nothing about you, and it goes nowhere unless you post it.</p>
+			<h4 data-word="menu.report">Report a problem</h4>
+			<p data-word="menu.reportText">Something broke, or something should be different? Copy this and post it on the game's Discord. It says how far your farm has got, what you are playing on, and any errors the game hit. It says nothing about you, and it goes nowhere unless you post it.</p>
 			<textarea id="report-text" readonly rows="7" aria-label="The report"></textarea>
 			<div class="row">
-				<button id="report-copy" type="button">Copy it</button>
-				<a id="report-link" class="button" href="#" target="_blank" rel="noopener" hidden>Open it</a>
+				<button id="report-copy" type="button" data-word="menu.copy">Copy it</button>
+				<a id="report-link" class="button" href="#" target="_blank" rel="noopener" hidden data-word="menu.open">Open it</a>
 			</div>
 			<p class="muted" id="report-note" role="status"></p>
 
-			<h4>Start over</h4>
-			<p>Erase this farm and begin again from one bean.</p>
-			<button id="reset" type="button" class="danger">Start over</button>
+			<h4 data-word="menu.startOver">Start over</h4>
+			<p data-word="menu.startOverText">Erase this farm and begin again from one bean.</p>
+			<button id="reset" type="button" class="danger" data-word="menu.startOver">Start over</button>
 
-			<div class="row"><button id="menu-close" type="button">Back to the farm</button></div>
+			<div class="row"><button id="menu-close" type="button" data-word="menu.close">Back to the farm</button></div>
 		</div>
 	</div>
 
 	<div id="ending" class="overlay" hidden>
 		<div class="card" role="dialog" aria-modal="true" aria-labelledby="ending-title">
-			<h3 id="ending-title" tabindex="-1">Every atom is bean.</h3>
+			<h3 id="ending-title" tabindex="-1"></h3>
 			<div id="ending-body"></div>
-			<button id="again" type="button">Plant it again (New Game+)</button>
+			<button id="again" type="button"></button>
 		</div>
 	</div>
 
