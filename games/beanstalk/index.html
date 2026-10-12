@@ -108,7 +108,9 @@
 			font: inherit; color: var(--ink); background: var(--panel);
 			border: 1px solid var(--line); border-radius: 6px; padding: 5px 10px; cursor: pointer;
 		}
-		button:hover:not(:disabled), button:focus-visible { border-color: var(--bean); background: var(--panel-hi); outline: none; }
+		/* The Language setting: a list, dressed as the buttons around it are. */
+		select { font: inherit; color: var(--ink); background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 5px 10px; }
+		button:hover:not(:disabled), button:focus-visible, select:focus-visible { border-color: var(--bean); background: var(--panel-hi); outline: none; }
 		button:active:not(:disabled) { transform: translateY(1px); }
 		button:disabled { opacity: 0.6; cursor: default; }
 		#tend { font-size: 1rem; padding: 10px 20px; width: 190px; border-color: var(--bean); }
@@ -441,6 +443,12 @@
 				<h4 data-word="menu.sound">Sound</h4>
 				<button id="mute" type="button"></button>
 				<button id="music" type="button"></button>
+			</div>
+
+			<div id="lang-box">
+				<h4 data-word="menu.language">Language</h4>
+				<p data-word="menu.languageText">The game follows the device's language where it has one; choose another here. Lines already in the journal stay as they were written.</p>
+				<select id="lang" aria-label="Language"></select>
 			</div>
 
 			<div id="backdrop-box">
