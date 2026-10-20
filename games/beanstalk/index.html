@@ -242,6 +242,16 @@
 		#menu p { font-size: 0.75rem; color: var(--muted); }
 		#menu button { margin-top: 6px; }
 		#menu .danger { border-color: #ff8a80; }
+		/* The Help card: short sections, each a heading and a paragraph or two. A list of
+		   lines, not a table, so it stays one column on a narrow screen. */
+		#help .card { width: min(520px, 100%); }
+		#help-card:focus { outline: none; }
+		#help-body h4 { margin: 18px 0 4px; font-size: 0.75rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--bean); }
+		#help-body p, #help .card > p { margin: 6px 0; font-size: 0.8125rem; line-height: 1.5; color: var(--muted); }
+		#help-body ul { margin: 6px 0; padding: 0; list-style: none; border-left: 2px solid var(--line); }
+		#help-body li { margin: 0; padding: 3px 0 3px 10px; font-size: 0.8125rem; line-height: 1.45; color: var(--ink); }
+		#help .row { margin-top: 12px; }
+		#help .row button { margin-top: 6px; }
 
 		/* The tablet layout: two columns, the panel of things to do below. */
 		@media (max-width: 1100px) {
@@ -439,6 +449,12 @@
 		<div class="card" id="menu-card" tabindex="-1" role="dialog" aria-modal="true" aria-labelledby="menu-title">
 			<h3 id="menu-title" data-word="menu.title">Menu</h3>
 
+			<div id="help-box">
+				<h4 data-word="help.menuHeading">How it works</h4>
+				<p data-word="help.menuText">The seasons, the weather, the market and the rest, and by how much each of them matters.</p>
+				<button id="open-help" type="button" data-word="help.open">Read how it works</button>
+			</div>
+
 			<div id="sound-box">
 				<h4 data-word="menu.sound">Sound</h4>
 				<button id="mute" type="button"></button>
@@ -505,6 +521,21 @@
 			<button id="reset" type="button" class="danger" data-word="menu.startOver">Start over</button>
 
 			<div class="row"><button id="menu-close" type="button" data-word="menu.close">Back to the farm</button></div>
+		</div>
+	</div>
+
+	<!-- "How it works": opened from the Menu. The sections are drawn into #help-body from the
+	     rules' own data (core/help.js); the card itself scrolls, and holds buttons, so it is
+	     reachable by keyboard. -->
+	<div id="help" class="overlay" data-closable hidden>
+		<div class="card" id="help-card" tabindex="-1" role="dialog" aria-modal="true" aria-labelledby="help-title">
+			<h3 id="help-title" data-word="help.title">How it works</h3>
+			<p class="muted" data-word="help.intro">Every figure here is read from the rules the farm is running on, so it is the one in force.</p>
+			<div id="help-body"></div>
+			<div class="row">
+				<button id="help-back" type="button" data-word="help.back">Back to the Menu</button>
+				<button id="help-close" type="button" data-word="help.close">Back to the farm</button>
+			</div>
 		</div>
 	</div>
 
