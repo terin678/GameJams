@@ -3,12 +3,13 @@ import { JOBS } from '../../data/jobs.js';
 import { jobLevels, unlockedJobs } from '../../core/jobs.js';
 import { isTouch } from '../../../../../shared/ui.js';
 import { frameKey } from '../textures.js';
-import { textStyle, bindKeys } from '../kit.js';
+import { textStyle, bindKeys, fitCamera } from '../kit.js';
 
 const W = TUNING.width, H = TUNING.height;
 
 export class Menu extends Phaser.Scene {
 	create() {
+		fitCamera(this);
 		const sfx = this.registry.get('sfx');
 		const store = this.registry.get('store');
 		const scores = this.registry.get('scores');

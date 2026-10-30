@@ -1,10 +1,11 @@
 import { TUNING } from '../../data/tuning.js';
-import { textStyle, bindKeys } from '../kit.js';
+import { textStyle, bindKeys, fitCamera } from '../kit.js';
 
 const W = TUNING.width, H = TUNING.height;
 
 export class Pause extends Phaser.Scene {
 	create() {
+		fitCamera(this);
 		const quality = this.registry.get('quality');
 		const sfx = this.registry.get('sfx');
 		const style = (px, color) => textStyle(this, px, color, { align: 'center' });

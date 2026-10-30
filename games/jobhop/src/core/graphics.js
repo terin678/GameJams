@@ -35,3 +35,14 @@ export const describeGraphics = (setting, auto) => (setting === 'auto' ? `AUTO (
 
 // How many particles a burst of `n` gets at this preset.
 export const scaleCount = (n, preset) => Math.round(n * preset.particles);
+
+// How many canvas pixels per game pixel. The game is laid out at
+// designW x designH and stretched to fit the window; drawing the canvas at
+// the screen's real pixel count keeps text and lines sharp instead of
+// stretching a small canvas. Rounded up to a whole number so pixel art
+// scales evenly, and capped (by the quality preset) to bound the cost.
+export function renderScale(cssW, cssH, dpr, designW, designH, cap) {
+	const fitW = Math.min(cssW, (cssH * designW) / designH);
+	if (!(fitW > 0)) return 1;
+	return Math.max(1, Math.min(cap, Math.ceil((fitW * dpr) / designW - 0.05)));
+}

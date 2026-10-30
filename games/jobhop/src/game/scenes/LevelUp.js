@@ -3,13 +3,14 @@
 import { TUNING } from '../../data/tuning.js';
 import { frameKey } from '../textures.js';
 import { describeCard } from '../cards.js';
-import { textStyle, bindKeys, stack, stackHeight } from '../kit.js';
+import { textStyle, bindKeys, stack, stackHeight, fitCamera } from '../kit.js';
 
 const W = TUNING.width, H = TUNING.height;
 const CARD = { w: 220, h: 250, gap: 22 };
 
 export class LevelUp extends Phaser.Scene {
 	create({ cards, level, active }) {
+		fitCamera(this);
 		const sfx = this.registry.get('sfx');
 		const style = (px, color) => textStyle(this, px, color, { align: 'center' });
 		const shade = this.add.rectangle(0, 0, W, H, 0x0b0a10, 0.72).setOrigin(0).setAlpha(0);

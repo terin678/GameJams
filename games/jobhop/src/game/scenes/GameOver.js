@@ -6,12 +6,13 @@ import { levelFromXp, nodesBetween, describeNode } from '../../core/jobs.js';
 import { formatTime } from '../../core/run.js';
 import { isTouch } from '../../../../../shared/ui.js';
 import { frameKey } from '../textures.js';
-import { textStyle, bindKeys, stack } from '../kit.js';
+import { textStyle, bindKeys, stack, fitCamera } from '../kit.js';
 
 const W = TUNING.width, H = TUNING.height;
 
 export class GameOver extends Phaser.Scene {
 	create(r) {
+		fitCamera(this);
 		const sfx = this.registry.get('sfx');
 		const style = (px, color) => textStyle(this, px, color, { align: 'center' });
 		this.add.tileSprite(0, 0, W, H, 'ground').setOrigin(0).setAlpha(0.4);

@@ -154,7 +154,12 @@ then beat Chaos.
   HIGH and steps down a level when frames run slow for a few seconds; it never
   steps back up mid-session. Lower levels drop shadows, damage numbers, trails,
   screen flashes and the walk bounce, and cut particles. The game plays the
-  same at every level. Presets and every effect timing live in
+  same at every level.
+- **Sharpness**: scenes are laid out at 800x600, but the canvas is drawn at
+  the screen's real pixel count (up to 3x on HIGH, 2x on MEDIUM, 1x on LOW)
+  and every camera zooms to match, so text stays crisp when the page
+  stretches it. This is picked when the page loads; a quality change takes
+  effect on the next load. Presets and every effect timing live in
   `src/data/graphics.js`; the AUTO rule is `src/core/graphics.js`.
 
 Play.js is the rules glue only: `src/game/fx.js` draws effects, `src/game/hud.js`

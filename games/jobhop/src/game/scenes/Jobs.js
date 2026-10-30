@@ -9,7 +9,7 @@ import { togglePick, chargeInfo } from '../../core/loadout.js';
 import { formatMod } from '../../core/stats.js';
 import { isTouch } from '../../../../../shared/ui.js';
 import { frameKey } from '../textures.js';
-import { textStyle, bindKeys, stack, stackHeight } from '../kit.js';
+import { textStyle, bindKeys, stack, stackHeight, fitCamera } from '../kit.js';
 
 const W = TUNING.width, H = TUNING.height;
 const CARD = { w: 172, h: 92 };
@@ -22,6 +22,7 @@ const ROWS = TIERS.map(t => Object.keys(JOBS).filter(id => JOBS[id].tier === t))
 
 export class Jobs extends Phaser.Scene {
 	create() {
+		fitCamera(this);
 		this.sfx = this.registry.get('sfx');
 		this.store = this.registry.get('store');
 		const jobXp = this.registry.get('jobXp');

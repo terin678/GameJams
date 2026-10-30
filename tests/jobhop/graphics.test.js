@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { loadGraphics, nextGraphics, createAutoQuality, sampleFrame, resolvePreset, scaleCount, describeGraphics } from '../../games/jobhop/src/core/graphics.js';
+import { loadGraphics, nextGraphics, createAutoQuality, sampleFrame, resolvePreset, scaleCount, describeGraphics, renderScale } from '../../games/jobhop/src/core/graphics.js';
 import { GRAPHICS_ORDER, QUALITY_LEVELS, PRESETS, AUTO, FX } from '../../games/jobhop/src/data/graphics.js';
 
 const LEVELS = ['high', 'medium', 'low'];
@@ -80,4 +80,21 @@ test('graphics data: every level has a full preset, ordered from best to cheapes
 	}
 	assert.ok(AUTO.slowMs > 16.7 && AUTO.windows >= 1 && AUTO.ignoreMs > AUTO.slowMs);
 	for (const [k, n] of Object.entries(FX.burst)) assert.ok(Number.isInteger(n) && n >= 0, k);
+});
+
+test('renderScale draws the canvas at about the real screen pixels, capped', () => {
+	assert.equal(renderScale(800, 600, 1, 800, 600, 3), 1, 'exactly fits: no upscale needed');
+	assert.equal(renderScale(1600, 1200, 1, 800, 600, 3), 2);
+	assert.equal(renderScale(698, 900, 1.5, 800, 600, 3), 2, 'high-DPI rounds up so text is never stretched');
+	assert.equal(renderScale(3840, 2160, 1, 800, 600, 3), 3, 'capped');
+	assert.equal(renderScale(1600, 1200, 1, 800, 600, 1), 1, 'LOW keeps the 1x canvas');
+	assert.equal(renderScale(2000, 600, 1, 800, 600, 3), 1, 'a wide window is limited by its height');
+	assert.equal(renderScale(0, 0, 1, 800, 600, 3), 1, 'not laid out yet');
+});
+
+test('sharper levels never render at a lower scale than cheaper ones', () => {
+	for (let i = 1; i < QUALITY_LEVELS.length; i++) {
+		assert.ok(PRESETS[QUALITY_LEVELS[i]].maxScale <= PRESETS[QUALITY_LEVELS[i - 1]].maxScale);
+	}
+	assert.equal(PRESETS.low.maxScale, 1);
 });

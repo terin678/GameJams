@@ -11,10 +11,11 @@ export const GRAPHICS_ORDER = ['auto', ...QUALITY_LEVELS];  // what [G] cycles t
 //   damageNumbers  numbers float up off hits
 //   flashes        screen flash on big blasts, red vignette when hurt
 //   bob            units bounce as they walk
+//   maxScale       most canvas pixels per game pixel (sharpness; set at page load)
 export const PRESETS = {
-	high: { particles: 1, maxParticles: 900, shadows: true, trails: true, damageNumbers: true, flashes: true, bob: true },
-	medium: { particles: 0.5, maxParticles: 350, shadows: true, trails: false, damageNumbers: false, flashes: true, bob: true },
-	low: { particles: 0.25, maxParticles: 120, shadows: false, trails: false, damageNumbers: false, flashes: false, bob: false },
+	high: { particles: 1, maxParticles: 900, shadows: true, trails: true, damageNumbers: true, flashes: true, bob: true, maxScale: 3 },
+	medium: { particles: 0.5, maxParticles: 350, shadows: true, trails: false, damageNumbers: false, flashes: true, bob: true, maxScale: 2 },
+	low: { particles: 0.25, maxParticles: 120, shadows: false, trails: false, damageNumbers: false, flashes: false, bob: false, maxScale: 1 },
 };
 
 // AUTO: average frame time over windowMs; `windows` slow windows in a row

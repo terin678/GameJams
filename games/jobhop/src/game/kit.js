@@ -1,5 +1,5 @@
 // Small helpers every scene was repeating.
-import { fs } from '../../../../shared/ui.js';
+import { TUNING } from '../data/tuning.js';
 
 export const FONT = 'monospace';
 
@@ -10,19 +10,33 @@ export const DEPTH = { ground: 0, shadow: 1, field: 2, gem: 5, unit: 10, unitTop
 // Depth for a unit at world y, relative to the player at py.
 export const unitDepth = (y, py) => DEPTH.unit + (DEPTH.unitTop - DEPTH.unit) * Math.max(0, Math.min(0.999, (y - py + 600) / 1200));
 
-// Bold monospace at a phone-friendly size. `extra` overrides or adds fields.
-export const textStyle = (scene, px, color = '#f4f4f4', extra = {}) => ({
-	fontFamily: FONT, fontSize: fs(scene, px), color, fontStyle: 'bold', resolution: textResolution(scene), ...extra,
-});
+// The canvas is drawn at `zoom` canvas pixels per layout pixel (see main.js).
+const zoomOf = scene => scene.registry.get('zoom') ?? 1;
 
-// The canvas is 800x600 stretched to fit the window, usually by an uneven
-// factor. Text drawn at 1x then stretched comes out blocky and smeared, so
-// draw it at the screen's real pixel density instead (capped at 4x).
-export function textResolution(scene) {
-	const s = scene.scale;
-	const stretch = s.displaySize.width / s.width || 1;
-	return Math.min(4, Math.max(1, Math.ceil(stretch * (window.devicePixelRatio || 1))));
+// Call first in every scene's create(): the camera maps the 800x600 layout
+// onto the bigger canvas. Origin 0 so HUD objects (scroll factor 0) land
+// where they are placed.
+export function fitCamera(scene) {
+	return scene.cameras.main.setOrigin(0, 0).setZoom(zoomOf(scene));
 }
+
+// On phones the 800-wide layout is shown narrower than 800 CSS pixels, so
+// text is scaled up to stay legible (capped, or layouts burst).
+let fontScale = null;
+function fontScaleOf(scene) {
+	if (scene.sys.game.device.os.desktop) return 1;
+	if (fontScale !== null) return fontScale;
+	const shown = scene.game.canvas.getBoundingClientRect().width;
+	if (!shown) return 1;   // not laid out yet; don't cache a bad value
+	fontScale = Math.min(1.6, Math.max(1, TUNING.width / shown));
+	return fontScale;
+}
+
+// Bold monospace at a phone-friendly size, rendered at the canvas's real
+// resolution so it is as sharp as the screen allows. `extra` adds or overrides.
+export const textStyle = (scene, px, color = '#f4f4f4', extra = {}) => ({
+	fontFamily: FONT, fontSize: `${Math.round(px * fontScaleOf(scene))}px`, color, fontStyle: 'bold', resolution: zoomOf(scene), ...extra,
+});
 
 // pixelArt keeps sprites crisp with nearest-neighbour sampling; text looks
 // better smoothed. Call once at boot: every scene's text gets linear filtering.

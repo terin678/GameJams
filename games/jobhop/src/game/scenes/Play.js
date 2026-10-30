@@ -22,7 +22,7 @@ import { createRun, tickRun, startBoss, endRun, runScore } from '../../core/run.
 import { progress, easeOutBack, bob, squash } from '../../core/anim.js';
 import { createRng } from '../../../../../shared/rng.js';
 import { frameKey, frameCount } from '../textures.js';
-import { DEPTH, unitDepth, bindKeys } from '../kit.js';
+import { DEPTH, unitDepth, bindKeys, fitCamera } from '../kit.js';
 import { ImagePool } from '../pool.js';
 import { Fx } from '../fx.js';
 import { Hud } from '../hud.js';
@@ -32,6 +32,7 @@ const RING = Math.hypot(W, H) / 2 + TUNING.spawnMargin;
 
 export class Play extends Phaser.Scene {
 	create() {
+		fitCamera(this);
 		this.sfx = this.registry.get('sfx');
 		this.store = this.registry.get('store');
 		this.quality = this.registry.get('quality');
@@ -101,7 +102,9 @@ export class Play extends Phaser.Scene {
 		this.player = { x: 0, y: 0, radius: TUNING.player.radius, shadow: null };
 		this.playerImg = this.add.image(0, 0, frameKey(this.jobSprite(), 0)).setDepth(DEPTH.unit);
 		this.player.foot = this.playerImg.height / 2 - 3;
-		this.cameras.main.startFollow(this.playerImg, true);
+		// The camera's origin is its top-left (see fitCamera), so offset the
+		// follow by half the view to keep the player centred.
+		this.cameras.main.startFollow(this.playerImg, true, 1, 1, W / 2, H / 2);
 	}
 
 	buildInput() {
@@ -116,10 +119,12 @@ export class Play extends Phaser.Scene {
 			'keydown-P': onPause, 'keydown-ESC': onPause, 'keydown-M': () => this.toggleMute(),
 		});
 
-		// Touch: drag anywhere is a floating stick.
+		// Touch: drag anywhere is a floating stick. Pointer positions are in
+		// canvas pixels, so divide by the zoom to work in layout pixels.
 		this.stick = null;
-		const down = p => { if (!this.stick) this.stick = { id: p.id, ox: p.x, oy: p.y, x: p.x, y: p.y }; };
-		const move = p => { if (this.stick?.id === p.id) { this.stick.x = p.x; this.stick.y = p.y; } };
+		const z = this.registry.get('zoom') ?? 1;
+		const down = p => { if (!this.stick) this.stick = { id: p.id, ox: p.x / z, oy: p.y / z, x: p.x / z, y: p.y / z }; };
+		const move = p => { if (this.stick?.id === p.id) { this.stick.x = p.x / z; this.stick.y = p.y / z; } };
 		const up = p => { if (this.stick?.id === p.id) this.stick = null; };
 		this.input.on('pointerdown', down);
 		this.input.on('pointermove', move);
