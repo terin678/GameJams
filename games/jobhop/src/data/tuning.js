@@ -39,8 +39,14 @@ export const TUNING = {
 
 	difficulty: { hpPerMinute: 0.35, damagePerMinute: 0.06 },
 
+	// Hit feel. Visual-only numbers live in data/graphics.js.
+	knockback: { shot: 4, orbit: 6, dash: 24 },
+	homingRange: 300,        // a homing shot looks this far for its next target
+	grabRadius: 8,           // pickups are taken this close to the player's edge
+	bigHit: 50,              // pulses hitting harder than this shake the screen
+	hurtFlashMs: 90,
 	hitFlashMs: 70,
-	fxMs: 160,
+
 	gridCell: 64,
 	separation: 0.35,
 };

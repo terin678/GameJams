@@ -129,6 +129,7 @@ then beat Chaos.
 | Swap job | Tab / Shift / E | SWAP button |
 | Job Action (spends gauge) | Space / K | ACTION button |
 | Pause / mute | P or Esc / M | II button |
+| Graphics quality | G on the title or pause screen | tap the graphics line |
 
 - **Two jobs per run.** Pick them on the Jobs screen (J on the title). Swapping
   has a short cooldown, gives brief i-frames, fires the new job's attack at once
@@ -148,6 +149,17 @@ then beat Chaos.
 - **Run levels** come from gems and offer three cards: level up either equipped
   job's attack (max 5) or take an accessory (Might, Area, Haste, Speed, Max HP,
   Magnet, Armor, Regen).
+
+- **Graphics quality**: AUTO (the default), HIGH, MEDIUM or LOW. AUTO starts at
+  HIGH and steps down a level when frames run slow for a few seconds; it never
+  steps back up mid-session. Lower levels drop shadows, damage numbers, trails,
+  screen flashes and the walk bounce, and cut particles. The game plays the
+  same at every level. Presets and every effect timing live in
+  `src/data/graphics.js`; the AUTO rule is `src/core/graphics.js`.
+
+Play.js is the rules glue only: `src/game/fx.js` draws effects, `src/game/hud.js`
+draws the HUD, and `src/game/pool.js` recycles sprites so a busy screen doesn't
+churn the garbage collector.
 
 Unlocks are derived from saved XP and never stored, so retuning the curve in
 `src/data/tuning.js` can't break a save. `tests/jobhop/data.test.js` checks the

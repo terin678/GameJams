@@ -12,13 +12,42 @@ export function buildTextures(scene) {
 		sprite.frames.forEach((rows, i) => makeTexture(scene, frameKey(key, i), rows, PALETTE, sprite.scale ?? TUNING.spriteScale));
 	}
 	buildGround(scene);
+	buildShadow(scene);
+	buildVignette(scene);
+}
+
+const canvas = (scene, key, w, h) => {
+	if (scene.textures.exists(key)) scene.textures.remove(key);
+	return scene.textures.createCanvas(key, w, h);
+};
+
+// A soft ground shadow, drawn in chunky rows to match the pixel art.
+// 32 px wide; scale it to the unit.
+function buildShadow(scene) {
+	const tex = canvas(scene, 'shadow', 32, 10);
+	const ctx = tex.context;
+	ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
+	[[8, 0, 16], [3, 2, 26], [0, 4, 32], [3, 6, 26], [8, 8, 16]].forEach(([x, y, w]) => ctx.fillRect(x, y, w, 2));
+	tex.refresh();
+}
+
+// Red edges for the hurt flash: clear in the middle, glowing at the rim.
+function buildVignette(scene) {
+	const { width: w, height: h } = TUNING;
+	const tex = canvas(scene, 'vignette', w, h);
+	const ctx = tex.context;
+	const grad = ctx.createRadialGradient(w / 2, h / 2, h * 0.3, w / 2, h / 2, Math.hypot(w, h) / 2);
+	grad.addColorStop(0, 'rgba(214, 70, 60, 0)');
+	grad.addColorStop(1, 'rgba(214, 70, 60, 0.85)');
+	ctx.fillStyle = grad;
+	ctx.fillRect(0, 0, w, h);
+	tex.refresh();
 }
 
 // A dark, tiling meadow: tufts, pebbles and the odd flower, in 3px "pixels".
 function buildGround(scene) {
 	const size = 192, px = 3;
-	if (scene.textures.exists('ground')) scene.textures.remove('ground');
-	const tex = scene.textures.createCanvas('ground', size, size);
+	const tex = canvas(scene, 'ground', size, size);
 	const ctx = tex.context;
 	const rng = createRng(2026);
 	ctx.fillStyle = '#1d2a22';

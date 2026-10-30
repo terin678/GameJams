@@ -5,14 +5,19 @@ import { JOBS, TIERS } from '../../data/jobs.js';
 import { ATTACKS, ACTIONS } from '../../data/abilities.js';
 import { STATS } from '../../data/passives.js';
 import { jobLevels, levelFromXp, isUnlocked, lockReason } from '../../core/jobs.js';
-import { togglePick } from '../../core/loadout.js';
+import { togglePick, chargeInfo } from '../../core/loadout.js';
 import { formatMod } from '../../core/stats.js';
-import { fs, isTouch } from '../../../../../shared/ui.js';
+import { isTouch } from '../../../../../shared/ui.js';
 import { frameKey } from '../textures.js';
+import { textStyle, bindKeys } from '../kit.js';
 
 const W = TUNING.width, H = TUNING.height;
 const CARD = { w: 172, h: 92 };
 const ROW_Y = [118, 238, 358];
+const charges = action => {
+	const n = chargeInfo(0, action.cost, TUNING.gauge.max).total;
+	return `holds ${n} charge${n > 1 ? 's' : ''}`;
+};
 const ROWS = TIERS.map(t => Object.keys(JOBS).filter(id => JOBS[id].tier === t));
 
 export class Jobs extends Phaser.Scene {
@@ -24,7 +29,7 @@ export class Jobs extends Phaser.Scene {
 		this.progress = Object.fromEntries(Object.keys(JOBS).map(id => [id, levelFromXp(jobXp[id] ?? 0, TUNING.jobXp)]));
 		this.picks = this.registry.get('picks').filter(id => JOBS[id] && isUnlocked(JOBS[id], this.levels));
 		this.cursor = { row: 0, col: 0 };
-		const style = (px, color = '#f4f4f4') => ({ fontFamily: 'monospace', fontSize: fs(this, px), color, fontStyle: 'bold' });
+		const style = (px, color) => textStyle(this, px, color);
 		this.style = style;
 
 		this.add.tileSprite(0, 0, W, H, 'ground').setOrigin(0).setAlpha(0.5);
@@ -55,18 +60,13 @@ export class Jobs extends Phaser.Scene {
 			.setOrigin(0.5).setInteractive({ useHandCursor: true });
 		this.footer.on('pointerdown', () => this.leave());
 
-		const kb = this.input.keyboard;
-		const keys = {
+		bindKeys(this, {
 			'keydown-LEFT': () => this.move(0, -1), 'keydown-A': () => this.move(0, -1),
 			'keydown-RIGHT': () => this.move(0, 1), 'keydown-D': () => this.move(0, 1),
 			'keydown-UP': () => this.move(-1, 0), 'keydown-W': () => this.move(-1, 0),
 			'keydown-DOWN': () => this.move(1, 0), 'keydown-S': () => this.move(1, 0),
 			'keydown-ENTER': () => this.toggle(this.current()), 'keydown-SPACE': () => this.toggle(this.current()),
 			'keydown-ESC': () => this.leave(), 'keydown-BACKSPACE': () => this.leave(), 'keydown-J': () => this.leave(),
-		};
-		for (const [ev, fn] of Object.entries(keys)) kb.on(ev, fn);
-		this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
-			for (const [ev, fn] of Object.entries(keys)) kb.off(ev, fn);
 		});
 		this.refresh();
 	}
@@ -155,7 +155,7 @@ export class Jobs extends Phaser.Scene {
 		this.detail.setText([
 			`${job.name.toUpperCase()}  ·  ${job.tier}${lock ? `   LOCKED: needs ${lock}` : ''}`,
 			job.blurb,
-			`Attack: ${job.attacks.map(a => ATTACKS[a].name).join(' + ')}    Action: ${action.name} (${action.cost} gauge)`,
+			`Attack: ${job.attacks.map(a => ATTACKS[a].name).join(' + ')}    Action: ${action.name} (${charges(action)})`,
 			`While active: ${stats || 'no bonus'}`,
 		].join('\n'));
 		this.nodeText.setText(['JOB TREE', ...job.nodes.map(n => {

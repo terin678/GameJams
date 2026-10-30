@@ -1,31 +1,41 @@
 import { TUNING } from '../../data/tuning.js';
-import { fs } from '../../../../../shared/ui.js';
+import { textStyle, bindKeys } from '../kit.js';
 
 const W = TUNING.width, H = TUNING.height;
 
 export class Pause extends Phaser.Scene {
 	create() {
+		const quality = this.registry.get('quality');
+		const sfx = this.registry.get('sfx');
+		const style = (px, color) => textStyle(this, px, color, { align: 'center' });
 		this.add.rectangle(0, 0, W, H, 0x14121c, 0.7).setOrigin(0);
-		const style = (px, color = '#f4f4f4') => ({ fontFamily: 'monospace', fontSize: fs(this, px), color, fontStyle: 'bold', align: 'center' });
-		this.add.text(W / 2, H * 0.4, 'PAUSED', style(32, '#f2d544')).setOrigin(0.5);
+		const title = this.add.text(W / 2, H * 0.4, 'PAUSED', style(32, '#f2d544')).setOrigin(0.5).setScale(1.3).setAlpha(0);
+		this.tweens.add({ targets: title, scale: 1, alpha: 1, duration: 200, ease: 'Back.easeOut' });
 		this.add.text(W / 2, H * 0.53, 'P / ESC / tap  to resume\nQ  to give up (job XP is kept)', { ...style(13), lineSpacing: 6 }).setOrigin(0.5);
+		const gfx = this.add.text(W / 2, H * 0.66, '', style(12, '#9ff0fa')).setOrigin(0.5).setInteractive({ useHandCursor: true });
+		const showGfx = () => gfx.setText(`[G] graphics: ${quality.label}`);
+		showGfx();
+		const cycleGfx = () => {
+			quality.cycle();
+			sfx.play('select');
+			showGfx();
+		};
+		gfx.on('pointerdown', (_p, _x, _y, e) => { e.stopPropagation(); cycleGfx(); });
 
+		let done = false;
 		const resume = () => {
+			if (done) return;
+			done = true;
 			this.scene.resume('Play');
 			this.scene.stop();
 		};
 		const quit = () => {
+			if (done) return;
+			done = true;
 			this.scene.get('Play').finish(false, { immediate: true });
 			this.scene.stop();
 		};
-		this.input.keyboard.once('keydown-P', resume);
-		this.input.keyboard.once('keydown-ESC', resume);
-		this.input.keyboard.once('keydown-Q', quit);
+		bindKeys(this, { 'keydown-P': resume, 'keydown-ESC': resume, 'keydown-Q': quit, 'keydown-G': cycleGfx });
 		this.input.once('pointerdown', resume);
-		this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
-			this.input.keyboard.off('keydown-P', resume);
-			this.input.keyboard.off('keydown-ESC', resume);
-			this.input.keyboard.off('keydown-Q', quit);
-		});
 	}
 }

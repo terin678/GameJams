@@ -5,6 +5,7 @@ import { unlockedJobs } from '../core/jobs.js';
 import { loadJobXp, loadPicks } from '../core/save.js';
 import { createStore, createScoreTable } from '../../../../shared/storage.js';
 import { Sfx } from '../../../../shared/sfx.js';
+import { createQuality } from './quality.js';
 import { Boot } from './scenes/Boot.js';
 import { Menu } from './scenes/Menu.js';
 import { Jobs } from './scenes/Jobs.js';
@@ -34,6 +35,7 @@ window.addEventListener('load', () => {
 	game.registry.set('store', store);
 	game.registry.set('scores', createScoreTable(store));
 	game.registry.set('sfx', new Sfx(SOUNDS, { muted: store.get('muted', false) }));
+	game.registry.set('quality', createQuality(store));
 	game.registry.set('jobXp', jobXp);
 	game.registry.set('picks', loadPicks(store.get('picks'), unlockedJobs(jobXp, JOBS, TUNING.jobXp), DEFAULT_PICKS));
 

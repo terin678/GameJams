@@ -62,3 +62,9 @@ test('nearest finds the closest live item within range', () => {
 	assert.equal(nearest(items, 0, 0), items[2]);
 	assert.equal(nearest(items, 0, 0, 2), null);
 });
+
+test('nearest can skip items (a homing shot ignores what it already hit)', () => {
+	const items = [{ x: 10, y: 0 }, { x: -3, y: 0 }];
+	const hit = new Set([items[1]]);
+	assert.equal(nearest(items, 0, 0, Infinity, it => hit.has(it)), items[0]);
+});

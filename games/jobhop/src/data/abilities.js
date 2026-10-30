@@ -2,6 +2,8 @@
 // core/attacks.js attackAt scales them. perLevel: per level above 1,
 // damage/area/cooldown as fractions, count as extra shots (floored).
 //
+// Every attack has a color: the swing or thrust, or the sparks a shot trails.
+//
 // shapes
 //   arc        range, arcDeg, knockback?           a swing toward the nearest enemy
 //   line       length, width, knockback?           a thrust toward the nearest enemy
@@ -10,18 +12,18 @@
 export const ATTACKS = {
 	slash: { name: 'Slash', shape: 'arc', damage: 10, cooldownMs: 900, range: 70, arcDeg: 120, knockback: 12, color: 0xdfe6ff, perLevel: { damage: 0.25, area: 0.08 } },
 	thrust: { name: 'Thrust', shape: 'line', damage: 13, cooldownMs: 950, length: 115, width: 18, knockback: 8, color: 0xa8f0a0, perLevel: { damage: 0.25, area: 0.1 } },
-	bolt: { name: 'Bolt', shape: 'projectile', damage: 8, cooldownMs: 850, count: 1, speed: 300, radius: 6, lifeMs: 1800, pierce: 0, homing: 4, sprite: 'bolt', perLevel: { damage: 0.2, count: 0.5 } },
+	bolt: { name: 'Bolt', shape: 'projectile', color: 0x9ff0fa, damage: 8, cooldownMs: 850, count: 1, speed: 300, radius: 6, lifeMs: 1800, pierce: 0, homing: 4, sprite: 'bolt', perLevel: { damage: 0.2, count: 0.5 } },
 	jab: { name: 'Jab', shape: 'arc', damage: 5, cooldownMs: 320, range: 46, arcDeg: 70, knockback: 4, color: 0xffc070, perLevel: { damage: 0.2, cooldown: 0.05 } },
 
 	cleave: { name: 'Cleave', shape: 'arc', damage: 18, cooldownMs: 1100, range: 92, arcDeg: 180, knockback: 18, color: 0xffffff, perLevel: { damage: 0.25, area: 0.08 } },
 	pike: { name: 'Pike', shape: 'line', damage: 18, cooldownMs: 950, length: 140, width: 22, knockback: 10, color: 0xc89af0, perLevel: { damage: 0.25, area: 0.1 } },
-	lances: { name: 'Wyvern Lances', shape: 'orbit', damage: 7, count: 2, orbit: 72, spin: 2.8, hitRadius: 12, hitEveryMs: 400, sprite: 'lance', perLevel: { damage: 0.2, count: 0.5 } },
-	firebolt: { name: 'Fira', shape: 'projectile', damage: 9, cooldownMs: 1000, count: 3, spreadDeg: 24, speed: 320, radius: 6, lifeMs: 1600, pierce: 0, homing: 3, burn: { dps: 6, ms: 2000 }, sprite: 'firebolt', perLevel: { damage: 0.2, count: 0.5 } },
+	lances: { name: 'Wyvern Lances', shape: 'orbit', color: 0xc89af0, damage: 7, count: 2, orbit: 72, spin: 2.8, hitRadius: 12, hitEveryMs: 400, sprite: 'lance', perLevel: { damage: 0.2, count: 0.5 } },
+	firebolt: { name: 'Fira', shape: 'projectile', color: 0xff9040, damage: 9, cooldownMs: 1000, count: 3, spreadDeg: 24, speed: 320, radius: 6, lifeMs: 1600, pierce: 0, homing: 3, burn: { dps: 6, ms: 2000 }, sprite: 'firebolt', perLevel: { damage: 0.2, count: 0.5 } },
 	palm: { name: 'Palm Strike', shape: 'arc', damage: 9, cooldownMs: 340, range: 56, arcDeg: 90, knockback: 8, color: 0xffe060, perLevel: { damage: 0.2, cooldown: 0.05 } },
 
 	holysword: { name: 'Holy Edge', shape: 'arc', damage: 20, cooldownMs: 1000, range: 95, arcDeg: 170, knockback: 16, color: 0xfff2a0, perLevel: { damage: 0.25, area: 0.08 } },
-	holybeam: { name: 'Holy Beam', shape: 'projectile', damage: 14, cooldownMs: 1400, count: 2, spreadDeg: 30, speed: 440, radius: 7, lifeMs: 1000, pierce: 99, sprite: 'beam', perLevel: { damage: 0.2, count: 0.5 } },
-	shuriken: { name: 'Shuriken', shape: 'projectile', damage: 8, cooldownMs: 700, count: 4, spreadDeg: 50, speed: 380, radius: 6, lifeMs: 1200, pierce: 1, sprite: 'shuriken', spin: 18, perLevel: { damage: 0.2, count: 0.5 } },
+	holybeam: { name: 'Holy Beam', shape: 'projectile', color: 0xfff2a0, damage: 14, cooldownMs: 1400, count: 2, spreadDeg: 30, speed: 440, radius: 7, lifeMs: 1000, pierce: 99, sprite: 'beam', perLevel: { damage: 0.2, count: 0.5 } },
+	shuriken: { name: 'Shuriken', shape: 'projectile', color: 0xb8bcc8, damage: 8, cooldownMs: 700, count: 4, spreadDeg: 50, speed: 380, radius: 6, lifeMs: 1200, pierce: 1, sprite: 'shuriken', spin: 18, perLevel: { damage: 0.2, count: 0.5 } },
 };
 
 // Job Actions spend `cost` gauge. Parts are listed in core/actions.js.

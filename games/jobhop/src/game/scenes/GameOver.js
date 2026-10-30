@@ -2,29 +2,29 @@
 import { TUNING } from '../../data/tuning.js';
 import { JOBS } from '../../data/jobs.js';
 import { STATS } from '../../data/passives.js';
-import { levelFromXp } from '../../core/jobs.js';
+import { levelFromXp, nodesBetween, describeNode } from '../../core/jobs.js';
 import { formatTime } from '../../core/run.js';
-import { formatMod } from '../../core/stats.js';
-import { fs, isTouch } from '../../../../../shared/ui.js';
+import { isTouch } from '../../../../../shared/ui.js';
 import { frameKey } from '../textures.js';
+import { textStyle, bindKeys } from '../kit.js';
 
 const W = TUNING.width, H = TUNING.height;
 
 export class GameOver extends Phaser.Scene {
 	create(r) {
 		const sfx = this.registry.get('sfx');
-		const style = (px, color = '#f4f4f4') => ({ fontFamily: 'monospace', fontSize: fs(this, px), color, fontStyle: 'bold', align: 'center' });
+		const style = (px, color) => textStyle(this, px, color, { align: 'center' });
 		this.add.tileSprite(0, 0, W, H, 'ground').setOrigin(0).setAlpha(0.4);
 		this.add.rectangle(0, 0, W, H, 0x14121c, 0.65).setOrigin(0);
 
-		this.add.text(W / 2, 50, r.won ? 'VICTORY' : 'FALLEN', { ...style(44, r.won ? '#f2d544' : '#d6463c'), stroke: '#14121c', strokeThickness: 8 }).setOrigin(0.5);
+		const title = this.add.text(W / 2, 50, r.won ? 'VICTORY' : 'FALLEN', { ...style(44, r.won ? '#f2d544' : '#d6463c'), stroke: '#14121c', strokeThickness: 8 }).setOrigin(0.5).setScale(1.8).setAlpha(0);
+		this.tweens.add({ targets: title, scale: 1, alpha: 1, duration: 360, ease: 'Back.easeOut' });
 		this.add.text(W / 2, 96, `survived ${formatTime(r.time)}    level ${r.level}    ${r.kills} KOs`, style(14)).setOrigin(0.5);
 		const rankText = r.rank === 0 ? `NEW BEST: ${r.score}` : r.rank > 0 ? `#${r.rank + 1} best run: ${r.score}` : `score ${r.score}`;
 		this.add.text(W / 2, 120, rankText, style(12, r.rank === 0 ? '#f2d544' : '#b8bcc8')).setOrigin(0.5);
 
 		this.add.text(W / 2, 156, 'JOB XP  (earned by the job you were playing)', style(12, '#9ff0fa')).setOrigin(0.5);
 		const curve = TUNING.jobXp;
-		const g = this.add.graphics();
 		r.picks.forEach((id, i) => {
 			const job = JOBS[id];
 			const y = 196 + i * 78;
@@ -33,11 +33,24 @@ export class GameOver extends Phaser.Scene {
 			this.add.image(150, y + 14, frameKey(job.sprite, 0));
 			const lvl = after.level > before.level ? `Lv ${before.level} -> ${after.level}  LEVEL UP!` : `Lv ${after.level}`;
 			this.add.text(180, y - 6, `${job.name}   +${gained} xp   ${lvl}`, { ...style(13, after.level > before.level ? '#f2d544' : '#f4f4f4'), align: 'left' });
-			g.fillStyle(0x0b0a10, 1).fillRect(180, y + 16, 440, 10);
-			g.fillStyle(after.max ? 0xf2d544 : 0x4d8fe0, 1).fillRect(181, y + 17, 438 * (after.max ? 1 : after.into / after.need), 8);
-			const nodes = job.nodes.filter(n => n.level > before.level && n.level <= after.level);
+			// The bar fills from where the job started this run; a level-up fills
+			// it to the end first, then refills from empty.
+			const frac = p => (p.max ? 1 : p.into / p.need);
+			const levels = after.level - before.level;
+			const bar = this.add.graphics();
+			const draw = t => {
+				const pos = frac(before) + t * (levels + frac(after) - frac(before));
+				const lapped = pos >= 1 && t < 1 ? pos % 1 || 1 : t >= 1 ? frac(after) : pos;
+				bar.clear();
+				bar.fillStyle(0x0b0a10, 1).fillRect(180, y + 16, 440, 10);
+				bar.fillStyle(after.max && t >= 1 ? 0xf2d544 : 0x4d8fe0, 1).fillRect(181, y + 17, 438 * Math.min(1, lapped), 8);
+			};
+			draw(0);
+			const fill = { t: 0 };
+			this.tweens.add({ targets: fill, t: 1, delay: 300 + i * 250, duration: 700 + levels * 300, ease: 'Cubic.easeOut', onUpdate: () => draw(fill.t) });
+			const nodes = nodesBetween(job, before.level, after.level);
 			if (nodes.length) {
-				this.add.text(180, y + 32, `new: ${nodes.map(n => `${formatMod(STATS, n.stat, n.add)}${n.mastery ? ' (all jobs)' : ''}`).join(', ')}`, { ...style(10, '#6fe07a'), align: 'left' });
+				this.add.text(180, y + 32, `new: ${nodes.map(n => describeNode(STATS, n)).join(', ')}`, { ...style(10, '#6fe07a'), align: 'left' });
 			}
 		});
 
@@ -68,11 +81,6 @@ export class GameOver extends Phaser.Scene {
 				.setOrigin(0.5).setInteractive({ useHandCursor: true })
 				.on('pointerdown', () => go(scene));
 		});
-		const kb = this.input.keyboard;
-		const keys = { 'keydown-SPACE': () => go('Play'), 'keydown-ENTER': () => go('Play'), 'keydown-J': () => go('Jobs'), 'keydown-ESC': () => go('Menu') };
-		for (const [ev, fn] of Object.entries(keys)) kb.on(ev, fn);
-		this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
-			for (const [ev, fn] of Object.entries(keys)) kb.off(ev, fn);
-		});
+		bindKeys(this, { 'keydown-SPACE': () => go('Play'), 'keydown-ENTER': () => go('Play'), 'keydown-J': () => go('Jobs'), 'keydown-ESC': () => go('Menu') });
 	}
 }

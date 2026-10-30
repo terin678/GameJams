@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import {
 	xpForLevel, levelFromXp, jobLevels, isUnlocked, unlockedJobs, lockReason,
 	equippedMods, masteryMods, creditJobXp, awardJobXp, newlyUnlocked, liveXp, gainJobXp,
+	nodesBetween, describeNode,
 } from '../../games/jobhop/src/core/jobs.js';
 import { JOBS as REAL } from '../../games/jobhop/src/data/jobs.js';
 import { TUNING } from '../../games/jobhop/src/data/tuning.js';
@@ -90,6 +91,18 @@ test('awardJobXp adds run XP to saved XP without mutating, capped at max level',
 test('newlyUnlocked lists jobs unlocked by this run', () => {
 	assert.deepEqual(newlyUnlocked({ a: 20 }, { a: 30 }, JOBS, CURVE), ['c']);
 	assert.deepEqual(newlyUnlocked({ a: 30 }, { a: 40 }, JOBS, CURVE), []);
+});
+
+test('nodesBetween lists nodes earned going from one level to another', () => {
+	assert.deepEqual(nodesBetween(JOBS.a, 1, 2).map(n => n.level), [2]);
+	assert.deepEqual(nodesBetween(JOBS.a, 1, 4).map(n => n.level), [2, 4]);
+	assert.deepEqual(nodesBetween(JOBS.a, 2, 3), []);
+});
+
+test('describeNode reads like a bonus and flags mastery', () => {
+	const STATS = { area: { name: 'Area', pct: true }, maxHp: { name: 'Max HP' } };
+	assert.equal(describeNode(STATS, JOBS.a.nodes[0]), '+10% Area');
+	assert.equal(describeNode(STATS, JOBS.a.nodes[1]), '+20 Max HP (all jobs)');
 });
 
 test('jobLevels maps every job', () => {

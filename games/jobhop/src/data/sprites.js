@@ -96,6 +96,8 @@ export const SPRITES = {
 
 	// Grey so the tier tint shows through.
 	gem: { scale: 2, frames: [['..w..', '.wgw.', 'wgwgw', 'wgggw', '.wgw.', '..w..']] },
+	// White so particles can be tinted any colour.
+	spark: { scale: 2, frames: [['ww', 'ww']] },
 	potion: { frames: [['..k..', '.kwk.', '.krk.', 'krrrk', 'krRrk', '.kkk.']] },
 };
 

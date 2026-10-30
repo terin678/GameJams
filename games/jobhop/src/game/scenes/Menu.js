@@ -1,8 +1,9 @@
 import { TUNING } from '../../data/tuning.js';
 import { JOBS } from '../../data/jobs.js';
 import { jobLevels, unlockedJobs } from '../../core/jobs.js';
-import { fs, isTouch } from '../../../../../shared/ui.js';
+import { isTouch } from '../../../../../shared/ui.js';
 import { frameKey } from '../textures.js';
+import { textStyle, bindKeys } from '../kit.js';
 
 const W = TUNING.width, H = TUNING.height;
 
@@ -11,23 +12,25 @@ export class Menu extends Phaser.Scene {
 		const sfx = this.registry.get('sfx');
 		const store = this.registry.get('store');
 		const scores = this.registry.get('scores');
+		const quality = this.registry.get('quality');
 		const jobXp = this.registry.get('jobXp');
 		const picks = this.registry.get('picks');
 		const levels = jobLevels(jobXp, JOBS, TUNING.jobXp);
-		const style = (px, color = '#f4f4f4') => ({ fontFamily: 'monospace', fontSize: fs(this, px), color, fontStyle: 'bold', align: 'center' });
+		const style = (px, color) => textStyle(this, px, color, { align: 'center' });
 
 		this.ground = this.add.tileSprite(0, 0, W, H, 'ground').setOrigin(0);
 		this.add.rectangle(0, 0, W, H, 0x14121c, 0.45).setOrigin(0);
 
-		this.add.text(W / 2, 64, 'JOB HOP', { ...style(56, '#f2d544'), stroke: '#14121c', strokeThickness: 10 }).setOrigin(0.5);
+		const title = this.add.text(W / 2, 64, 'JOB HOP', { ...style(56, '#f2d544'), stroke: '#14121c', strokeThickness: 10 }).setOrigin(0.5);
+		this.tweens.add({ targets: title, scale: 1.05, yoyo: true, repeat: -1, duration: 1400, ease: 'Sine.easeInOut' });
 		this.add.text(W / 2, 108, 'SURVIVE TEN MINUTES.  MASTER EVERY JOB.', style(13, '#9ff0fa')).setOrigin(0.5);
 
-		// The loadout: first pick starts active.
+		// The loadout: first pick starts active. They march on the spot.
 		this.heroes = picks.map((id, i) => {
 			const x = W / 2 + (i ? 110 : -110);
 			const img = this.add.image(x, 190, frameKey(JOBS[id].sprite, 0)).setScale(2).setFlipX(i === 1);
 			this.add.text(x, 238, `${JOBS[id].name}\nLv ${levels[id]}`, { ...style(13), lineSpacing: 4 }).setOrigin(0.5, 0);
-			return img;
+			return { img, sprite: JOBS[id].sprite, y: 190 };
 		});
 		this.add.text(W / 2, 190, 'TAB', style(14, '#8a93b8')).setOrigin(0.5);
 		this.add.text(W / 2, 208, '<->', style(14, '#8a93b8')).setOrigin(0.5);
@@ -61,6 +64,15 @@ export class Menu extends Phaser.Scene {
 			showMute();
 		};
 
+		const gfx = this.add.text(10, H - 14, '', style(10, '#8a93b8')).setOrigin(0, 0.5).setInteractive({ useHandCursor: true });
+		const showGfx = () => gfx.setText(`[G] graphics: ${quality.label}`);
+		showGfx();
+		const cycleGfx = () => {
+			quality.cycle();
+			sfx.play('select');
+			showGfx();
+		};
+
 		let leaving = false;
 		const go = scene => {
 			if (leaving) return;
@@ -71,21 +83,20 @@ export class Menu extends Phaser.Scene {
 		const start = () => go('Play');
 		const openJobs = () => go('Jobs');
 		mute.on('pointerdown', (_p, _x, _y, e) => { e.stopPropagation(); toggleMute(); });
+		gfx.on('pointerdown', (_p, _x, _y, e) => { e.stopPropagation(); cycleGfx(); });
 		jobsBtn.on('pointerdown', (_p, _x, _y, e) => { e.stopPropagation(); openJobs(); });
 
-		const kb = this.input.keyboard;
-		const keys = { 'keydown-SPACE': start, 'keydown-ENTER': start, 'keydown-J': openJobs, 'keydown-M': toggleMute };
-		for (const [ev, fn] of Object.entries(keys)) kb.on(ev, fn);
+		bindKeys(this, { 'keydown-SPACE': start, 'keydown-ENTER': start, 'keydown-J': openJobs, 'keydown-M': toggleMute, 'keydown-G': cycleGfx });
 		this.input.on('pointerdown', start);
-		this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
-			for (const [ev, fn] of Object.entries(keys)) kb.off(ev, fn);
-			this.input.off('pointerdown', start);
-		});
+		this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => this.input.off('pointerdown', start));
 	}
 
 	update(time, delta) {
 		this.ground.tilePositionX += 0.02 * delta;
 		this.ground.tilePositionY += 0.01 * delta;
-		this.heroes.forEach((h, i) => h.setTexture(frameKey(h.texture.key.replace(/_\d$/, ''), Math.floor(time / 180 + i) % 2)));
+		this.heroes.forEach((h, i) => {
+			const step = Math.floor(time / 180 + i) % 2;
+			h.img.setTexture(frameKey(h.sprite, step)).setY(h.y - step * 3);
+		});
 	}
 }

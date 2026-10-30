@@ -90,6 +90,7 @@ test('attacks match their shape', () => {
 	for (const [id, a] of Object.entries(ATTACKS)) {
 		assert.ok(SHAPES[a.shape], `${id}.shape "${a.shape}"`);
 		assert.ok(a.damage > 0, `${id}.damage`);
+		assert.ok(Number.isInteger(a.color), `${id}.color`);
 		for (const k of SHAPES[a.shape]) assert.ok(a[k] !== undefined, `${id}.${k}`);
 		if (a.sprite) assert.ok(SPRITES[a.sprite], `${id}.sprite`);
 		if (a.burn) assert.ok(a.burn.dps > 0 && a.burn.ms > 0, `${id}.burn`);
@@ -132,6 +133,7 @@ test('enemies are well-formed', () => {
 		if (e.potion !== undefined) assert.ok(e.potion > 0 && e.potion <= 1, `${id}.potion`);
 		if (e.summon) assert.ok(ENEMIES[e.summon.type] && !ENEMIES[e.summon.type].boss, `${id}.summon`);
 		if (e.dash) assert.ok(e.dash.ms < e.dash.everyMs, `${id}.dash`);
+		assert.ok(Number.isInteger(e.color) && e.color >= 0 && e.color <= 0xffffff, `${id}.color (death burst)`);
 	}
 	assert.equal(Object.values(ENEMIES).filter(e => e.boss).length, 1, 'one boss');
 	assert.ok(Object.values(ENEMIES).some(e => e.elite), 'at least one elite');

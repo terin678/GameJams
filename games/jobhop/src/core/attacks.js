@@ -79,10 +79,11 @@ export function orbitPositions(cx, cy, count, radius, angle) {
 	});
 }
 
-export function nearest(items, x, y, maxDist = Infinity) {
+// The closest live item within maxDist; `skip(item)` true leaves an item out.
+export function nearest(items, x, y, maxDist = Infinity, skip = null) {
 	let best = null, bestD = maxDist * maxDist;
 	for (const it of items) {
-		if (it.dead) continue;
+		if (it.dead || skip?.(it)) continue;
 		const dx = it.x - x, dy = it.y - y, d = dx * dx + dy * dy;
 		if (d <= bestD) { best = it; bestD = d; }
 	}

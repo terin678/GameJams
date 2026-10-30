@@ -1,3 +1,5 @@
+import { formatMod } from './stats.js';
+
 // The job tree. Saved progress is only { jobId: xp }; levels and unlocks are
 // always derived from it, so changing the curve or the tree never breaks a save.
 // curve: { base, growth, maxLevel }. Going from level L to L+1 costs
@@ -88,3 +90,8 @@ export function newlyUnlocked(beforeXp, afterXp, jobs, curve) {
 	const before = new Set(unlockedJobs(beforeXp, jobs, curve));
 	return unlockedJobs(afterXp, jobs, curve).filter(id => !before.has(id));
 }
+
+// The nodes a job earns going from level `from` to level `to`.
+export const nodesBetween = (job, from, to) => job.nodes.filter(n => n.level > from && n.level <= to);
+
+export const describeNode = (STATS, n) => `${formatMod(STATS, n.stat, n.add)}${n.mastery ? ' (all jobs)' : ''}`;
