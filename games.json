@@ -1,5 +1,13 @@
 [
 	{
+		"slug": "jobhop",
+		"title": "Job Hop",
+		"blurb": "A Vampire Survivors-style arena with a Final Fantasy job tree. Take two jobs, swap mid-fight, and level them across runs to unlock Knight, Dragoon, Paladin and more.",
+		"date": "2026-10-29",
+		"tags": ["survivor", "action", "jobs"],
+		"path": "games/jobhop/"
+	},
+	{
 		"slug": "beanstalk",
 		"title": "Beanstalk",
 		"blurb": "An idle farming game. Plant one bean, hire a farmhand, build some drones, and keep going until the stalk runs out of universe.",

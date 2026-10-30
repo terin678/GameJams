@@ -1,0 +1,21 @@
+// Synthesized sound effects, see shared/sfx.js for the format.
+export const SOUNDS = {
+	hit: { wave: 'square', f0: 520, f1: 200, dur: 0.04, vol: 0.05 },
+	kill: { wave: 'noise', f0: 2200, f1: 300, dur: 0.08, vol: 0.1 },
+	swing: { wave: 'noise', f0: 3000, f1: 900, dur: 0.05, vol: 0.04 },
+	hurt: { wave: 'sawtooth', f0: 400, f1: 90, dur: 0.25, vol: 0.22 },
+	gem: { wave: 'triangle', f0: 1200, f1: 1700, dur: 0.05, vol: 0.06 },
+	potion: { wave: 'triangle', notes: [659, 880, 1175], dur: 0.25, vol: 0.2 },
+	levelup: { wave: 'square', notes: [523, 659, 784, 1047, 1319], dur: 0.45, vol: 0.18 },
+	swap: { wave: 'triangle', notes: [392, 587, 784], dur: 0.22, vol: 0.2 },
+	action: { wave: 'square', f0: 220, f1: 880, dur: 0.25, vol: 0.18 },
+	boom: { wave: 'noise', f0: 1200, f1: 60, dur: 0.5, vol: 0.4 },
+	empty: { wave: 'square', f0: 150, f1: 120, dur: 0.12, vol: 0.12 },
+	select: { wave: 'square', f0: 660, dur: 0.05, vol: 0.1 },
+	unlock: { wave: 'triangle', notes: [523, 659, 784, 1047, 1319, 1568], dur: 0.8, vol: 0.25 },
+	start: { wave: 'square', notes: [262, 330, 392, 523], dur: 0.4, vol: 0.18 },
+	elite: { wave: 'sawtooth', notes: [196, 185, 196, 185], dur: 0.6, vol: 0.18 },
+	boss: { wave: 'sawtooth', notes: [110, 98, 110, 98, 82], dur: 1.4, vol: 0.22 },
+	gameover: { wave: 'triangle', notes: [523, 392, 330, 262], dur: 1.2, vol: 0.3 },
+	win: { wave: 'square', notes: [523, 659, 784, 1047, 784, 1047, 1319], dur: 1.2, vol: 0.2 },
+};

@@ -1,0 +1,91 @@
+import { TUNING } from '../../data/tuning.js';
+import { JOBS } from '../../data/jobs.js';
+import { jobLevels, unlockedJobs } from '../../core/jobs.js';
+import { fs, isTouch } from '../../../../../shared/ui.js';
+import { frameKey } from '../textures.js';
+
+const W = TUNING.width, H = TUNING.height;
+
+export class Menu extends Phaser.Scene {
+	create() {
+		const sfx = this.registry.get('sfx');
+		const store = this.registry.get('store');
+		const scores = this.registry.get('scores');
+		const jobXp = this.registry.get('jobXp');
+		const picks = this.registry.get('picks');
+		const levels = jobLevels(jobXp, JOBS, TUNING.jobXp);
+		const style = (px, color = '#f4f4f4') => ({ fontFamily: 'monospace', fontSize: fs(this, px), color, fontStyle: 'bold', align: 'center' });
+
+		this.ground = this.add.tileSprite(0, 0, W, H, 'ground').setOrigin(0);
+		this.add.rectangle(0, 0, W, H, 0x14121c, 0.45).setOrigin(0);
+
+		this.add.text(W / 2, 64, 'JOB HOP', { ...style(56, '#f2d544'), stroke: '#14121c', strokeThickness: 10 }).setOrigin(0.5);
+		this.add.text(W / 2, 108, 'SURVIVE TEN MINUTES.  MASTER EVERY JOB.', style(13, '#9ff0fa')).setOrigin(0.5);
+
+		// The loadout: first pick starts active.
+		this.heroes = picks.map((id, i) => {
+			const x = W / 2 + (i ? 110 : -110);
+			const img = this.add.image(x, 190, frameKey(JOBS[id].sprite, 0)).setScale(2).setFlipX(i === 1);
+			this.add.text(x, 238, `${JOBS[id].name}\nLv ${levels[id]}`, { ...style(13), lineSpacing: 4 }).setOrigin(0.5, 0);
+			return img;
+		});
+		this.add.text(W / 2, 190, 'TAB', style(14, '#8a93b8')).setOrigin(0.5);
+		this.add.text(W / 2, 208, '<->', style(14, '#8a93b8')).setOrigin(0.5);
+
+		const unlocked = unlockedJobs(jobXp, JOBS, TUNING.jobXp).length;
+		const jobsBtn = this.add.text(W / 2, 300, `${isTouch(this) ? '' : '[J] '}CHANGE JOBS   ${unlocked} / ${Object.keys(JOBS).length} unlocked`, {
+			...style(13, '#9ff0fa'), backgroundColor: '#1b2238', padding: { x: 10, y: 6 },
+		}).setOrigin(0.5).setInteractive({ useHandCursor: true });
+
+		const controls = isTouch(this)
+			? 'DRAG to move, attacks are automatic\nSWAP changes job, ACTION spends the gauge'
+			: 'ARROWS / WASD  move (attacks are automatic)\nTAB / SHIFT  swap job      SPACE  job action\nP  pause      M  mute';
+		this.add.text(W / 2, 360, controls, { ...style(12), lineSpacing: 6 }).setOrigin(0.5);
+		this.add.text(W / 2, 418, 'Kills give job XP to the job you are playing.\nLevel jobs to unlock Advanced and Expert jobs.', { ...style(11, '#b8bcc8'), lineSpacing: 4 }).setOrigin(0.5);
+
+		const list = scores.list();
+		const table = list.length ? list.map((e, i) => `${i + 1}. ${e.name}  ${String(e.score).padStart(5)}`).join('\n') : 'no runs yet';
+		this.add.text(W / 2, 458, 'BEST RUNS  (seconds survived, +300 for a win)', style(10, '#f2d544')).setOrigin(0.5);
+		this.add.text(W / 2, 472, table, { ...style(11), lineSpacing: 2 }).setOrigin(0.5, 0);
+
+		const prompt = this.add.text(W / 2, H - 30, isTouch(this) ? 'TAP TO START' : 'PRESS SPACE TO START', style(16)).setOrigin(0.5);
+		this.tweens.add({ targets: prompt, alpha: 0.2, yoyo: true, repeat: -1, duration: 600 });
+
+		const mute = this.add.text(W - 10, H - 14, '', style(10, '#8a93b8')).setOrigin(1, 0.5).setInteractive({ useHandCursor: true });
+		const showMute = () => mute.setText(sfx.muted ? '[M] sound: off' : '[M] sound: on');
+		showMute();
+		const toggleMute = () => {
+			sfx.unlock();
+			sfx.muted = !sfx.muted;
+			store.set('muted', sfx.muted);
+			showMute();
+		};
+
+		let leaving = false;
+		const go = scene => {
+			if (leaving) return;
+			leaving = true;
+			sfx.unlock();
+			this.scene.start(scene);
+		};
+		const start = () => go('Play');
+		const openJobs = () => go('Jobs');
+		mute.on('pointerdown', (_p, _x, _y, e) => { e.stopPropagation(); toggleMute(); });
+		jobsBtn.on('pointerdown', (_p, _x, _y, e) => { e.stopPropagation(); openJobs(); });
+
+		const kb = this.input.keyboard;
+		const keys = { 'keydown-SPACE': start, 'keydown-ENTER': start, 'keydown-J': openJobs, 'keydown-M': toggleMute };
+		for (const [ev, fn] of Object.entries(keys)) kb.on(ev, fn);
+		this.input.on('pointerdown', start);
+		this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
+			for (const [ev, fn] of Object.entries(keys)) kb.off(ev, fn);
+			this.input.off('pointerdown', start);
+		});
+	}
+
+	update(time, delta) {
+		this.ground.tilePositionX += 0.02 * delta;
+		this.ground.tilePositionY += 0.01 * delta;
+		this.heroes.forEach((h, i) => h.setTexture(frameKey(h.texture.key.replace(/_\d$/, ''), Math.floor(time / 180 + i) % 2)));
+	}
+}

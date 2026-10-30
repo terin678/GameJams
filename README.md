@@ -8,6 +8,7 @@ No build step and no CI: plain ES modules, vendored Phaser 3, tests run locally.
 | **Beanstalk**: an idle farm that gets out of hand (built copy only; see below) | [`games/beanstalk/`](games/beanstalk/) |
 | **Superposition**: Schrödinger's cat in a maze, with quantum powers | [`games/superposition/`](games/superposition/) |
 | **Fowl Play: The Battle of Midair** — 1943 with a pigeon | [`games/midair/`](games/midair/) |
+| **Job Hop**: a survivor arena with a Final Fantasy style job tree | [`games/jobhop/`](games/jobhop/) |
 ## Run it
 
 ```bash
@@ -115,6 +116,38 @@ The maze (`src/data/maze.js`) is authored as a left half and mirrored, and
 `tests/superposition/data.test.js` checks it stays symmetric, so the twin's
 mirrored moves are always legal. Observer behaviours, timings and speeds are
 all in `src/data/`.
+
+## Job Hop
+
+Vampire Survivors meets Stranger of Paradise's job system. Attacks are
+automatic; you move, swap jobs and fire Job Actions. Survive ten minutes,
+then beat Chaos.
+
+| | Keyboard | Touch |
+|---|---|---|
+| Move | Arrows / WASD | drag anywhere |
+| Swap job | Tab / Shift / E | SWAP button |
+| Job Action (spends gauge) | Space / K | ACTION button |
+| Pause / mute | P or Esc / M | II button |
+
+- **Two jobs per run.** Pick them on the Jobs screen (J on the title). Swapping
+  has a short cooldown, gives brief i-frames, fires the new job's attack at once
+  and tops up its gauge.
+- **Job XP goes only to the active job.** Each kill credits the job you are
+  playing at that moment, banked when the run ends (win, death or quit).
+- **The tree** (`src/data/jobs.js`): four Basic jobs start unlocked. Each Basic
+  job at level 5 unlocks its Advanced job (Swordsman → Knight, Lancer → Dragoon,
+  Mage → Black Mage, Pugilist → Monk). Experts need two Advanced jobs at
+  level 8: Knight + Black Mage → Paladin, Monk + Dragoon → Ninja.
+- **Job nodes**: each job has five stat nodes earned by level, active while that
+  job is active. The level 10 node is a mastery bonus that applies to every job.
+- **Run levels** come from gems and offer three cards: level up either equipped
+  job's attack (max 5) or take an accessory (Might, Area, Haste, Speed, Max HP,
+  Magnet, Armor, Regen).
+
+Unlocks are derived from saved XP and never stored, so retuning the curve in
+`src/data/tuning.js` can't break a save. `tests/jobhop/data.test.js` checks the
+tree's shape (4/4/2, requirements one tier down, every attack and action used).
 
 ## Beanstalk
 
