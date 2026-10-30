@@ -6,7 +6,7 @@ import { levelFromXp, nodesBetween, describeNode } from '../../core/jobs.js';
 import { formatTime } from '../../core/run.js';
 import { isTouch } from '../../../../../shared/ui.js';
 import { frameKey } from '../textures.js';
-import { textStyle, bindKeys } from '../kit.js';
+import { textStyle, bindKeys, stack } from '../kit.js';
 
 const W = TUNING.width, H = TUNING.height;
 
@@ -17,22 +17,29 @@ export class GameOver extends Phaser.Scene {
 		this.add.tileSprite(0, 0, W, H, 'ground').setOrigin(0).setAlpha(0.4);
 		this.add.rectangle(0, 0, W, H, 0x14121c, 0.65).setOrigin(0);
 
-		const title = this.add.text(W / 2, 50, r.won ? 'VICTORY' : 'FALLEN', { ...style(44, r.won ? '#f2d544' : '#d6463c'), stroke: '#14121c', strokeThickness: 8 }).setOrigin(0.5).setScale(1.8).setAlpha(0);
-		this.tweens.add({ targets: title, scale: 1, alpha: 1, duration: 360, ease: 'Back.easeOut' });
-		this.add.text(W / 2, 96, `survived ${formatTime(r.time)}    level ${r.level}    ${r.kills} KOs`, style(14)).setOrigin(0.5);
+		// The header lines stack by measured height, so phone fonts never collide.
+		const line = (str, px, color, extra = {}) => this.add.text(W / 2, 0, str, { ...style(px, color), ...extra }).setOrigin(0.5, 0);
+		const title = line(r.won ? 'VICTORY' : 'FALLEN', 44, r.won ? '#f2d544' : '#d6463c', { stroke: '#14121c', strokeThickness: 8 });
 		const rankText = r.rank === 0 ? `NEW BEST: ${r.score}` : r.rank > 0 ? `#${r.rank + 1} best run: ${r.score}` : `score ${r.score}`;
-		this.add.text(W / 2, 120, rankText, style(12, r.rank === 0 ? '#f2d544' : '#b8bcc8')).setOrigin(0.5);
-
-		this.add.text(W / 2, 156, 'JOB XP  (earned by the job you were playing)', style(12, '#9ff0fa')).setOrigin(0.5);
+		const headerBottom = stack(14, [
+			title,
+			[line(`survived ${formatTime(r.time)}    level ${r.level}    ${r.kills} KOs`, 14), 2],
+			[line(rankText, 12, r.rank === 0 ? '#f2d544' : '#b8bcc8'), 4],
+			[line('JOB XP  (earned by the job you were playing)', 12, '#9ff0fa'), 18],
+		]);
+		title.setScale(1.8).setAlpha(0);
+		this.tweens.add({ targets: title, scale: 1, alpha: 1, duration: 360, ease: 'Back.easeOut' });
+		const rowsTop = Math.max(196, Math.ceil(headerBottom) + 30);
 		const curve = TUNING.jobXp;
 		r.picks.forEach((id, i) => {
 			const job = JOBS[id];
-			const y = 196 + i * 78;
+			const y = rowsTop + i * 78;
 			const before = levelFromXp(r.before[id] ?? 0, curve), after = levelFromXp(r.after[id] ?? 0, curve);
 			const gained = Math.round(r.runJobXp[id] ?? 0);
 			this.add.image(150, y + 14, frameKey(job.sprite, 0));
 			const lvl = after.level > before.level ? `Lv ${before.level} -> ${after.level}  LEVEL UP!` : `Lv ${after.level}`;
-			this.add.text(180, y - 6, `${job.name}   +${gained} xp   ${lvl}`, { ...style(13, after.level > before.level ? '#f2d544' : '#f4f4f4'), align: 'left' });
+			const head = this.add.text(180, y - 6, `${job.name}   +${gained} xp   ${lvl}`, { ...style(13, after.level > before.level ? '#f2d544' : '#f4f4f4'), align: 'left' });
+			const barY = Math.ceil(head.getBounds().bottom) + 4;   // under the heading at any font size
 			// The bar fills from where the job started this run; a level-up fills
 			// it to the end first, then refills from empty.
 			const frac = p => (p.max ? 1 : p.into / p.need);
@@ -42,22 +49,22 @@ export class GameOver extends Phaser.Scene {
 				const pos = frac(before) + t * (levels + frac(after) - frac(before));
 				const lapped = pos >= 1 && t < 1 ? pos % 1 || 1 : t >= 1 ? frac(after) : pos;
 				bar.clear();
-				bar.fillStyle(0x0b0a10, 1).fillRect(180, y + 16, 440, 10);
-				bar.fillStyle(after.max && t >= 1 ? 0xf2d544 : 0x4d8fe0, 1).fillRect(181, y + 17, 438 * Math.min(1, lapped), 8);
+				bar.fillStyle(0x0b0a10, 1).fillRect(180, barY, 440, 10);
+				bar.fillStyle(after.max && t >= 1 ? 0xf2d544 : 0x4d8fe0, 1).fillRect(181, barY + 1, 438 * Math.min(1, lapped), 8);
 			};
 			draw(0);
 			const fill = { t: 0 };
 			this.tweens.add({ targets: fill, t: 1, delay: 300 + i * 250, duration: 700 + levels * 300, ease: 'Cubic.easeOut', onUpdate: () => draw(fill.t) });
 			const nodes = nodesBetween(job, before.level, after.level);
 			if (nodes.length) {
-				this.add.text(180, y + 32, `new: ${nodes.map(n => describeNode(STATS, n)).join(', ')}`, { ...style(10, '#6fe07a'), align: 'left' });
+				this.add.text(180, barY + 14, `new: ${nodes.map(n => describeNode(STATS, n)).join(', ')}`, { ...style(10, '#6fe07a'), align: 'left' });
 			}
 		});
 
 		r.unlocked.forEach((id, i) => {
-			const y = 370 + i * 54;
+			const y = Math.max(370, rowsTop + r.picks.length * 78 + 18) + i * 54;
 			const t = this.add.text(W / 2 + 20, y, `NEW JOB UNLOCKED: ${JOBS[id].name.toUpperCase()}`, { ...style(18, '#f2d544'), stroke: '#14121c', strokeThickness: 5 }).setOrigin(0.5);
-			this.add.image(W / 2 - t.width / 2 - 16, y, frameKey(JOBS[id].sprite, 0));
+			this.add.image(t.getBounds().left - 18, y, frameKey(JOBS[id].sprite, 0));
 			this.tweens.add({ targets: t, alpha: 0.4, yoyo: true, repeat: -1, duration: 500 });
 		});
 		if (r.unlocked.length) this.time.delayedCall(500, () => sfx.play('unlock'));

@@ -9,7 +9,7 @@ import { togglePick, chargeInfo } from '../../core/loadout.js';
 import { formatMod } from '../../core/stats.js';
 import { isTouch } from '../../../../../shared/ui.js';
 import { frameKey } from '../textures.js';
-import { textStyle, bindKeys } from '../kit.js';
+import { textStyle, bindKeys, stack, stackHeight } from '../kit.js';
 
 const W = TUNING.width, H = TUNING.height;
 const CARD = { w: 172, h: 92 };
@@ -34,12 +34,15 @@ export class Jobs extends Phaser.Scene {
 
 		this.add.tileSprite(0, 0, W, H, 'ground').setOrigin(0).setAlpha(0.5);
 		this.add.rectangle(0, 0, W, H, 0x14121c, 0.6).setOrigin(0);
-		this.add.text(W / 2, 22, 'JOBS', style(24, '#f2d544')).setOrigin(0.5);
-		this.header = this.add.text(W / 2, 50, '', style(12, '#9ff0fa')).setOrigin(0.5);
-		ROWS.forEach((row, r) => this.add.text(30, ROW_Y[r] - CARD.h / 2 - 13, TIERS[r].toUpperCase(), style(9, '#8a93b8')));
+		const title = this.add.text(W / 2, 8, 'JOBS', style(24, '#f2d544')).setOrigin(0.5, 0);
+		this.header = this.add.text(W / 2, title.getBounds().bottom + 2, 'Ag', style(12, '#9ff0fa')).setOrigin(0.5, 0);
+		// Push the tree down if bigger phone fonts made the header taller.
+		const shift = Math.max(0, Math.ceil(this.header.getBounds().bottom + 16 - (ROW_Y[0] - CARD.h / 2)));
+		const rowY = ROW_Y.map(y => y + shift);
+		ROWS.forEach((row, r) => this.add.text(30, rowY[r] - CARD.h / 2 - 2, TIERS[r].toUpperCase(), style(9, '#8a93b8')).setOrigin(0, 1));
 
 		this.pos = {};
-		ROWS.forEach((row, r) => row.forEach((id, c) => { this.pos[id] = { x: W / 2 + (c - (row.length - 1) / 2) * (CARD.w + 18), y: ROW_Y[r] }; }));
+		ROWS.forEach((row, r) => row.forEach((id, c) => { this.pos[id] = { x: W / 2 + (c - (row.length - 1) / 2) * (CARD.w + 18), y: rowY[r] }; }));
 
 		// Tree lines under the cards: lit when that requirement is met.
 		const lines = this.add.graphics();
@@ -54,8 +57,9 @@ export class Jobs extends Phaser.Scene {
 
 		this.cards = {};
 		for (const id of Object.keys(JOBS)) this.buildCard(id);
-		this.detail = this.add.text(30, 418, '', { ...style(11), lineSpacing: 4, wordWrap: { width: W - 60 } });
-		this.nodeText = this.add.text(W - 30, 418, '', { ...style(11), lineSpacing: 4, align: 'right' }).setOrigin(1, 0);
+		const detailY = rowY.at(-1) + CARD.h / 2 + 14;
+		this.detail = this.add.text(30, detailY, '', { ...style(11), lineSpacing: 4, wordWrap: { width: W - 60 } });
+		this.nodeText = this.add.text(W - 30, detailY, '', { ...style(11), lineSpacing: 4, align: 'right' }).setOrigin(1, 0);
 		this.footer = this.add.text(W / 2, H - 16, isTouch(this) ? 'tap a job to pick it  ·  tap here when done' : 'ARROWS move  ·  ENTER pick / unpick  ·  ESC done', style(11, '#8a93b8'))
 			.setOrigin(0.5).setInteractive({ useHandCursor: true });
 		this.footer.on('pointerdown', () => this.leave());
@@ -77,18 +81,27 @@ export class Jobs extends Phaser.Scene {
 		const bg = this.add.rectangle(x, y, CARD.w, CARD.h, 0x1b1a28, 0.95).setInteractive({ useHandCursor: true });
 		const icon = this.add.image(x - CARD.w / 2 + 26, y + 2, frameKey(job.sprite, 0));
 		if (!unlocked) icon.setTintFill(0x000000).setAlpha(0.6);
-		const name = this.add.text(x - CARD.w / 2 + 50, y - 34, job.name, style(12, unlocked ? '#f4f4f4' : '#6b7080'));
+		// Name, level, XP bar and XP numbers, stacked by measured height and
+		// centred in the card so bigger phone fonts never overlap.
+		const tx = x - CARD.w / 2 + 50, bw = CARD.w - 62;
+		const name = this.add.text(tx, 0, job.name, style(12, unlocked ? '#f4f4f4' : '#6b7080'));
 		const p = this.progress[id];
 		const sub = unlocked ? (p.max ? `Lv ${p.level}  MASTERED` : `Lv ${p.level}`) : 'LOCKED';
-		const lvl = this.add.text(x - CARD.w / 2 + 50, y - 16, sub, style(11, unlocked ? (p.max ? '#f2d544' : '#9ff0fa') : '#8f2a24'));
+		const lvl = this.add.text(tx, 0, sub, style(11, unlocked ? (p.max ? '#f2d544' : '#9ff0fa') : '#8f2a24'));
 		const bar = this.add.graphics();
+		const barSlot = { displayHeight: 7, setY(v) { this.y = v; return this; } };
+		const parts = [name, lvl];
 		if (unlocked) {
-			const bx = x - CARD.w / 2 + 50, bw = CARD.w - 62;
-			bar.fillStyle(0x0b0a10, 1).fillRect(bx, y + 4, bw, 7);
-			bar.fillStyle(p.max ? 0xf2d544 : 0x4d8fe0, 1).fillRect(bx + 1, y + 5, (bw - 2) * (p.max ? 1 : p.into / p.need), 5);
-			this.add.text(bx, y + 16, p.max ? '' : `${Math.floor(p.into)} / ${p.need} xp`, style(9, '#8a93b8'));
+			parts.push([barSlot, 4]);
+			if (!p.max) parts.push([this.add.text(tx, 0, `${Math.floor(p.into)} / ${p.need} xp`, style(9, '#8a93b8')), 3]);
 		}
-		const badge = this.add.text(x + CARD.w / 2 - 8, y - CARD.h / 2 + 6, '', { ...style(12, '#14121c'), backgroundColor: '#f2d544', padding: { x: 5, y: 2 } }).setOrigin(1, 0);
+		stack(y - stackHeight(parts) / 2, parts);
+		if (unlocked) {
+			bar.fillStyle(0x0b0a10, 1).fillRect(tx, barSlot.y, bw, 7);
+			bar.fillStyle(p.max ? 0xf2d544 : 0x4d8fe0, 1).fillRect(tx + 1, barSlot.y + 1, (bw - 2) * (p.max ? 1 : p.into / p.need), 5);
+		}
+		// The pick number sits on the card's top edge like a tab, clear of the name.
+		const badge = this.add.text(x + CARD.w / 2 - 8, y - CARD.h / 2, '', { ...style(12, '#14121c'), backgroundColor: '#f2d544', padding: { x: 5, y: 2 } }).setOrigin(1, 0.5);
 		bg.on('pointerover', () => { const r = ROWS.findIndex(row => row.includes(id)); this.cursor = { row: r, col: ROWS[r].indexOf(id) }; this.refresh(); });
 		bg.on('pointerdown', () => this.toggle(id));
 		this.cards[id] = { bg, badge, unlocked, name, lvl, bar };

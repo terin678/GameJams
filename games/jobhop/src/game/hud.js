@@ -10,7 +10,7 @@ import { xpToNext } from '../core/xp.js';
 import { formatTime } from '../core/run.js';
 import { chase } from '../core/anim.js';
 import { isTouch } from '../../../../shared/ui.js';
-import { DEPTH, textStyle } from './kit.js';
+import { DEPTH, textStyle, stack } from './kit.js';
 import { frameKey } from './textures.js';
 
 const W = TUNING.width, H = TUNING.height;
@@ -23,12 +23,33 @@ export class Hud {
 		const scene = play;
 		const style = (px, color) => textStyle(scene, px, color);
 		const hud = o => o.setScrollFactor(0).setDepth(DEPTH.hud);
+		const touch = isTouch(scene);
 		this.gfx = hud(scene.add.graphics());
-		this.lvText = hud(scene.add.text(12, 16, '', style(14, '#9ff0fa')));
-		this.timeText = hud(scene.add.text(W / 2, 16, '', style(22)).setOrigin(0.5, 0));
-		this.killText = hud(scene.add.text(W - 12, 40, '', style(13, '#b8bcc8')).setOrigin(1, 0));
-		this.hpText = hud(scene.add.text(12 + 100, 44, '', style(10)).setOrigin(0.5, 0));
-		this.bossText = hud(scene.add.text(W / 2, 50, '', style(12, '#ff8a80')).setOrigin(0.5, 0).setVisible(false));
+
+		// Everything is placed from measured text sizes, because phones draw
+		// text up to 1.6x larger and fixed offsets would collide.
+		// Top row: run level, timer, KOs (and the pause button on touch).
+		this.lvText = hud(scene.add.text(12, 0, 'LV 1', style(14, '#9ff0fa')).setOrigin(0, 0.5));
+		this.timeText = hud(scene.add.text(W / 2, 0, '00:00', style(22)).setOrigin(0.5));
+		const row = 12 + Math.max(this.lvText.height, this.timeText.height) / 2;
+		this.lvText.setY(row);
+		this.timeText.setY(row);
+		let koRight = W - 12;
+		if (touch) {
+			const pauseBtn = hud(scene.add.text(W - 12, row, 'II', style(18, '#8a93b8')).setOrigin(1, 0.5).setInteractive())
+				.on('pointerdown', (_p, _x, _y, e) => { e.stopPropagation(); scene.pause(); });
+			koRight = pauseBtn.getBounds().left - 14;
+		}
+		this.killText = hud(scene.add.text(koRight, row, 'KO 0', style(13, '#b8bcc8')).setOrigin(1, 0.5));
+
+		// HP bar under the level, tall enough for its numbers, which sit centred in it.
+		this.hpText = hud(scene.add.text(0, 0, '100 / 100', style(10)).setOrigin(0.5));
+		this.hpBar = { x: 12, y: Math.max(40, this.lvText.getBounds().bottom + 6), w: 200, h: Math.max(14, Math.ceil(this.hpText.height) + 2) };
+		this.hpText.setPosition(this.hpBar.x + this.hpBar.w / 2, this.hpBar.y + this.hpBar.h / 2);
+
+		// Boss name under the timer, its bar under the name.
+		this.bossText = hud(scene.add.text(W / 2, this.timeText.getBounds().bottom + 2, 'BOSS', style(12, '#ff8a80')).setOrigin(0.5, 0).setVisible(false));
+		this.bossBarY = Math.ceil(this.bossText.getBounds().bottom) + 2;
 
 		// Bars that animate: HP leaves a white chip that drains after a beat;
 		// run XP slides instead of jumping.
@@ -37,44 +58,47 @@ export class Hud {
 		this.xpShown = 0;
 		this.swapFlashUntil = 0;
 
-		// Job panels: name and level, the action with its charges, and a live job XP bar.
-		const top = H - PANEL.h - 12;
+		// Job panels: name and level, the action with its charges, and a live
+		// job XP bar, stacked and centred in a panel tall enough to hold them.
+		const label = (x, px, color) => hud(scene.add.text(x, 0, 'Ag', style(px, color)));
 		this.panels = play.loadout.jobs.map((id, i) => {
 			const x = 12 + i * (PANEL.w + PANEL.gap);
-			return {
-				id, x, y: top,
-				icon: hud(scene.add.image(x + 22, top + PANEL.h / 2, frameKey(JOBS[id].sprite, 0))),
-				name: hud(scene.add.text(x + 44, top + 5, '', style(12))),
-				act: hud(scene.add.text(x + 44, top + 21, '', style(10, '#b8bcc8'))),
-			};
+			return { id, x, name: label(x + 44, 12), act: label(x + 44, 10, '#b8bcc8') };
 		});
-		const touch = isTouch(scene);
-		hud(scene.add.text(12, top - 18, touch ? '' : 'TAB swap job    P pause', style(10, '#8a93b8')));
+		const { name, act } = this.panels[0];
+		const content = name.height + act.height + 3 + 8;   // name, action, gap, XP bar
+		this.panelH = Math.max(PANEL.h, Math.ceil(content) + 10);
+		const top = H - this.panelH - 12;
+		for (const pn of this.panels) {
+			pn.y = top;
+			pn.barY = stack(top + (this.panelH - content) / 2, [pn.name, pn.act]) + 3;
+			pn.icon = hud(scene.add.image(pn.x + 22, top + this.panelH / 2, frameKey(JOBS[pn.id].sprite, 0)));
+		}
+		hud(scene.add.text(12, top - 4, touch ? '' : 'TAB swap job    P pause', style(10, '#8a93b8')).setOrigin(0, 1));
 
 		// The Job Action dial: fills as the next charge builds, a pip per charge.
-		this.dialName = hud(scene.add.text(DIAL.x, DIAL.y - DIAL.r - 16, '', style(11)).setOrigin(0.5));
+		this.dialName = hud(scene.add.text(DIAL.x, DIAL.y - DIAL.r - 4, '', style(11)).setOrigin(0.5, 1));
 		this.dialIcon = hud(scene.add.image(DIAL.x, DIAL.y, frameKey(play.jobSprite(), 0)));
-		hud(scene.add.text(DIAL.x, DIAL.y + DIAL.r + 24, touch ? 'TAP' : 'SPACE', style(10, '#8a93b8')).setOrigin(0.5));
-		this.dialNag = hud(scene.add.text(DIAL.x - DIAL.r - 12, DIAL.y, touch ? 'TAP ME! ▶' : 'press SPACE! ▶', style(12, '#f2d544')).setOrigin(1, 0.5).setVisible(false));
+		hud(scene.add.text(DIAL.x, DIAL.y + DIAL.r + 17, touch ? 'TAP' : 'SPACE', style(10, '#8a93b8')).setOrigin(0.5, 0));
+		// The first-use prompt: left of the dial, or above it on touch where the SWAP button is.
+		this.dialNag = touch
+			? hud(scene.add.text(DIAL.x, 0, 'TAP ME! ▼', style(12, '#f2d544')).setOrigin(0.5, 1).setVisible(false))
+			: hud(scene.add.text(DIAL.x - DIAL.r - 12, DIAL.y, 'press SPACE! ▶', style(12, '#f2d544')).setOrigin(1, 0.5).setVisible(false));
 		hud(scene.add.circle(DIAL.x, DIAL.y, DIAL.r, 0x000000, 0.001).setInteractive({ useHandCursor: true }))
 			.on('pointerdown', (_p, _x, _y, e) => { e.stopPropagation(); play.tryAction(); });
 		this.lastReady = Object.fromEntries(play.loadout.jobs.map(id => [id, 0]));
 
-		if (touch) this.buildTouchButtons();
+		if (touch) this.buildSwapButton();
 		this.refresh();
+		this.dialNag.setX(Math.min(this.dialNag.x, W - 6 - this.dialNag.width / 2));
+		if (touch) this.dialNag.setY(this.dialName.getBounds().top - 2);
 	}
 
-	buildTouchButtons() {
-		const scene = this.play;
-		const button = (x, y, r, label, color, fn) => {
-			const c = scene.add.circle(x, y, r, color, 0.35).setStrokeStyle(2, color, 0.9).setScrollFactor(0).setDepth(DEPTH.hud).setInteractive();
-			scene.add.text(x, y, label, textStyle(scene, 12)).setOrigin(0.5).setScrollFactor(0).setDepth(DEPTH.hud);
-			c.on('pointerdown', (_p, _x, _y, e) => { e.stopPropagation(); fn(); });
-		};
-		button(DIAL.x - DIAL.r - 50, H - 50, 30, 'SWAP', 0x9ff0fa, () => scene.trySwap());
-		scene.add.text(W - 12, 12, 'II', textStyle(scene, 18, '#8a93b8'))
-			.setOrigin(1, 0).setScrollFactor(0).setDepth(DEPTH.hud).setInteractive()
-			.on('pointerdown', (_p, _x, _y, e) => { e.stopPropagation(); scene.pause(); });
+	buildSwapButton() {
+		const scene = this.play, x = DIAL.x - DIAL.r - 50, y = H - 50, r = 30, color = 0x9ff0fa;
+		const c = scene.add.circle(x, y, r, color, 0.35).setStrokeStyle(2, color, 0.9).setScrollFactor(0).setDepth(DEPTH.hud).setInteractive();
+		scene.add.text(x, y, 'SWAP', textStyle(scene, 12)).setOrigin(0.5).setScrollFactor(0).setDepth(DEPTH.hud);
+		c.on('pointerdown', (_p, _x, _y, e) => { e.stopPropagation(); scene.trySwap(); });
 	}
 
 	// After a swap or a job level: names, levels, which panel is lit.
@@ -134,30 +158,30 @@ export class Hud {
 
 		const hp = Math.max(0, play.hp / play.stats.maxHp);
 		this.chip = now < this.chipHoldUntil ? Math.max(this.chip, hp) : chase(this.chip, hp, dt, FX.chip.perSecond);
-		bar(12, 40, 200, 14, hp, hp < 0.3 && Math.floor(now / 200) % 2 ? 0xff6a5c : 0xd6463c, this.chip);
+		bar(this.hpBar.x, this.hpBar.y, this.hpBar.w, this.hpBar.h, hp, hp < 0.3 && Math.floor(now / 200) % 2 ? 0xff6a5c : 0xd6463c, this.chip);
 		this.hpText.setText(`${Math.max(0, Math.ceil(play.hp))} / ${Math.round(play.stats.maxHp)}`);
 
 		const boss = play.boss && !play.boss.dead ? play.boss : null;
 		this.bossText.setVisible(!!boss);
 		if (boss) {
 			this.bossText.setText(boss.def.name.toUpperCase());
-			bar(W / 2 - 200, 68, 400, 10, boss.hp / boss.maxHp, 0xb0302a);
+			bar(W / 2 - 200, this.bossBarY, 400, 10, boss.hp / boss.maxHp, 0xb0302a);
 		}
 
 		this.panels.forEach((pn, i) => {
 			const active = i === play.loadout.active;
 			const action = ACTIONS[JOBS[pn.id].action];
-			h.fillStyle(0x14121c, active ? 0.85 : 0.6).fillRect(pn.x, pn.y, PANEL.w, PANEL.h);
+			h.fillStyle(0x14121c, active ? 0.85 : 0.6).fillRect(pn.x, pn.y, PANEL.w, this.panelH);
 			const flash = active && now < this.swapFlashUntil;
-			h.lineStyle(flash ? 3 : 2, flash ? 0xffffff : active ? 0xf2d544 : 0x2c3550, 1).strokeRect(pn.x, pn.y, PANEL.w, PANEL.h);
+			h.lineStyle(flash ? 3 : 2, flash ? 0xffffff : active ? 0xf2d544 : 0x2c3550, 1).strokeRect(pn.x, pn.y, PANEL.w, this.panelH);
 			const c = chargeInfo(play.loadout.gauge[pn.id], action.cost, TUNING.gauge.max);
 			const label = `${action.name}  ${'●'.repeat(c.ready)}${'○'.repeat(c.total - c.ready)}`;
 			if (pn.act.text !== label) pn.act.setText(label);
 			const jx = levelFromXp((play.savedXp[pn.id] ?? 0) + (play.runJobXp[pn.id] ?? 0), TUNING.jobXp);
-			bar(pn.x + 44, pn.y + 39, PANEL.w - 54, 8, jx.max ? 1 : jx.into / jx.need, jx.max ? 0xf2d544 : 0x4d8fe0);
+			bar(pn.x + 44, pn.barY, PANEL.w - 54, 8, jx.max ? 1 : jx.into / jx.need, jx.max ? 0xf2d544 : 0x4d8fe0);
 			if (!active && !canSwap(play.loadout, now)) {
 				const left = (play.loadout.swapReadyAt - now) / TUNING.swap.cooldownMs;
-				h.fillStyle(0x000000, 0.45).fillRect(pn.x, pn.y, PANEL.w * left, PANEL.h);
+				h.fillStyle(0x000000, 0.45).fillRect(pn.x, pn.y, PANEL.w * left, this.panelH);
 			}
 		});
 		this.drawDial(h);

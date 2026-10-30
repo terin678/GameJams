@@ -3,7 +3,7 @@
 import { TUNING } from '../../data/tuning.js';
 import { frameKey } from '../textures.js';
 import { describeCard } from '../cards.js';
-import { textStyle, bindKeys } from '../kit.js';
+import { textStyle, bindKeys, stack, stackHeight } from '../kit.js';
 
 const W = TUNING.width, H = TUNING.height;
 const CARD = { w: 220, h: 250, gap: 22 };
@@ -16,26 +16,34 @@ export class LevelUp extends Phaser.Scene {
 		this.tweens.add({ targets: shade, alpha: 1, duration: 150 });
 		const title = this.add.text(W / 2, 84, `LEVEL ${level}!`, { ...style(30, '#f2d544'), stroke: '#14121c', strokeThickness: 6 }).setOrigin(0.5).setScale(1.6);
 		this.tweens.add({ targets: title, scale: 1, duration: 280, ease: 'Back.easeOut' });
-		this.add.text(W / 2, 120, 'choose one', style(12, '#b8bcc8')).setOrigin(0.5);
+		this.add.text(W / 2, title.y + title.height / 2 + 4, 'choose one', style(12, '#b8bcc8')).setOrigin(0.5, 0);
 
 		const readyAt = this.time.now + TUNING.cardInputDelayMs;
 		let sel = 0, chosen = false;
 		const n = cards.length;
-		// Each card is a container, so it moves and scales as one.
-		const boxes = cards.map((card, i) => {
+		// Each card is a container, so it moves and scales as one. Cards are
+		// built first, then all sized to the tallest so phone fonts always fit.
+		const built = cards.map((card, i) => {
 			const d = describeCard(card, active);
-			const x = W / 2 + (i - (n - 1) / 2) * (CARD.w + CARD.gap), y = H / 2 + 30;
-			const box = this.add.rectangle(0, 0, CARD.w, CARD.h, 0x1b1a28, 0.95).setStrokeStyle(2, 0x2c3550);
-			const parts = [
-				box,
-				this.add.image(0, -78, frameKey(d.icon)).setScale(d.icon === 'gem' ? 1.5 : 1.6),
-				this.add.text(0, -34, d.title, style(16, d.color)).setOrigin(0.5),
-				this.add.text(0, -12, d.sub, style(10, '#b8bcc8')).setOrigin(0.5),
-				this.add.text(0, 8, d.level, style(11, '#f4f4f4')).setOrigin(0.5),
-				this.add.text(0, 30, d.body, { ...style(11, '#e8dcc0'), lineSpacing: 4, wordWrap: { width: CARD.w - 24 } }).setOrigin(0.5, 0),
-				this.add.text(0, CARD.h / 2 - 16, `[${i + 1}]`, style(10, '#8a93b8')).setOrigin(0.5),
+			const text = (str, px, color, extra = {}) => this.add.text(0, 0, str, { ...style(px, color), ...extra }).setOrigin(0.5, 0);
+			const body = [
+				this.add.image(0, 0, frameKey(d.icon)).setScale(d.icon === 'gem' ? 1.5 : 1.6).setOrigin(0.5, 0),
+				[text(d.title, 16, d.color), 8],
+				[text(d.sub, 10, '#b8bcc8'), 2],
+				[text(d.level, 11, '#f4f4f4'), 4],
+				[text(d.body, 11, '#e8dcc0', { lineSpacing: 4, wordWrap: { width: CARD.w - 24 } }), 12],
 			];
-			const c = this.add.container(x, y + 60, parts).setAlpha(0).setSize(CARD.w, CARD.h).setInteractive({ useHandCursor: true });
+			const key = this.add.text(0, 0, `[${i + 1}]`, style(10, '#8a93b8')).setOrigin(0.5, 1);
+			return { body, key, need: 18 + stackHeight(body) + 12 + key.height + 8 };
+		});
+		const cardH = Math.max(CARD.h, ...built.map(b => Math.ceil(b.need)));
+		const boxes = built.map(({ body, key }, i) => {
+			const x = W / 2 + (i - (n - 1) / 2) * (CARD.w + CARD.gap), y = H / 2 + 30;
+			const box = this.add.rectangle(0, 0, CARD.w, cardH, 0x1b1a28, 0.95).setStrokeStyle(2, 0x2c3550);
+			stack(-cardH / 2 + 18, body);
+			key.setY(cardH / 2 - 8);
+			const parts = [box, ...body.map(e => (Array.isArray(e) ? e[0] : e)), key];
+			const c = this.add.container(x, y + 60, parts).setAlpha(0).setSize(CARD.w, cardH).setInteractive({ useHandCursor: true });
 			this.tweens.add({ targets: c, y, alpha: 1, delay: 60 + i * 70, duration: 260, ease: 'Back.easeOut' });
 			c.on('pointerover', () => { sel = i; highlight(); });
 			c.on('pointerdown', () => choose(i));

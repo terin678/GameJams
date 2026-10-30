@@ -21,9 +21,9 @@ export class Menu extends Phaser.Scene {
 		this.ground = this.add.tileSprite(0, 0, W, H, 'ground').setOrigin(0);
 		this.add.rectangle(0, 0, W, H, 0x14121c, 0.45).setOrigin(0);
 
-		const title = this.add.text(W / 2, 64, 'JOB HOP', { ...style(56, '#f2d544'), stroke: '#14121c', strokeThickness: 10 }).setOrigin(0.5);
+		const title = this.add.text(W / 2, 60, 'JOB HOP', { ...style(56, '#f2d544'), stroke: '#14121c', strokeThickness: 10 }).setOrigin(0.5);
 		this.tweens.add({ targets: title, scale: 1.05, yoyo: true, repeat: -1, duration: 1400, ease: 'Sine.easeInOut' });
-		this.add.text(W / 2, 108, 'SURVIVE TEN MINUTES.  MASTER EVERY JOB.', style(13, '#9ff0fa')).setOrigin(0.5);
+		this.add.text(W / 2, title.getBounds().bottom + 4, 'SURVIVE TEN MINUTES.  MASTER EVERY JOB.', style(13, '#9ff0fa')).setOrigin(0.5, 0);
 
 		// The loadout: first pick starts active. They march on the spot.
 		this.heroes = picks.map((id, i) => {
@@ -32,8 +32,7 @@ export class Menu extends Phaser.Scene {
 			this.add.text(x, 238, `${JOBS[id].name}\nLv ${levels[id]}`, { ...style(13), lineSpacing: 4 }).setOrigin(0.5, 0);
 			return { img, sprite: JOBS[id].sprite, y: 190 };
 		});
-		this.add.text(W / 2, 190, 'TAB', style(14, '#8a93b8')).setOrigin(0.5);
-		this.add.text(W / 2, 208, '<->', style(14, '#8a93b8')).setOrigin(0.5);
+		this.add.text(W / 2, 190, `${isTouch(this) ? 'SWAP' : 'TAB'}\n<->`, { ...style(14, '#8a93b8'), lineSpacing: 2 }).setOrigin(0.5);
 
 		const unlocked = unlockedJobs(jobXp, JOBS, TUNING.jobXp).length;
 		const jobsBtn = this.add.text(W / 2, 300, `${isTouch(this) ? '' : '[J] '}CHANGE JOBS   ${unlocked} / ${Object.keys(JOBS).length} unlocked`, {
