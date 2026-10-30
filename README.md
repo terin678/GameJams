@@ -134,7 +134,11 @@ then beat Chaos.
   has a short cooldown, gives brief i-frames, fires the new job's attack at once
   and tops up its gauge.
 - **Job XP goes only to the active job.** Each kill credits the job you are
-  playing at that moment, banked when the run ends (win, death or quit).
+  playing at that moment. Jobs level up mid-run (new nodes apply at once, and
+  unlocks are announced), and the XP is saved when the run ends (win, death or quit).
+- **Job Action charges.** The dial at the bottom right fills as the next charge
+  builds (over time and with kills); each pip under it is a ready charge. An
+  action costing 50 of the 100 gauge holds two charges.
 - **The tree** (`src/data/jobs.js`): four Basic jobs start unlocked. Each Basic
   job at level 5 unlocks its Advanced job (Swordsman → Knight, Lancer → Dragoon,
   Mage → Black Mage, Pugilist → Monk). Experts need two Advanced jobs at

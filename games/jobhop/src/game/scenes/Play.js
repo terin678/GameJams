@@ -6,9 +6,9 @@ import { STATS, PASSIVES } from '../../data/passives.js';
 import { ENEMIES } from '../../data/enemies.js';
 import { STAGE } from '../../data/stage.js';
 import { GEM_TINTS } from '../../data/sprites.js';
-import { jobLevels, equippedMods, masteryMods, creditJobXp, awardJobXp, newlyUnlocked } from '../../core/jobs.js';
-import { createLoadout, activeJob, canSwap, swap, addGauge, spendAction } from '../../core/loadout.js';
-import { deriveStats, passiveMods } from '../../core/stats.js';
+import { jobLevels, levelFromXp, equippedMods, masteryMods, gainJobXp, liveXp, unlockedJobs, awardJobXp, newlyUnlocked } from '../../core/jobs.js';
+import { createLoadout, activeJob, canSwap, swap, addGauge, spendAction, gaugeCap, chargeInfo } from '../../core/loadout.js';
+import { deriveStats, passiveMods, formatMod } from '../../core/stats.js';
 import { createLevelState, gainXp, xpToNext, addGem, gemTier } from '../../core/xp.js';
 import { cardPool, offerCards, applyCard } from '../../core/levelup.js';
 import { createSpawner, dueSpawns, dueEvents, ringPosition, enemyHp } from '../../core/spawner.js';
@@ -26,6 +26,7 @@ const DEPTH = { ground: 0, field: 2, gem: 5, enemy: 10, boss: 12, clone: 18, pla
 const FONT = 'monospace';
 const RING = Math.hypot(W, H) / 2 + TUNING.spawnMargin;
 const PANEL = { w: 214, h: 54, gap: 10 };
+const ICON = { x: W - 64, y: H - 84, r: 34 };   // the Job Action charge dial
 
 export class Play extends Phaser.Scene {
 	create() {
@@ -34,10 +35,14 @@ export class Play extends Phaser.Scene {
 		this.rng = createRng(Date.now());
 		this.savedXp = this.registry.get('jobXp');
 		const [a, b] = this.registry.get('picks');
-		this.loadout = createLoadout(a, b);
-		// Job levels are fixed for the run; XP earned now is banked at the end.
+		const cap = id => gaugeCap(ACTIONS[JOBS[id].action].cost, TUNING.gauge.max);
+		this.loadout = createLoadout(a, b, { [a]: cap(a), [b]: cap(b) });
+		// Jobs level up live as the active job earns XP; it is saved at the end.
 		this.levels = jobLevels(this.savedXp, JOBS, TUNING.jobXp);
 		this.mastery = masteryMods(this.levels, JOBS);
+		this.knownUnlocked = new Set(unlockedJobs(this.savedXp, JOBS, TUNING.jobXp));
+		this.actionUsed = false;     // until the first Job Action, the dial nags
+		this.lastReady = { [a]: 0, [b]: 0 };
 
 		this.run = createRun();
 		this.runLevel = createLevelState();
@@ -150,22 +155,31 @@ export class Play extends Phaser.Scene {
 		this.hpText = hud(this.add.text(12 + 100, 44, '', style(10)).setOrigin(0.5, 0));
 		this.bossText = hud(this.add.text(W / 2, 50, '', style(12, '#ff8a80')).setOrigin(0.5, 0).setVisible(false));
 
+		// Job panels: name and level, the action with its charges, and a live job XP bar.
 		const top = H - PANEL.h - 12;
 		this.panels = this.loadout.jobs.map((id, i) => {
 			const x = 12 + i * (PANEL.w + PANEL.gap);
 			const job = JOBS[id];
-			const action = ACTIONS[job.action];
 			return {
 				id, x, y: top,
 				icon: hud(this.add.image(x + 22, top + PANEL.h / 2, frameKey(job.sprite, 0))),
-				name: hud(this.add.text(x + 44, top + 6, `${job.name}  Lv ${this.levels[id]}`, style(12))),
-				act: hud(this.add.text(x + 44, top + 22, `${action.name} (${action.cost})`, style(10, '#b8bcc8'))),
+				name: hud(this.add.text(x + 44, top + 5, '', style(12))),
+				act: hud(this.add.text(x + 44, top + 21, '', style(10, '#b8bcc8'))),
 			};
 		});
-		const hint = isTouch(this) ? '' : 'TAB swap job    SPACE job action    P pause';
+		const hint = isTouch(this) ? '' : 'TAB swap job    P pause';
 		this.hintText = hud(this.add.text(12, top - 18, hint, style(10, '#8a93b8')));
 
-		if (isTouch(this)) this.buildTouchButtons();
+		// The Job Action dial: fills as the next charge builds, a pip per charge.
+		const touch = isTouch(this);
+		this.dialName = hud(this.add.text(ICON.x, ICON.y - ICON.r - 16, '', style(11)).setOrigin(0.5));
+		this.dialIcon = hud(this.add.image(ICON.x, ICON.y, frameKey(this.jobSprite(), 0)));
+		this.dialKey = hud(this.add.text(ICON.x, ICON.y + ICON.r + 24, touch ? 'TAP' : 'SPACE', style(10, '#8a93b8')).setOrigin(0.5));
+		this.dialNag = hud(this.add.text(ICON.x - ICON.r - 12, ICON.y, touch ? 'TAP ME! ▶' : 'press SPACE! ▶', style(12, '#f2d544')).setOrigin(1, 0.5).setVisible(false));
+		hud(this.add.circle(ICON.x, ICON.y, ICON.r, 0x000000, 0.001).setInteractive({ useHandCursor: true }))
+			.on('pointerdown', (_p, _x, _y, e) => { e.stopPropagation(); this.tryAction(); });
+
+		if (touch) this.buildTouchButtons();
 		this.refreshPanels();
 	}
 
@@ -175,8 +189,7 @@ export class Play extends Phaser.Scene {
 			this.add.text(x, y, label, { fontFamily: FONT, fontSize: fs(this, 12), color: '#f4f4f4', fontStyle: 'bold' }).setOrigin(0.5).setScrollFactor(0).setDepth(DEPTH.hud);
 			c.on('pointerdown', (_p, _x, _y, e) => { e.stopPropagation(); fn(); });
 		};
-		button(W - 70, H - 90, 40, 'ACTION', 0xf2d544, () => this.tryAction());
-		button(W - 170, H - 60, 30, 'SWAP', 0x9ff0fa, () => this.trySwap());
+		button(ICON.x - ICON.r - 50, H - 50, 30, 'SWAP', 0x9ff0fa, () => this.trySwap());
 		this.add.text(W - 12, 12, 'II', { fontFamily: FONT, fontSize: fs(this, 18), color: '#8a93b8', fontStyle: 'bold' })
 			.setOrigin(1, 0).setScrollFactor(0).setDepth(DEPTH.hud).setInteractive()
 			.on('pointerdown', (_p, _x, _y, e) => { e.stopPropagation(); this.pause(); });
@@ -215,8 +228,8 @@ export class Play extends Phaser.Scene {
 		this.sfx.play(key);
 	}
 
-	banner(text, ms) {
-		const t = this.add.text(W / 2, H * 0.3, text, {
+	banner(text, ms, y = H * 0.3) {
+		const t = this.add.text(W / 2, y, text, {
 			fontFamily: FONT, fontSize: fs(this, 26), color: '#f2d544', fontStyle: 'bold', stroke: '#14121c', strokeThickness: 6, align: 'center',
 		}).setOrigin(0.5).setScrollFactor(0).setDepth(DEPTH.hud + 1);
 		this.tweens.add({ targets: t, alpha: 0, delay: ms, duration: 400, onComplete: () => t.destroy() });
@@ -345,6 +358,8 @@ export class Play extends Phaser.Scene {
 		if (this.over || !this.scene.isActive()) return;
 		const def = ACTIONS[JOBS[activeJob(this.loadout)].action];
 		if (!spendAction(this.loadout, def.cost)) { this.sfx.play('empty'); return; }
+		this.actionUsed = true;
+		this.lastReady[activeJob(this.loadout)] -= 1;
 		const p = this.player;
 		const target = nearest(this.enemies, p.x, p.y, TUNING.player.aimRange);
 		const plan = planAction(def, { now: this.now, x: p.x, y: p.y, dir: aimAt(p.x, p.y, target, this.facing), target });
@@ -485,8 +500,10 @@ export class Play extends Phaser.Scene {
 		e.dead = true;
 		e.img.destroy();
 		this.run.kills++;
-		// Job XP goes only to the job you are playing right now.
-		creditJobXp(this.runJobXp, activeJob(this.loadout), e.def.xp * TUNING.jobXp.perEnemyXp);
+		// Job XP goes only to the job you are playing right now, and levels it on the spot.
+		const id = activeJob(this.loadout);
+		const { from, to } = gainJobXp(this.savedXp, this.runJobXp, id, e.def.xp * TUNING.jobXp.perEnemyXp, TUNING.jobXp);
+		if (to > from) this.jobLevelUp(id, from, to);
 		addGauge(this.loadout, TUNING.gauge.perKill, TUNING.gauge.max);
 		this.dropGem(e.x, e.y, e.def.xp);
 		if (e.def.potion && this.rng.next() < e.def.potion) this.dropPotion(e.x + 10, e.y);
@@ -497,6 +514,29 @@ export class Play extends Phaser.Scene {
 			this.cameras.main.shake(400, 0.01);
 			this.finish(true);
 		}
+	}
+
+	// A job levelled mid-run: its new nodes (and any mastery) apply right away,
+	// and anything it unlocks is announced.
+	jobLevelUp(id, from, to) {
+		const job = JOBS[id];
+		this.levels[id] = to;
+		this.mastery = masteryMods(this.levels, JOBS);
+		this.recomputeStats({ grow: true });
+		const nodes = job.nodes
+			.filter(n => n.level > from && n.level <= to)
+			.map(n => `${formatMod(STATS, n.stat, n.add)}${n.mastery ? ' (all jobs)' : ''}`);
+		this.banner(`${job.name.toUpperCase()}  LV ${to}${nodes.length ? `\n${nodes.join('   ')}` : ''}`, 1500, H * 0.22);
+		this.sfx.play('joblevel');
+		const fresh = unlockedJobs(liveXp(this.savedXp, this.runJobXp), JOBS, TUNING.jobXp).filter(j => !this.knownUnlocked.has(j));
+		for (const j of fresh) {
+			this.knownUnlocked.add(j);
+			this.time.delayedCall(700, () => {
+				this.banner(`NEW JOB UNLOCKED: ${JOBS[j].name.toUpperCase()}`, 2200, H * 0.36);
+				this.sfx.play('unlock');
+			});
+		}
+		this.refreshPanels();
 	}
 
 	tickBurns(dt) {
@@ -760,10 +800,46 @@ export class Play extends Phaser.Scene {
 	refreshPanels() {
 		this.panels.forEach((pn, i) => {
 			const active = i === this.loadout.active;
+			pn.name.setText(`${JOBS[pn.id].name}  Lv ${this.levels[pn.id]}`);
 			pn.icon.setAlpha(active ? 1 : 0.5);
 			pn.name.setAlpha(active ? 1 : 0.55);
 			pn.act.setAlpha(active ? 1 : 0.55);
 		});
+		const action = ACTIONS[JOBS[activeJob(this.loadout)].action];
+		this.dialName.setText(action.name);
+		this.dialIcon.setTexture(frameKey(this.jobSprite(), 0));
+	}
+
+	// The dial for the active job's action, plus a chime when a charge fills.
+	drawDial(h) {
+		const id = activeJob(this.loadout);
+		const action = ACTIONS[JOBS[id].action];
+		const c = chargeInfo(this.loadout.gauge[id], action.cost, TUNING.gauge.max);
+		const { x, y, r } = ICON;
+		const top = -Math.PI / 2;
+		h.fillStyle(0x14121c, 0.88).fillCircle(x, y, r);
+		if (c.progress > 0 && c.ready < c.total) {
+			h.fillStyle(action.color, 0.3);
+			h.beginPath();
+			h.slice(x, y, r - 3, top, top + Math.PI * 2 * c.progress, false);
+			h.fillPath();
+		}
+		if (c.ready > 0) h.fillStyle(action.color, c.ready >= c.total ? 0.45 : 0.18).fillCircle(x, y, r - 3);
+		const pulse = 0.55 + 0.45 * Math.sin(this.now / 140);
+		h.lineStyle(c.ready ? 4 : 2, c.ready ? action.color : 0x3a3f58, c.ready ? pulse : 1).strokeCircle(x, y, r);
+		for (let k = 0; k < c.total; k++) {
+			const px = x + (k - (c.total - 1) / 2) * 16, py = y + r + 10;
+			if (k < c.ready) h.fillStyle(action.color, 1).fillCircle(px, py, 5);
+			else h.lineStyle(2, 0x6b7080, 1).strokeCircle(px, py, 4);
+		}
+		this.dialIcon.setAlpha(c.ready ? 1 : 0.45);
+
+		if (c.ready > this.lastReady[id]) {
+			this.sfx.play('ready');
+			this.fx.push({ kind: 'ring', x: this.player.x, y: this.player.y, radius: 30, color: action.color, born: this.now, until: this.now + 300 });
+		}
+		this.lastReady[id] = c.ready;
+		this.dialNag.setVisible(!this.actionUsed && c.ready > 0).setAlpha(pulse);
 	}
 
 	updateHud() {
@@ -794,12 +870,16 @@ export class Play extends Phaser.Scene {
 			const action = ACTIONS[JOBS[pn.id].action];
 			h.fillStyle(0x14121c, active ? 0.85 : 0.6).fillRect(pn.x, pn.y, PANEL.w, PANEL.h);
 			h.lineStyle(2, active ? 0xf2d544 : 0x2c3550, 1).strokeRect(pn.x, pn.y, PANEL.w, PANEL.h);
-			const g = this.loadout.gauge[pn.id];
-			bar(pn.x + 44, pn.y + 38, PANEL.w - 54, 9, g / TUNING.gauge.max, g >= action.cost ? 0xf2d544 : 0x8a93b8);
+			const c = chargeInfo(this.loadout.gauge[pn.id], action.cost, TUNING.gauge.max);
+			const label = `${action.name}  ${'●'.repeat(c.ready)}${'○'.repeat(c.total - c.ready)}`;
+			if (pn.act.text !== label) pn.act.setText(label);
+			const xp = levelFromXp((this.savedXp[pn.id] ?? 0) + (this.runJobXp[pn.id] ?? 0), TUNING.jobXp);
+			bar(pn.x + 44, pn.y + 39, PANEL.w - 54, 8, xp.max ? 1 : xp.into / xp.need, xp.max ? 0xf2d544 : 0x4d8fe0);
 			if (!active && !canSwap(this.loadout, this.now)) {
 				const left = (this.loadout.swapReadyAt - this.now) / TUNING.swap.cooldownMs;
 				h.fillStyle(0x000000, 0.45).fillRect(pn.x, pn.y, PANEL.w * left, PANEL.h);
 			}
 		});
+		this.drawDial(h);
 	}
 }

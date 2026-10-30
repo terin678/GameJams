@@ -62,6 +62,21 @@ export function creditJobXp(runXp, jobId, amount) {
 	return runXp;
 }
 
+// Saved XP plus what this run has earned so far: what levels jobs mid-run.
+export function liveXp(saved, runXp) {
+	const out = { ...saved };
+	for (const [id, xp] of Object.entries(runXp)) out[id] = (out[id] ?? 0) + xp;
+	return out;
+}
+
+// Credit the active job and report whether that crossed a level.
+export function gainJobXp(saved, runXp, jobId, amount, curve) {
+	const before = levelFromXp((saved[jobId] ?? 0) + (runXp[jobId] ?? 0), curve).level;
+	creditJobXp(runXp, jobId, amount);
+	const after = levelFromXp((saved[jobId] ?? 0) + runXp[jobId], curve).level;
+	return { from: before, to: after };
+}
+
 export function awardJobXp(saved, runXp, curve) {
 	const cap = xpForLevel(curve.maxLevel, curve);
 	const out = { ...saved };

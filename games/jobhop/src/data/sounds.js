@@ -10,6 +10,8 @@ export const SOUNDS = {
 	swap: { wave: 'triangle', notes: [392, 587, 784], dur: 0.22, vol: 0.2 },
 	action: { wave: 'square', f0: 220, f1: 880, dur: 0.25, vol: 0.18 },
 	boom: { wave: 'noise', f0: 1200, f1: 60, dur: 0.5, vol: 0.4 },
+	ready: { wave: 'triangle', notes: [880, 1320], dur: 0.14, vol: 0.14 },
+	joblevel: { wave: 'square', notes: [392, 523, 659, 784, 1047], dur: 0.5, vol: 0.18 },
 	empty: { wave: 'square', f0: 150, f1: 120, dur: 0.12, vol: 0.12 },
 	select: { wave: 'square', f0: 660, dur: 0.05, vol: 0.1 },
 	unlock: { wave: 'triangle', notes: [523, 659, 784, 1047, 1319, 1568], dur: 0.8, vol: 0.25 },

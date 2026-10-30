@@ -41,7 +41,7 @@ export class Menu extends Phaser.Scene {
 			? 'DRAG to move, attacks are automatic\nSWAP changes job, ACTION spends the gauge'
 			: 'ARROWS / WASD  move (attacks are automatic)\nTAB / SHIFT  swap job      SPACE  job action\nP  pause      M  mute';
 		this.add.text(W / 2, 360, controls, { ...style(12), lineSpacing: 6 }).setOrigin(0.5);
-		this.add.text(W / 2, 418, 'Kills give job XP to the job you are playing.\nLevel jobs to unlock Advanced and Expert jobs.', { ...style(11, '#b8bcc8'), lineSpacing: 4 }).setOrigin(0.5);
+		this.add.text(W / 2, 418, 'Kills level up the job you are playing, mid-run. Level jobs to unlock more.\nThe JOB ACTION dial (bottom right) charges over time and with kills.', { ...style(11, '#b8bcc8'), lineSpacing: 4 }).setOrigin(0.5);
 
 		const list = scores.list();
 		const table = list.length ? list.map((e, i) => `${i + 1}. ${e.name}  ${String(e.score).padStart(5)}`).join('\n') : 'no runs yet';

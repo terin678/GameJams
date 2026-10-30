@@ -2,7 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
 	xpForLevel, levelFromXp, jobLevels, isUnlocked, unlockedJobs, lockReason,
-	equippedMods, masteryMods, creditJobXp, awardJobXp, newlyUnlocked,
+	equippedMods, masteryMods, creditJobXp, awardJobXp, newlyUnlocked, liveXp, gainJobXp,
 } from '../../games/jobhop/src/core/jobs.js';
 import { JOBS as REAL } from '../../games/jobhop/src/data/jobs.js';
 import { TUNING } from '../../games/jobhop/src/data/tuning.js';
@@ -64,6 +64,20 @@ test('job XP is credited only to the job named', () => {
 	creditJobXp(run, 'a', 3);
 	creditJobXp(run, 'a', 2);
 	assert.deepEqual(run, { a: 5 });
+});
+
+test('liveXp adds run XP on top of the save without mutating it', () => {
+	const saved = { a: 5 };
+	assert.deepEqual(liveXp(saved, { a: 3, b: 2 }), { a: 8, b: 2 });
+	assert.deepEqual(saved, { a: 5 });
+});
+
+test('gainJobXp credits the job and reports a level crossed mid-run', () => {
+	const saved = { a: 8 }, run = {};
+	assert.deepEqual(gainJobXp(saved, run, 'a', 1, CURVE), { from: 1, to: 1 });
+	assert.deepEqual(gainJobXp(saved, run, 'a', 25, CURVE), { from: 1, to: 3 });
+	assert.deepEqual(run, { a: 26 });
+	assert.deepEqual(gainJobXp(saved, run, 'a', 500, CURVE), { from: 3, to: 4 }, 'stops at max level');
 });
 
 test('awardJobXp adds run XP to saved XP without mutating, capped at max level', () => {
